@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/browse_candidate.dart';
 import '../../models/browse_response.dart';
+import '../../models/conversation_summary.dart';
 import '../../models/daily_pick.dart';
 import '../../models/user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../auth/selected_user_provider.dart';
+import '../chat/conversation_thread_screen.dart';
 import '../home/backend_health_banner.dart';
 import 'browse_provider.dart';
 
@@ -111,9 +113,34 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       final message = result.isMatch && result.matchedUserName != null
           ? 'It\'s a match with ${result.matchedUserName}!'
           : result.message;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          action: result.isMatch && result.matchId != null
+              ? SnackBarAction(
+                  label: 'Message now',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => ConversationThreadScreen(
+                          currentUser: widget.currentUser,
+                          conversation: ConversationSummary(
+                            id: result.matchId!,
+                            otherUserId: result.matchedUserId ?? candidate.id,
+                            otherUserName:
+                                result.matchedUserName ?? candidate.name,
+                            messageCount: 0,
+                            lastMessageAt: DateTime.now(),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                )
+              : null,
+        ),
+      );
     } on ApiError catch (error) {
       if (!mounted) {
         return;

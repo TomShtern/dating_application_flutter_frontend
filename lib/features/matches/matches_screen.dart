@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
+import '../../models/conversation_summary.dart';
 import '../../models/match_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../auth/selected_user_provider.dart';
+import '../chat/conversation_thread_screen.dart';
 import 'matches_provider.dart';
 
 class MatchesScreen extends ConsumerWidget {
@@ -62,7 +64,10 @@ class MatchesScreen extends ConsumerWidget {
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        return _MatchCard(match: response.matches[index]);
+                        return _MatchCard(
+                          currentUser: currentUser,
+                          match: response.matches[index],
+                        );
                       },
                     );
                   },
@@ -85,8 +90,9 @@ class MatchesScreen extends ConsumerWidget {
 }
 
 class _MatchCard extends StatelessWidget {
-  const _MatchCard({required this.match});
+  const _MatchCard({required this.currentUser, required this.match});
 
+  final UserSummary currentUser;
   final MatchSummary match;
 
   @override
@@ -99,6 +105,22 @@ class _MatchCard extends StatelessWidget {
           'Matched on ${match.createdAt.toLocal().toIso8601String().split('T').first} • ${match.state}',
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => ConversationThreadScreen(
+                currentUser: currentUser,
+                conversation: ConversationSummary(
+                  id: match.matchId,
+                  otherUserId: match.otherUserId,
+                  otherUserName: match.otherUserName,
+                  messageCount: 0,
+                  lastMessageAt: match.createdAt,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

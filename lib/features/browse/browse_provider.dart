@@ -6,6 +6,8 @@ import '../../models/browse_response.dart';
 import '../../models/like_result.dart';
 import '../../models/user_summary.dart';
 import '../auth/selected_user_provider.dart';
+import '../chat/conversations_provider.dart';
+import '../matches/matches_provider.dart';
 
 final browseProvider = FutureProvider<BrowseResponse>((ref) async {
   final currentUser = await ref.watch(selectedUserProvider.future);
@@ -35,6 +37,10 @@ class BrowseController {
       targetId: targetId,
     );
     _ref.invalidate(browseProvider);
+    if (result.isMatch) {
+      _ref.invalidate(matchesProvider);
+      _ref.invalidate(conversationsProvider);
+    }
     return result;
   }
 

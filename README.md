@@ -61,7 +61,7 @@ Out of scope for this phase:
 
 Run the usual Flutter checks and make sure at least one target is available.
 
-In this workspace, the starter app was verified successfully on **Windows desktop**. Android is still the intended mobile target, but Android SDK setup is still required on this machine before local Android runs will work.
+In this workspace, the app has been verified successfully on **Windows desktop** and an **Android emulator**. The current local Android flow uses an emulator talking to the host backend over `10.0.2.2`.
 
 ### Start the backend
 
@@ -91,11 +91,13 @@ The app reads these values through Dart defines in `lib/app/env.dart`, so launch
 
 - `flutter run -d windows --dart-define-from-file=.env`
 - `flutter run -d chrome --dart-define-from-file=.env`
+- `flutter run -d emulator-5554 --dart-define-from-file=.env`
 
 Important note:
 
 - `.env` is ignored by git and is **not** auto-loaded unless you pass `--dart-define-from-file=.env`
-- for a physical Android phone, replace `127.0.0.1` with your laptop LAN IP
+- for an Android emulator, use `http://10.0.2.2:7070`
+- for a physical Android phone, replace loopback or emulator hosts with your laptop LAN IP
 
 The Flutter client keeps header injection centralized so request rules do not get scattered across screens.
 
@@ -120,7 +122,7 @@ Recommended build order:
 
 ## Current status
 
-As of 2026-04-18:
+As of 2026-04-19:
 
 - blank Flutter starter verified on Windows
 - bootstrap plan written and attached in `docs/superpowers/plans/2026-04-18-mobile-bootstrap-foundation.md`
@@ -128,6 +130,8 @@ As of 2026-04-18:
 - backend health, browse candidates, and like/pass actions are now wired into the app shell
 - a signed-in navigation shell now routes between Discover, Matches, and Chats for the selected dev user
 - matches and conversations list screens are wired to the backend contract with loading, empty, retry, and refresh states
-- conversation threads now load real messages, distinguish incoming/outgoing bubbles, and allow sending messages through the backend contract
-- current verification status: `flutter test`, `flutter analyze`, and Windows launches with `--dart-define-from-file=.env` all passed for the latest chat slice
-- next feature slice should focus on modest thread refresh/polling, match-to-thread entry refinement, and broader chat UX polish
+- conversation threads now load real messages, distinguish incoming/outgoing bubbles, allow sending messages through the backend contract, poll while visible, and auto-scroll to the latest message
+- match cards now open the conversation thread directly using the backend's canonical pair ID contract
+- Discover now offers a direct `Message now` handoff when a like becomes a mutual match, and matching also refreshes the Matches and Chats data sources
+- current verification status: `flutter test`, `flutter analyze`, debug APK builds, and emulator-to-backend connectivity have all been verified in this workspace
+- next feature slice should focus on broader chat UX polish and richer conversation list/thread quality-of-life details

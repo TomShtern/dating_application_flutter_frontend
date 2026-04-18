@@ -5,9 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
+import 'package:flutter_dating_application_1/features/chat/conversations_provider.dart';
+import 'package:flutter_dating_application_1/features/matches/matches_provider.dart';
 import 'package:flutter_dating_application_1/models/browse_candidate.dart';
 import 'package:flutter_dating_application_1/models/browse_response.dart';
+import 'package:flutter_dating_application_1/models/conversation_summary.dart';
 import 'package:flutter_dating_application_1/models/like_result.dart';
+import 'package:flutter_dating_application_1/models/match_summary.dart';
+import 'package:flutter_dating_application_1/models/matches_response.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 void main() {
@@ -132,15 +137,141 @@ void main() {
     expect(apiClient.browseCalls, 2);
     expect(apiClient.passCalls, 1);
   });
+
+  test('likeCandidate invalidates matches and conversations on a new match', () async {
+    final apiClient = _FakeApiClient(
+      browseResponses: const [
+        BrowseResponse(
+          candidates: [
+            BrowseCandidate(
+              id: 'target-1',
+              name: 'Noa',
+              age: 29,
+              state: 'ACTIVE',
+            ),
+          ],
+          dailyPick: null,
+          dailyPickViewed: false,
+          locationMissing: false,
+        ),
+      ],
+      likeResult: const LikeResult(
+        isMatch: true,
+        message: 'It\'s a match!',
+        matchedUserName: 'Noa',
+        matchId:
+            '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
+      ),
+      matchResponses: [
+        MatchesResponse(
+          matches: [
+            MatchSummary(
+              matchId:
+                  '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
+              otherUserId: '22222222-2222-2222-2222-222222222222',
+              otherUserName: 'Noa',
+              state: 'ACTIVE',
+              createdAt: DateTime.parse('2026-04-19T09:00:00Z'),
+            ),
+          ],
+          totalCount: 1,
+          offset: 0,
+          limit: 20,
+          hasMore: false,
+        ),
+        MatchesResponse(
+          matches: [
+            MatchSummary(
+              matchId:
+                  '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
+              otherUserId: '22222222-2222-2222-2222-222222222222',
+              otherUserName: 'Noa',
+              state: 'ACTIVE',
+              createdAt: DateTime.parse('2026-04-19T09:00:00Z'),
+            ),
+          ],
+          totalCount: 1,
+          offset: 0,
+          limit: 20,
+          hasMore: false,
+        ),
+      ],
+      conversationResponses: [
+        [
+          ConversationSummary(
+            id: '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
+            otherUserId: '22222222-2222-2222-2222-222222222222',
+            otherUserName: 'Noa',
+            messageCount: 0,
+            lastMessageAt: DateTime.parse('2026-04-19T09:00:00Z'),
+          ),
+        ],
+        [
+          ConversationSummary(
+            id: '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
+            otherUserId: '22222222-2222-2222-2222-222222222222',
+            otherUserName: 'Noa',
+            messageCount: 0,
+            lastMessageAt: DateTime.parse('2026-04-19T09:00:00Z'),
+          ),
+        ],
+      ],
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        apiClientProvider.overrideWithValue(apiClient),
+        selectedUserProvider.overrideWith(
+          (ref) async => const UserSummary(
+            id: '11111111-1111-1111-1111-111111111111',
+            name: 'Dana',
+            age: 27,
+            state: 'ACTIVE',
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(matchesProvider.future);
+    await container.read(conversationsProvider.future);
+    expect(apiClient.matchesCalls, 1);
+    expect(apiClient.conversationsCalls, 1);
+
+    final result = await container
+        .read(browseControllerProvider)
+        .likeCandidate('target-1');
+
+    expect(result.isMatch, isTrue);
+
+    await container.read(matchesProvider.future);
+    await container.read(conversationsProvider.future);
+
+    expect(apiClient.matchesCalls, 2);
+    expect(apiClient.conversationsCalls, 2);
+  });
 }
 
 class _FakeApiClient extends ApiClient {
-  _FakeApiClient({required this.browseResponses}) : super(dio: Dio());
+  _FakeApiClient({
+    required this.browseResponses,
+    this.likeResult = const LikeResult(
+      isMatch: false,
+      message: 'Like recorded',
+    ),
+    this.matchResponses = const [],
+    this.conversationResponses = const [],
+  }) : super(dio: Dio());
 
   final List<BrowseResponse> browseResponses;
+  final LikeResult likeResult;
+  final List<MatchesResponse> matchResponses;
+  final List<List<ConversationSummary>> conversationResponses;
   int browseCalls = 0;
   int likeCalls = 0;
   int passCalls = 0;
+  int matchesCalls = 0;
+  int conversationsCalls = 0;
 
   @override
   Future<BrowseResponse> getBrowse({required String userId}) async {
@@ -157,7 +288,7 @@ class _FakeApiClient extends ApiClient {
     required String targetId,
   }) async {
     likeCalls++;
-    return const LikeResult(isMatch: false, message: 'Like recorded');
+    return likeResult;
   }
 
   @override
@@ -167,5 +298,31 @@ class _FakeApiClient extends ApiClient {
   }) async {
     passCalls++;
     return 'Passed';
+  }
+
+  @override
+  Future<MatchesResponse> getMatches({
+    required String userId,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final responseIndex = matchesCalls < matchResponses.length
+        ? matchesCalls
+        : matchResponses.length - 1;
+    matchesCalls++;
+    return matchResponses[responseIndex];
+  }
+
+  @override
+  Future<List<ConversationSummary>> getConversations({
+    required String userId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final responseIndex = conversationsCalls < conversationResponses.length
+        ? conversationsCalls
+        : conversationResponses.length - 1;
+    conversationsCalls++;
+    return conversationResponses[responseIndex];
   }
 }

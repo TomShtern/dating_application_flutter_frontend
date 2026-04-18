@@ -64,5 +64,8 @@
     "terminal.integrated.defaultProfile.windows": "PowerShell",
     "chat.growthNotification.enabled": true,
     "chat.useClaudeHooks": true,
-    "python.analysis.aiHoverSummaries": true
+    "python.analysis.aiHoverSummaries": true,
+    "github.copilot.chat.additionalReadAccessPaths": [
+        "\"C:\\Users\\tom7s\\Desktopp\\Claude_Folder_2\\Date_Program\""
+    ]
 }
