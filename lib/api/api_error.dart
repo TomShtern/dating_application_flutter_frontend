@@ -7,7 +7,7 @@ class ApiError implements Exception {
   final String? code;
   final int? statusCode;
 
-  factory ApiError.fromDioException(DioException exception) {
+  factory ApiError.fromDioException(DioException exception, {String? baseUrl}) {
     final response = exception.response;
     final payload = response?.data;
 
@@ -23,9 +23,50 @@ class ApiError implements Exception {
     }
 
     return ApiError(
-      message: exception.message ?? 'Request failed.',
+      message: _messageFromException(exception, baseUrl: baseUrl),
       statusCode: response?.statusCode,
     );
+  }
+
+  static String _messageFromException(
+    DioException exception, {
+    String? baseUrl,
+  }) {
+    if (exception.type == DioExceptionType.connectionError) {
+      return _connectionErrorMessage(baseUrl: baseUrl);
+    }
+
+    return exception.message ?? 'Request failed.';
+  }
+
+  static String _connectionErrorMessage({String? baseUrl}) {
+    final normalizedBaseUrl = baseUrl?.trim();
+    final targetLabel = normalizedBaseUrl == null || normalizedBaseUrl.isEmpty
+        ? 'the configured backend'
+        : 'the backend at $normalizedBaseUrl';
+
+    if (_isLoopbackBaseUrl(normalizedBaseUrl)) {
+      return 'Could not connect to $targetLabel. '
+          'If you are using the Android emulator, use http://10.0.2.2:7070 instead. '
+          'Also make sure the backend is running on port 7070.';
+    }
+
+    if (normalizedBaseUrl?.contains('10.0.2.2') ?? false) {
+      return 'Could not connect to $targetLabel. '
+          'This Android emulator URL points to your computer, so make sure '
+          'the backend is running there on port 7070.';
+    }
+
+    return 'Could not connect to $targetLabel. '
+        'Make sure the backend is running and reachable on port 7070.';
+  }
+
+  static bool _isLoopbackBaseUrl(String? baseUrl) {
+    if (baseUrl == null || baseUrl.isEmpty) {
+      return false;
+    }
+
+    return baseUrl.contains('127.0.0.1') || baseUrl.contains('localhost');
   }
 
   @override

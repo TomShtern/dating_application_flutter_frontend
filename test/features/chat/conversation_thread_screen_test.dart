@@ -202,6 +202,53 @@ void main() {
 
     expect(apiClient.getMessagesCalls, 2);
   });
+
+  testWidgets('scrolls to the latest message when the thread opens', (
+    WidgetTester tester,
+  ) async {
+    final messages = List.generate(
+      30,
+      (index) => MessageDto(
+        id: 'message-${index + 1}',
+        conversationId: conversation.id,
+        senderId: index.isEven ? conversation.otherUserId : currentUser.id,
+        content: 'Message ${index + 1}',
+        sentAt: DateTime.parse(
+          '2026-04-18T14:20:00Z',
+        ).add(Duration(minutes: index)),
+      ),
+    );
+
+    final apiClient = _FakeConversationThreadApiClient(
+      messageResponses: [messages],
+      sentMessage: MessageDto(
+        id: 'message-31',
+        conversationId: conversation.id,
+        senderId: currentUser.id,
+        content: 'Hey there',
+        sentAt: DateTime.parse('2026-04-18T14:50:00Z'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+        ],
+        child: MaterialApp(
+          home: ConversationThreadScreen(
+            currentUser: currentUser,
+            conversation: conversation,
+            refreshInterval: Duration.zero,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Message 30'), findsOneWidget);
+  });
 }
 
 class _FakeConversationThreadApiClient extends ApiClient {

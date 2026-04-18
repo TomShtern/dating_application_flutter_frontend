@@ -31,8 +31,10 @@ class _ConversationThreadScreenState
     extends ConsumerState<ConversationThreadScreen>
     with WidgetsBindingObserver {
   late final TextEditingController _messageController;
+  late final ScrollController _messagesScrollController;
   Timer? _refreshTimer;
   bool _isSending = false;
+  int _lastAutoScrolledMessageCount = -1;
   AppLifecycleState _appLifecycleState = AppLifecycleState.resumed;
 
   @override
@@ -40,12 +42,17 @@ class _ConversationThreadScreenState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _messageController = TextEditingController();
+    _messagesScrollController = ScrollController();
     _startRefreshTimer();
   }
 
   @override
   void didUpdateWidget(covariant ConversationThreadScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.conversation.id != widget.conversation.id) {
+      _lastAutoScrolledMessageCount = -1;
+    }
+
     if (oldWidget.conversation.id != widget.conversation.id ||
         oldWidget.refreshInterval != widget.refreshInterval) {
       _startRefreshTimer();
@@ -62,6 +69,7 @@ class _ConversationThreadScreenState
     WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     _messageController.dispose();
+    _messagesScrollController.dispose();
     super.dispose();
   }
 
@@ -108,7 +116,10 @@ class _ConversationThreadScreenState
                       );
                     }
 
+                    _scheduleAutoScrollToLatest(messages.length);
+
                     return _MessageList(
+                      scrollController: _messagesScrollController,
                       messages: messages,
                       currentUserId: widget.currentUser.id,
                       otherUserName: widget.conversation.otherUserName,
@@ -242,15 +253,34 @@ class _ConversationThreadScreenState
         .read(conversationThreadControllerProvider(widget.conversation.id))
         .refresh();
   }
+
+  void _scheduleAutoScrollToLatest(int messageCount) {
+    if (_lastAutoScrolledMessageCount == messageCount) {
+      return;
+    }
+
+    _lastAutoScrolledMessageCount = messageCount;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_messagesScrollController.hasClients) {
+        return;
+      }
+
+      _messagesScrollController.jumpTo(
+        _messagesScrollController.position.maxScrollExtent,
+      );
+    });
+  }
 }
 
 class _MessageList extends StatelessWidget {
   const _MessageList({
+    required this.scrollController,
     required this.messages,
     required this.currentUserId,
     required this.otherUserName,
   });
 
+  final ScrollController scrollController;
   final List<MessageDto> messages;
   final String currentUserId;
   final String otherUserName;
@@ -258,6 +288,7 @@ class _MessageList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
+      controller: scrollController,
       itemCount: messages.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {

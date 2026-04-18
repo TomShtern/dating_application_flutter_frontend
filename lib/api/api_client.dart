@@ -64,7 +64,7 @@ class ApiClient {
         _expectMap(response.data, context: 'loading backend health'),
       );
     } on DioException catch (error) {
-      throw ApiError.fromDioException(error);
+      throw _toApiError(error);
     }
   }
 
@@ -81,7 +81,7 @@ class ApiClient {
           )
           .toList(growable: false);
     } on DioException catch (error) {
-      throw ApiError.fromDioException(error);
+      throw _toApiError(error);
     }
   }
 
@@ -96,7 +96,7 @@ class ApiClient {
         _expectMap(response.data, context: 'loading browse candidates'),
       );
     } on DioException catch (error) {
-      throw ApiError.fromDioException(error);
+      throw _toApiError(error);
     }
   }
 
@@ -114,7 +114,7 @@ class ApiClient {
         _expectMap(response.data, context: 'liking a candidate'),
       );
     } on DioException catch (error) {
-      throw ApiError.fromDioException(error);
+      throw _toApiError(error);
     }
   }
 
@@ -130,7 +130,7 @@ class ApiClient {
       final payload = _expectMap(response.data, context: 'passing a candidate');
       return payload['message'] as String? ?? 'Passed';
     } on DioException catch (error) {
-      throw ApiError.fromDioException(error);
+      throw _toApiError(error);
     }
   }
 
@@ -150,7 +150,7 @@ class ApiClient {
         _expectMap(response.data, context: 'loading matches'),
       );
     } on DioException catch (error) {
-      throw ApiError.fromDioException(error);
+      throw _toApiError(error);
     }
   }
 
@@ -179,7 +179,7 @@ class ApiClient {
           )
           .toList(growable: false);
     } on DioException catch (error) {
-      throw ApiError.fromDioException(error);
+      throw _toApiError(error);
     }
   }
 
@@ -205,7 +205,7 @@ class ApiClient {
           )
           .toList(growable: false);
     } on DioException catch (error) {
-      throw ApiError.fromDioException(error);
+      throw _toApiError(error);
     }
   }
 
@@ -225,8 +225,12 @@ class ApiClient {
         _expectMap(response.data, context: 'sending a message'),
       );
     } on DioException catch (error) {
-      throw ApiError.fromDioException(error);
+      throw _toApiError(error);
     }
+  }
+
+  ApiError _toApiError(DioException error) {
+    return ApiError.fromDioException(error, baseUrl: _dio.options.baseUrl);
   }
 
   Map<String, dynamic> _expectMap(dynamic payload, {required String context}) {
