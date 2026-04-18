@@ -1,0 +1,105 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../api/api_error.dart';
+import '../../models/match_summary.dart';
+import '../../models/user_summary.dart';
+import '../../shared/widgets/app_async_state.dart';
+import '../auth/selected_user_provider.dart';
+import 'matches_provider.dart';
+
+class MatchesScreen extends ConsumerWidget {
+  const MatchesScreen({super.key, required this.currentUser});
+
+  final UserSummary currentUser;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final matchesState = ref.watch(matchesProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Your matches'),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh matches',
+            onPressed: () => ref.read(matchesControllerProvider).refresh(),
+            icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            tooltip: 'Switch user',
+            onPressed: () async {
+              await ref.read(selectUserControllerProvider).clearSelection();
+              ref.invalidate(matchesProvider);
+            },
+            icon: const Icon(Icons.switch_account_outlined),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Mutual matches for ${currentUser.name}',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: matchesState.when(
+                  data: (response) {
+                    if (response.matches.isEmpty) {
+                      return const AppAsyncState.empty(
+                        message:
+                            'No matches yet. Keep exploring to find mutual likes.',
+                      );
+                    }
+
+                    return ListView.separated(
+                      itemCount: response.matches.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        return _MatchCard(match: response.matches[index]);
+                      },
+                    );
+                  },
+                  loading: () =>
+                      const AppAsyncState.loading(message: 'Loading matches…'),
+                  error: (error, stackTrace) => AppAsyncState.error(
+                    message: error is ApiError
+                        ? error.message
+                        : 'Unable to load matches right now.',
+                    onRetry: () => ref.invalidate(matchesProvider),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchCard extends StatelessWidget {
+  const _MatchCard({required this.match});
+
+  final MatchSummary match;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const CircleAvatar(child: Icon(Icons.favorite_rounded)),
+        title: Text(match.otherUserName),
+        subtitle: Text(
+          'Matched on ${match.createdAt.toLocal().toIso8601String().split('T').first} • ${match.state}',
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+      ),
+    );
+  }
+}
