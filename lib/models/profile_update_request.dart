@@ -18,12 +18,9 @@ class ProfileUpdateRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'bio': bio.trim(),
-      'gender': gender.trim(),
-      'interestedIn': interestedIn
-          .map((value) => value.trim())
-          .where((value) => value.isNotEmpty)
-          .toList(growable: false),
+      'bio': bio,
+      'gender': gender,
+      'interestedIn': List<String>.of(interestedIn, growable: false),
       'maxDistanceKm': maxDistanceKm,
     };
   }

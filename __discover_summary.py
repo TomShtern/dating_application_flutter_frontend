@@ -1,4 +1,4 @@
-import json, urllib.request, urllib.error, ssl
+import json, urllib.request, urllib.error, ssl, os
 from pathlib import Path
 
 def parse_env(path):
@@ -42,6 +42,16 @@ def shape(o):
 def flatten(s, prefix=''):
     if isinstance(s, str): return [f'{prefix}:{s}' if prefix else s]
     if isinstance(s, dict) and set(s) == {'__arrayOf'}: return flatten(s['__arrayOf'], prefix + '[]' if prefix else '[]')
+    if isinstance(s, dict) and '__oneOf' in s:
+        out = []
+        for option in s['__oneOf']:
+            out.extend(flatten(option, prefix + '{oneOf}' if prefix else '{oneOf}'))
+        return out
+    if isinstance(s, list):
+        out = []
+        for item in s:
+            out.extend(flatten(item, prefix))
+        return out
     out = []
     if isinstance(s, dict):
         for k in sorted(s):
@@ -51,7 +61,7 @@ def flatten(s, prefix=''):
 def get(path, headers=None):
     req = urllib.request.Request(base.rstrip('/') + path, headers=headers or {}, method='GET')
     try:
-        with urllib.request.urlopen(req, timeout=20, context=ssl._create_unverified_context()) as r:
+        with urllib.request.urlopen(req, timeout=20, context=_ssl_ctx) as r:
             status = r.getcode(); raw = r.read().decode('utf-8', 'replace')
     except urllib.error.HTTPError as e:
         status = e.code; raw = e.read().decode('utf-8', 'replace')
@@ -95,6 +105,9 @@ def summarize(r, limit=60):
     if 'skipped' in r: return {'skipped': r['skipped']}
     fields = flatten(r.get('shape')) if r.get('shape') is not None else []
     return {'status': r['status'], 'fields': fields[:limit], 'truncated': len(fields) > limit}
+
+_skip_ssl = os.environ.get('SKIP_SSL_VERIFY', '').lower() in ('1', 'true', 'yes')
+_ssl_ctx = ssl._create_unverified_context() if _skip_ssl else ssl.create_default_context()
 
 env = parse_env(Path('.env'))
 base = env.get('DATING_APP_API_BASE_URL', '')

@@ -14,9 +14,9 @@ void main() {
       );
 
       expect(request.toJson(), {
-        'bio': 'Updated bio',
-        'gender': 'FEMALE',
-        'interestedIn': ['MALE', 'FEMALE'],
+        'bio': '  Updated bio  ',
+        'gender': ' FEMALE ',
+        'interestedIn': [' MALE ', '', 'FEMALE '],
         'maxDistanceKm': 42,
       });
     },

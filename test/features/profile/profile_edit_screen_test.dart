@@ -112,6 +112,10 @@ void main() {
       find.text('Use FEMALE, MALE, NON_BINARY, or OTHER.'),
       findsOneWidget,
     );
+    expect(
+      find.text('Use MALE, FEMALE, NON_BINARY, or OTHER.'),
+      findsOneWidget,
+    );
     expect(find.text('Please enter a valid maximum distance.'), findsOneWidget);
     expect(apiClient.updatedRequests, isEmpty);
   });
