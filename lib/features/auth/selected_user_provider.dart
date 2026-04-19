@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_client.dart';
+import '../../shared/persistence/shared_preferences_provider.dart';
 import '../../models/user_summary.dart';
 import 'selected_user_store.dart';
 

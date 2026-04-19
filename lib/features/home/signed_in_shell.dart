@@ -4,6 +4,8 @@ import '../../models/user_summary.dart';
 import '../browse/browse_screen.dart';
 import '../chat/conversations_screen.dart';
 import '../matches/matches_screen.dart';
+import '../profile/profile_screen.dart';
+import '../settings/settings_screen.dart';
 
 class SignedInShell extends StatefulWidget {
   const SignedInShell({super.key, required this.currentUser});
@@ -23,6 +25,8 @@ class _SignedInShellState extends State<SignedInShell> {
       BrowseScreen(currentUser: widget.currentUser),
       MatchesScreen(currentUser: widget.currentUser),
       ConversationsScreen(currentUser: widget.currentUser),
+      const ProfileScreen.currentUser(),
+      SettingsScreen(currentUser: widget.currentUser),
     ];
 
     return Scaffold(
@@ -49,6 +53,16 @@ class _SignedInShellState extends State<SignedInShell> {
             icon: Icon(Icons.chat_bubble_outline_rounded),
             selectedIcon: Icon(Icons.chat_bubble_rounded),
             label: 'Chats',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),

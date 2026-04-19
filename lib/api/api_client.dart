@@ -8,6 +8,11 @@ import '../models/health_status.dart';
 import '../models/like_result.dart';
 import '../models/message_dto.dart';
 import '../models/matches_response.dart';
+import '../models/achievement_summary.dart';
+import '../models/profile_update_request.dart';
+import '../models/undo_swipe_result.dart';
+import '../models/user_stats.dart';
+import '../models/user_detail.dart';
 import '../models/user_summary.dart';
 import 'api_endpoints.dart';
 import 'api_error.dart';
@@ -85,6 +90,103 @@ class ApiClient {
     }
   }
 
+  Future<UserDetail> getUserDetail({
+    required String userId,
+    String? actingUserId,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.userDetail(userId),
+        options: Options(extra: {'userId': actingUserId ?? userId}),
+      );
+
+      return UserDetail.fromJson(
+        _expectMap(response.data, context: 'loading a user profile'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<void> updateProfile({
+    required String userId,
+    required ProfileUpdateRequest request,
+  }) async {
+    try {
+      await _dio.put<dynamic>(
+        ApiEndpoints.updateProfile(userId),
+        data: request.toJson(),
+        options: Options(extra: {'userId': userId}),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<String> blockUser({
+    required String userId,
+    required String targetId,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.blockUser(userId, targetId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return _extractMessage(response.data, fallback: 'User blocked.');
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<String> unblockUser({
+    required String userId,
+    required String targetId,
+  }) async {
+    try {
+      final response = await _dio.delete<dynamic>(
+        ApiEndpoints.unblockUser(userId, targetId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return _extractMessage(response.data, fallback: 'User unblocked.');
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<String> reportUser({
+    required String userId,
+    required String targetId,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.reportUser(userId, targetId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return _extractMessage(response.data, fallback: 'User reported.');
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<String> unmatchUser({
+    required String userId,
+    required String targetId,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.unmatchUser(userId, targetId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return _extractMessage(response.data, fallback: 'Match removed.');
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
   Future<BrowseResponse> getBrowse({required String userId}) async {
     try {
       final response = await _dio.get<dynamic>(
@@ -134,6 +236,21 @@ class ApiClient {
     }
   }
 
+  Future<UndoSwipeResult> undoLastSwipe({required String userId}) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.undo(userId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return UndoSwipeResult.fromJson(
+        _expectMap(response.data, context: 'undoing the last swipe'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
   Future<MatchesResponse> getMatches({
     required String userId,
     int limit = 20,
@@ -174,6 +291,47 @@ class ApiClient {
       return payload
           .map(
             (item) => ConversationSummary.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(growable: false);
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<UserStats> getStats({required String userId}) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.stats(userId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return UserStats.fromJson(
+        _expectMap(response.data, context: 'loading stats'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<List<AchievementSummary>> getAchievements({
+    required String userId,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.achievements(userId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      final payload = _expectAchievementsList(
+        response.data,
+        context: 'loading achievements',
+      );
+
+      return payload
+          .map(
+            (item) => AchievementSummary.fromJson(
               Map<String, dynamic>.from(item as Map),
             ),
           )
@@ -247,5 +405,46 @@ class ApiClient {
     }
 
     return payload;
+  }
+
+  List<dynamic> _expectAchievementsList(
+    dynamic payload, {
+    required String context,
+  }) {
+    if (payload is List) {
+      return payload;
+    }
+
+    if (payload is Map) {
+      final map = Map<String, dynamic>.from(payload);
+      for (final key in const ['achievements', 'items', 'content', 'results']) {
+        final value = map[key];
+        if (value is List) {
+          return value;
+        }
+      }
+    }
+
+    throw ApiError(message: 'Unexpected response while $context.');
+  }
+
+  String _extractMessage(dynamic payload, {required String fallback}) {
+    if (payload == null) {
+      return fallback;
+    }
+
+    if (payload is String) {
+      final message = payload.trim();
+      return message.isEmpty ? fallback : message;
+    }
+
+    if (payload is Map) {
+      final message = Map<String, dynamic>.from(payload)['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message;
+      }
+    }
+
+    return fallback;
   }
 }

@@ -1,15 +1,8 @@
 import 'dart:convert';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/user_summary.dart';
-
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError(
-    'sharedPreferencesProvider must be overridden before use.',
-  );
-});
 
 class SelectedUserStore {
   SelectedUserStore(this._preferences);
@@ -24,12 +17,16 @@ class SelectedUserStore {
       return null;
     }
 
-    final decoded = jsonDecode(rawUser);
-    if (decoded is! Map) {
+    try {
+      final decoded = jsonDecode(rawUser);
+      if (decoded is! Map) {
+        return null;
+      }
+
+      return UserSummary.fromJson(Map<String, dynamic>.from(decoded));
+    } on FormatException {
       return null;
     }
-
-    return UserSummary.fromJson(Map<String, dynamic>.from(decoded));
   }
 
   Future<void> saveSelectedUser(UserSummary user) async {

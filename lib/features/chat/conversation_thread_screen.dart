@@ -7,7 +7,10 @@ import '../../api/api_error.dart';
 import '../../models/conversation_summary.dart';
 import '../../models/message_dto.dart';
 import '../../models/user_summary.dart';
+import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../profile/profile_screen.dart';
+import '../safety/safety_action_sheet.dart';
 import 'conversation_thread_provider.dart';
 
 class ConversationThreadScreen extends ConsumerStatefulWidget {
@@ -84,6 +87,30 @@ class _ConversationThreadScreenState
       appBar: AppBar(
         title: Text(widget.conversation.otherUserName),
         actions: [
+          IconButton(
+            tooltip: 'View profile',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => ProfileScreen.otherUser(
+                    userId: widget.conversation.otherUserId,
+                    userName: widget.conversation.otherUserName,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.person_outline_rounded),
+          ),
+          SafetyActionsButton(
+            targetUserId: widget.conversation.otherUserId,
+            targetUserName: widget.conversation.otherUserName,
+            canUnmatch: true,
+            onCompleted: (context, outcome) {
+              if (outcome.removesRelationship) {
+                Navigator.of(context).maybePop();
+              }
+            },
+          ),
           IconButton(
             tooltip: 'Refresh messages',
             onPressed: () => ref
@@ -316,7 +343,7 @@ class _MessageList extends StatelessWidget {
                     Text(message.content),
                     const SizedBox(height: 8),
                     Text(
-                      _formatDateTime(message.sentAt),
+                      formatDateTimeStamp(message.sentAt),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -328,13 +355,4 @@ class _MessageList extends StatelessWidget {
       },
     );
   }
-}
-
-String _formatDateTime(DateTime value) {
-  final local = value.toLocal();
-  final month = local.month.toString().padLeft(2, '0');
-  final day = local.day.toString().padLeft(2, '0');
-  final hour = local.hour.toString().padLeft(2, '0');
-  final minute = local.minute.toString().padLeft(2, '0');
-  return '${local.year}-$month-$day $hour:$minute';
 }

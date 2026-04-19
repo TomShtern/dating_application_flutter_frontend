@@ -1,0 +1,118 @@
+00:00 +0: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart
+00:00 +0: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart: parses the documented profile payload from JSON
+00:00 +1: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart: uses safe defaults when optional profile fields are missing
+00:00 +2: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_provider_test.dart: profileProvider loads the current user detail from the API client
+00:00 +3: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_provider_test.dart: otherUserProfileProvider loads another user detail from the API client
+00:00 +4: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart: shows a loading state before the profile resolves
+00:02 +5: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/home/signed_in_shell_test.dart: opens the current user profile from the shell navigation
+00:03 +5: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart: renders profile content and fallback text for empty fields
+ΓץנΓץנΓץí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γץ₧ΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנ
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Location not shared": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart:80:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart line 80
+The test description was:
+  renders profile content and fallback text for empty fields
+ΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנ
+00:03 +5 -1: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/home/signed_in_shell_test.dart: opens the current user profile from the shell navigation
+00:03 +5 -1: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart: renders profile content and fallback text for empty fields [E]
+  Test failed. See exception logs above.
+  The test description was: renders profile content and fallback text for empty fields
+  
+00:03 +5 -1: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart: shows an error state and retries the current profile load
+ΓץנΓץנΓץí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γץ₧ΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנ
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Unable to load profile right now.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart:108:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart line 108
+The test description was:
+  shows an error state and retries the current profile load
+ΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנ
+00:03 +5 -2: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/home/signed_in_shell_test.dart: opens the current user profile from the shell navigation
+00:03 +5 -2: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart: shows an error state and retries the current profile load [E]
+  Test failed. See exception logs above.
+  The test description was: shows an error state and retries the current profile load
+  
+00:04 +6 -2: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart: offers a message handoff when a like becomes a match
+00:04 +7 -2: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart: offers a message handoff when a like becomes a match
+00:04 +8 -2: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart: renders existing messages and sends a new one
+00:04 +9 -2: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart: renders existing messages and sends a new one
+00:05 +9 -2: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart: opens the viewed candidate profile from browse
+
+Warning: A call to tap() with finder "Found 1 widget with type "OutlinedButton" that are ancestors of widget with text "View profile": [
+  OutlinedButton(dependencies: [IconTheme, InheritedCupertinoTheme, MediaQuery, _InheritedTheme, _LocalizationsScope-[GlobalKey#68f09]], state: _ButtonStyleState#4a548),
+]" derived an Offset (Offset(169.6, 484.0)) that would not hit test on the specified widget.
+Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
+The finder corresponds to this RenderBox: RenderSemanticsAnnotations#2c3f6 relayoutBoundary=up13
+The hit test result at that offset is: HitTestResult(_RenderInkFeatures#a5aff@Offset(169.6, 484.0), RenderPhysicalModel#d56de@Offset(169.6, 484.0), RenderSemanticsAnnotations#347c9@Offset(169.6, 484.0), RenderRepaintBoundary#3aa73@Offset(169.6, 484.0), RenderIgnorePointer#9c350@Offset(169.6, 484.0), RenderAnimatedOpacity#30a63@Offset(169.6, 484.0), RenderAnimatedOpacity#5b62d@Offset(169.6, 484.0), _RenderColoredBox#8cb19@Offset(169.6, 484.0), RenderAnimatedOpacity#9c6f7@Offset(169.6, 484.0), RenderIgnorePointer#8f37a@Offset(169.6, 484.0), RenderAnimatedOpacity#077cc@Offset(169.6, 484.0), RenderRepaintBoundary#8da7f@Offset(169.6, 484.0), RenderSemanticsAnnotations#4d638@Offset(169.6, 484.0), RenderOffstage#199ad@Offset(169.6, 484.0), RenderSemanticsAnnotations#04383@Offset(169.6, 484.0), _RenderTheater#5a993@Offset(169.6, 484.0), RenderAbsorbPointer#9901e@Offset(169.6, 484.0), RenderPointerListener#0c331@Offset(169.6, 484.0), RenderSemanticsAnnotations#a3a05@Offset(169.6, 484.0), RenderCustomPaint#d6600@Offset(169.6, 484.0), RenderSemanticsAnnotations#3ec77@Offset(169.6, 484.0), RenderSemanticsAnnotations#d1cbe@Offset(169.6, 484.0), RenderSemanticsAnnotations#79609@Offset(169.6, 484.0), RenderTapRegionSurface#7995b@Offset(169.6, 484.0), RenderSemanticsAnnotations#51835@Offset(169.6, 484.0), RenderSemanticsAnnotations#dca6e@Offset(169.6, 484.0), HitTestEntry<HitTestTarget>#27668(_ReusableRenderView#b017a), HitTestEntry<HitTestTarget>#92686(<AutomatedTestWidgetsFlutterBinding>))
+#0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2158:25)
+#1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1942:12)
+#2      WidgetController.tap (package:flutter_test/src/controller.dart:1075:7)
+#3      main.<anonymous closure> (file:///C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart:133:18)
+<asynchronous suspension>
+#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+#6      StackZoneSpecification._registerCallback.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:114:42)
+<asynchronous suspension>
+To silence this warning, pass "warnIfMissed: false" to "tap()".
+To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to true.
+
+ΓץנΓץנΓץí EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK Γץ₧ΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנ
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Always up for a museum date.": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart:136:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart line 136
+The test description was:
+  opens the viewed candidate profile from browse
+ΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנΓץנ
+00:05 +9 -3: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart: renders existing messages and sends a new one
+00:05 +9 -3: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart: opens the viewed candidate profile from browse [E]
+  Test failed. See exception logs above.
+  The test description was: opens the viewed candidate profile from browse
+  
+00:05 +10 -3: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart: shows an empty state when the conversation has no messages
+00:05 +11 -3: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart: refreshes the thread periodically while visible
+00:05 +12 -3: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart: scrolls to the latest message when the thread opens
+00:05 +13 -3: C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart: opens the other user profile from the app bar action
+00:05 +14 -3: Some tests failed.

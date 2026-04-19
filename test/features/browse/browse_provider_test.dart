@@ -13,6 +13,7 @@ import 'package:flutter_dating_application_1/models/conversation_summary.dart';
 import 'package:flutter_dating_application_1/models/like_result.dart';
 import 'package:flutter_dating_application_1/models/match_summary.dart';
 import 'package:flutter_dating_application_1/models/matches_response.dart';
+import 'package:flutter_dating_application_1/models/undo_swipe_result.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 void main() {
@@ -250,6 +251,132 @@ void main() {
     expect(apiClient.matchesCalls, 2);
     expect(apiClient.conversationsCalls, 2);
   });
+
+  test(
+    'undoLastSwipe refreshes browse and invalidates related lists when needed',
+    () async {
+      final apiClient = _FakeApiClient(
+        browseResponses: const [
+          BrowseResponse(
+            candidates: [
+              BrowseCandidate(
+                id: 'target-1',
+                name: 'Noa',
+                age: 29,
+                state: 'ACTIVE',
+              ),
+            ],
+            dailyPick: null,
+            dailyPickViewed: false,
+            locationMissing: false,
+          ),
+          BrowseResponse(
+            candidates: [
+              BrowseCandidate(
+                id: 'target-2',
+                name: 'Maya',
+                age: 30,
+                state: 'ACTIVE',
+              ),
+            ],
+            dailyPick: null,
+            dailyPickViewed: false,
+            locationMissing: false,
+          ),
+        ],
+        undoResult: const UndoSwipeResult(
+          success: true,
+          message: 'Last swipe undone',
+          matchDeleted: true,
+        ),
+        matchResponses: [
+          MatchesResponse(
+            matches: [
+              MatchSummary(
+                matchId: 'match-1',
+                otherUserId: 'user-2',
+                otherUserName: 'Noa',
+                state: 'ACTIVE',
+                createdAt: DateTime.parse('2026-04-19T09:00:00Z'),
+              ),
+            ],
+            totalCount: 1,
+            offset: 0,
+            limit: 20,
+            hasMore: false,
+          ),
+          MatchesResponse(
+            matches: [
+              MatchSummary(
+                matchId: 'match-2',
+                otherUserId: 'user-3',
+                otherUserName: 'Maya',
+                state: 'ACTIVE',
+                createdAt: DateTime.parse('2026-04-19T09:10:00Z'),
+              ),
+            ],
+            totalCount: 1,
+            offset: 0,
+            limit: 20,
+            hasMore: false,
+          ),
+        ],
+        conversationResponses: [
+          [
+            ConversationSummary(
+              id: 'match-1',
+              otherUserId: 'user-2',
+              otherUserName: 'Noa',
+              messageCount: 1,
+              lastMessageAt: DateTime.parse('2026-04-19T09:00:00Z'),
+            ),
+          ],
+          [
+            ConversationSummary(
+              id: 'match-2',
+              otherUserId: 'user-3',
+              otherUserName: 'Maya',
+              messageCount: 2,
+              lastMessageAt: DateTime.parse('2026-04-19T09:10:00Z'),
+            ),
+          ],
+        ],
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith(
+            (ref) async => const UserSummary(
+              id: '11111111-1111-1111-1111-111111111111',
+              name: 'Dana',
+              age: 27,
+              state: 'ACTIVE',
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(browseProvider.future);
+      await container.read(matchesProvider.future);
+      await container.read(conversationsProvider.future);
+
+      final result = await container
+          .read(browseControllerProvider)
+          .undoLastSwipe();
+
+      expect(result.message, 'Last swipe undone');
+      await container.read(browseProvider.future);
+      await container.read(matchesProvider.future);
+      await container.read(conversationsProvider.future);
+
+      expect(apiClient.undoCalls, 1);
+      expect(apiClient.browseCalls, 2);
+      expect(apiClient.matchesCalls, 2);
+      expect(apiClient.conversationsCalls, 2);
+    },
+  );
 }
 
 class _FakeApiClient extends ApiClient {
@@ -259,17 +386,24 @@ class _FakeApiClient extends ApiClient {
       isMatch: false,
       message: 'Like recorded',
     ),
+    this.undoResult = const UndoSwipeResult(
+      success: true,
+      message: 'Last swipe undone',
+      matchDeleted: false,
+    ),
     this.matchResponses = const [],
     this.conversationResponses = const [],
   }) : super(dio: Dio());
 
   final List<BrowseResponse> browseResponses;
   final LikeResult likeResult;
+  final UndoSwipeResult undoResult;
   final List<MatchesResponse> matchResponses;
   final List<List<ConversationSummary>> conversationResponses;
   int browseCalls = 0;
   int likeCalls = 0;
   int passCalls = 0;
+  int undoCalls = 0;
   int matchesCalls = 0;
   int conversationsCalls = 0;
 
@@ -298,6 +432,12 @@ class _FakeApiClient extends ApiClient {
   }) async {
     passCalls++;
     return 'Passed';
+  }
+
+  @override
+  Future<UndoSwipeResult> undoLastSwipe({required String userId}) async {
+    undoCalls++;
+    return undoResult;
   }
 
   @override

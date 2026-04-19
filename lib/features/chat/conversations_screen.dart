@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/conversation_summary.dart';
 import '../../models/user_summary.dart';
+import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../auth/selected_user_provider.dart';
 import 'conversation_thread_screen.dart';
 import 'conversations_provider.dart';
 
@@ -27,14 +27,6 @@ class ConversationsScreen extends ConsumerWidget {
             onPressed: () =>
                 ref.read(conversationsControllerProvider).refresh(),
             icon: const Icon(Icons.refresh),
-          ),
-          IconButton(
-            tooltip: 'Switch user',
-            onPressed: () async {
-              await ref.read(selectUserControllerProvider).clearSelection();
-              ref.invalidate(conversationsProvider);
-            },
-            icon: const Icon(Icons.switch_account_outlined),
           ),
         ],
       ),
@@ -105,7 +97,7 @@ class _ConversationCard extends StatelessWidget {
         ),
         title: Text(summary.otherUserName),
         subtitle: Text(
-          '${summary.messageCount} message(s) • Last activity ${_formatDateTime(summary.lastMessageAt)}',
+          '${summary.messageCount} message(s) • Last activity ${formatDateTimeStamp(summary.lastMessageAt)}',
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () {
@@ -121,13 +113,4 @@ class _ConversationCard extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatDateTime(DateTime value) {
-  final local = value.toLocal();
-  final month = local.month.toString().padLeft(2, '0');
-  final day = local.day.toString().padLeft(2, '0');
-  final hour = local.hour.toString().padLeft(2, '0');
-  final minute = local.minute.toString().padLeft(2, '0');
-  return '${local.year}-$month-$day $hour:$minute';
 }

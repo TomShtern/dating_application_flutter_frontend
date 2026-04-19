@@ -1,17 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_client.dart';
-import '../../api/api_error.dart';
 import '../../models/matches_response.dart';
 import '../../models/user_summary.dart';
-import '../auth/selected_user_provider.dart';
+import '../../shared/providers/selected_user_guard.dart' as user_guard;
 
 final matchesProvider = FutureProvider<MatchesResponse>((ref) async {
-  final currentUser = await ref.watch(selectedUserProvider.future);
-  if (currentUser == null) {
-    throw const ApiError(message: 'Please choose a dev user first.');
-  }
-
+  final currentUser = await user_guard.requireSelectedUser(ref);
   final apiClient = ref.watch(apiClientProvider);
   return apiClient.getMatches(userId: currentUser.id);
 });
@@ -30,11 +25,6 @@ class MatchesController {
   }
 
   Future<UserSummary> requireSelectedUser() async {
-    final currentUser = await _ref.read(selectedUserProvider.future);
-    if (currentUser == null) {
-      throw const ApiError(message: 'Please choose a dev user first.');
-    }
-
-    return currentUser;
+    return user_guard.requireSelectedUser(_ref);
   }
 }

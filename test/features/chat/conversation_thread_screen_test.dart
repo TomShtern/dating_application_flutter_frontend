@@ -6,8 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_screen.dart';
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
 import 'package:flutter_dating_application_1/models/conversation_summary.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
+import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 void main() {
@@ -248,6 +250,94 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Message 30'), findsOneWidget);
+  });
+
+  testWidgets('opens the other user profile from the app bar action', (
+    WidgetTester tester,
+  ) async {
+    final apiClient = _FakeConversationThreadApiClient(
+      messageResponses: const [[]],
+      sentMessage: MessageDto(
+        id: 'message-1',
+        conversationId: conversation.id,
+        senderId: currentUser.id,
+        content: 'Hey there',
+        sentAt: DateTime.parse('2026-04-18T14:21:00Z'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          otherUserProfileProvider(conversation.otherUserId).overrideWith(
+            (ref) async => const UserDetail(
+              id: '22222222-2222-2222-2222-222222222222',
+              name: 'Noa',
+              age: 29,
+              bio: 'Always up for a museum date.',
+              gender: 'FEMALE',
+              interestedIn: ['MALE'],
+              approximateLocation: 'Haifa',
+              maxDistanceKm: 25,
+              photoUrls: ['/photos/noa-1.jpg'],
+              state: 'ACTIVE',
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          home: ConversationThreadScreen(
+            currentUser: currentUser,
+            conversation: conversation,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('View profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Always up for a museum date.'), findsOneWidget);
+  });
+
+  testWidgets('opens safety actions from the conversation app bar', (
+    WidgetTester tester,
+  ) async {
+    final apiClient = _FakeConversationThreadApiClient(
+      messageResponses: const [[]],
+      sentMessage: MessageDto(
+        id: 'message-1',
+        conversationId: conversation.id,
+        senderId: currentUser.id,
+        content: 'Hey there',
+        sentAt: DateTime.parse('2026-04-18T14:21:00Z'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+        ],
+        child: MaterialApp(
+          home: ConversationThreadScreen(
+            currentUser: currentUser,
+            conversation: conversation,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Safety actions'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Block user'), findsOneWidget);
+    expect(find.text('Report user'), findsOneWidget);
+    expect(find.text('Unmatch'), findsOneWidget);
   });
 }
 

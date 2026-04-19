@@ -1,20 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_client.dart';
-import '../../api/api_error.dart';
 import '../../models/browse_response.dart';
 import '../../models/like_result.dart';
+import '../../models/undo_swipe_result.dart';
 import '../../models/user_summary.dart';
-import '../auth/selected_user_provider.dart';
+import '../../shared/providers/selected_user_guard.dart' as user_guard;
 import '../chat/conversations_provider.dart';
 import '../matches/matches_provider.dart';
 
 final browseProvider = FutureProvider<BrowseResponse>((ref) async {
-  final currentUser = await ref.watch(selectedUserProvider.future);
-  if (currentUser == null) {
-    throw const ApiError(message: 'Please choose a dev user first.');
-  }
-
+  final currentUser = await user_guard.requireSelectedUser(ref);
   final apiClient = ref.watch(apiClientProvider);
   return apiClient.getBrowse(userId: currentUser.id);
 });
@@ -54,16 +50,22 @@ class BrowseController {
     return message;
   }
 
+  Future<UndoSwipeResult> undoLastSwipe() async {
+    final currentUser = await _requireSelectedUser();
+    final result = await _apiClient.undoLastSwipe(userId: currentUser.id);
+    _ref.invalidate(browseProvider);
+    if (result.matchDeleted) {
+      _ref.invalidate(matchesProvider);
+      _ref.invalidate(conversationsProvider);
+    }
+    return result;
+  }
+
   void refresh() {
     _ref.invalidate(browseProvider);
   }
 
   Future<UserSummary> _requireSelectedUser() async {
-    final currentUser = await _ref.read(selectedUserProvider.future);
-    if (currentUser == null) {
-      throw const ApiError(message: 'Please choose a dev user first.');
-    }
-
-    return currentUser;
+    return user_guard.requireSelectedUser(_ref);
   }
 }

@@ -22,6 +22,7 @@ import 'package:flutter_dating_application_1/models/match_summary.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/matches_response.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
+import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

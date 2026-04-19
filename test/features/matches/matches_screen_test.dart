@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_provider.dart';
+import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/matches/matches_provider.dart';
 import 'package:flutter_dating_application_1/features/matches/matches_screen.dart';
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
 import 'package:flutter_dating_application_1/models/match_summary.dart';
 import 'package:flutter_dating_application_1/models/matches_response.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
+import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 void main() {
@@ -33,6 +36,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          selectedUserProvider.overrideWith((ref) async => currentUser),
           matchesProvider.overrideWith(
             (ref) async => MatchesResponse(
               matches: [match],
@@ -62,5 +66,75 @@ void main() {
       find.text('No messages yet. Say hello to start the conversation.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('opens the matched user profile from the profile action', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          matchesProvider.overrideWith(
+            (ref) async => MatchesResponse(
+              matches: [match],
+              totalCount: 1,
+              offset: 0,
+              limit: 20,
+              hasMore: false,
+            ),
+          ),
+          otherUserProfileProvider(match.otherUserId).overrideWith(
+            (ref) async => const UserDetail(
+              id: '22222222-2222-2222-2222-222222222222',
+              name: 'Noa',
+              age: 29,
+              bio: 'Always up for a museum date.',
+              gender: 'FEMALE',
+              interestedIn: ['MALE'],
+              approximateLocation: 'Haifa',
+              maxDistanceKm: 25,
+              photoUrls: ['/photos/noa-1.jpg'],
+              state: 'ACTIVE',
+            ),
+          ),
+        ],
+        child: MaterialApp(home: MatchesScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('View profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Always up for a museum date.'), findsOneWidget);
+  });
+
+  testWidgets('opens safety actions for a match', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          matchesProvider.overrideWith(
+            (ref) async => MatchesResponse(
+              matches: [match],
+              totalCount: 1,
+              offset: 0,
+              limit: 20,
+              hasMore: false,
+            ),
+          ),
+        ],
+        child: MaterialApp(home: MatchesScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Safety actions'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Block user'), findsOneWidget);
+    expect(find.text('Report user'), findsOneWidget);
+    expect(find.text('Unmatch'), findsOneWidget);
   });
 }

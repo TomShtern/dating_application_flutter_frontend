@@ -1,0 +1,434 @@
+00:00 +0: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart
+test/models/user_detail_test.dart:3:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+import 'package:flutter_dating_application_1/models/user_detail.dart';
+       ^
+test/models/user_detail_test.dart:7:20: Error: Undefined name 'UserDetail'.
+    final detail = UserDetail.fromJson({
+                   ^^^^^^^^^^
+test/models/user_detail_test.dart:33:20: Error: Undefined name 'UserDetail'.
+    final detail = UserDetail.fromJson({'id': 'user-1'});
+                   ^^^^^^^^^^
+00:00 +0 -1: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart [E]
+  Failed to load "C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart":
+  Compilation failed for testPath=C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart: test/models/user_detail_test.dart:3:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+  import 'package:flutter_dating_application_1/models/user_detail.dart';
+         ^
+  test/models/user_detail_test.dart:7:20: Error: Undefined name 'UserDetail'.
+      final detail = UserDetail.fromJson({
+                     ^^^^^^^^^^
+  test/models/user_detail_test.dart:33:20: Error: Undefined name 'UserDetail'.
+      final detail = UserDetail.fromJson({'id': 'user-1'});
+                     ^^^^^^^^^^
+  .
+  Error: The Dart compiler exited unexpectedly.
+  package:flutter_tools/src/base/common.dart 34:3  throwToolExit
+  package:flutter_tools/src/compile.dart 939:11    DefaultResidentCompiler._compile.<fn>
+  dart:async/zone_root.dart 48:47                  _rootRunUnary
+  dart:async/zone.dart 733:19                      _CustomZone.runUnary
+  dart:async/future_impl.dart 948:45               Future._propagateToListeners.handleValueCallback
+  dart:async/future_impl.dart 977:13               Future._propagateToListeners
+  dart:async/future_impl.dart 862:9                Future._propagateToListeners
+  dart:async/future_impl.dart 720:5                Future._completeWithValue
+  dart:async/future_impl.dart 804:7                Future._asyncCompleteWithValue.<fn>
+  dart:async/zone_root.dart 35:13                  _rootRun
+  dart:async/zone.dart 726:19                      _CustomZone.run
+  dart:async/zone.dart 625:7                       _CustomZone.runGuarded
+  dart:async/zone.dart 666:23                      _CustomZone.bindCallbackGuarded.<fn>
+  dart:async/schedule_microtask.dart 40:35         _microtaskLoop
+  dart:async/schedule_microtask.dart 49:5          _startMicrotaskLoop
+  dart:isolate-patch/isolate_patch.dart 127:13     _runPendingImmediateCallback
+  dart:isolate-patch/isolate_patch.dart 194:5      _RawReceivePort._handleMessage
+  
+test/features/profile/profile_provider_test.dart:7:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+       ^
+test/features/profile/profile_provider_test.dart:8:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+import 'package:flutter_dating_application_1/models/user_detail.dart';
+       ^
+test/features/profile/profile_provider_test.dart:94:21: Error: Type 'UserDetail' not found.
+  final Map<String, UserDetail> responses;
+                    ^^^^^^^^^^
+test/features/profile/profile_provider_test.dart:98:10: Error: Type 'UserDetail' not found.
+  Future<UserDetail> getUserDetail({required String userId}) async {
+         ^^^^^^^^^^
+test/features/profile/profile_provider_test.dart:19:29: Error: Method not found: 'UserDetail'.
+  const currentUserDetail = UserDetail(
+                            ^^^^^^^^^^
+test/features/profile/profile_provider_test.dart:32:27: Error: Method not found: 'UserDetail'.
+  const otherUserDetail = UserDetail(
+                          ^^^^^^^^^^
+test/features/profile/profile_provider_test.dart:61:41: Error: Undefined name 'profileProvider'.
+    final detail = await container.read(profileProvider.future);
+                                        ^^^^^^^^^^^^^^^
+test/features/profile/profile_provider_test.dart:82:7: Error: Method not found: 'otherUserProfileProvider'.
+      otherUserProfileProvider(otherUserDetail.id).future,
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+test/features/profile/profile_provider_test.dart:63:19: Error: The getter 'id' isn't defined for the type 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'id'.
+    expect(detail.id, currentUserDetail.id);
+                  ^^
+test/features/profile/profile_provider_test.dart:64:19: Error: The getter 'name' isn't defined for the type 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'name'.
+    expect(detail.name, currentUserDetail.name);
+                  ^^^^
+test/features/profile/profile_provider_test.dart:85:19: Error: The getter 'id' isn't defined for the type 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'id'.
+    expect(detail.id, otherUserDetail.id);
+                  ^^
+test/features/profile/profile_provider_test.dart:86:19: Error: The getter 'name' isn't defined for the type 'Object?'.
+ - 'Object' is from 'dart:core'.
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'name'.
+    expect(detail.name, otherUserDetail.name);
+                  ^^^^
+test/features/profile/profile_provider_test.dart:94:21: Error: 'UserDetail' isn't a type.
+  final Map<String, UserDetail> responses;
+                    ^^^^^^^^^^
+00:00 +0 -2: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_provider_test.dart [E]
+  Failed to load "C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_provider_test.dart":
+  Compilation failed for testPath=C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_provider_test.dart: test/features/profile/profile_provider_test.dart:7:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+  import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+         ^
+  test/features/profile/profile_provider_test.dart:8:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+  import 'package:flutter_dating_application_1/models/user_detail.dart';
+         ^
+  test/features/profile/profile_provider_test.dart:94:21: Error: Type 'UserDetail' not found.
+    final Map<String, UserDetail> responses;
+                      ^^^^^^^^^^
+  test/features/profile/profile_provider_test.dart:98:10: Error: Type 'UserDetail' not found.
+    Future<UserDetail> getUserDetail({required String userId}) async {
+           ^^^^^^^^^^
+  test/features/profile/profile_provider_test.dart:19:29: Error: Method not found: 'UserDetail'.
+    const currentUserDetail = UserDetail(
+                              ^^^^^^^^^^
+  test/features/profile/profile_provider_test.dart:32:27: Error: Method not found: 'UserDetail'.
+    const otherUserDetail = UserDetail(
+                            ^^^^^^^^^^
+  test/features/profile/profile_provider_test.dart:61:41: Error: Undefined name 'profileProvider'.
+      final detail = await container.read(profileProvider.future);
+                                          ^^^^^^^^^^^^^^^
+  test/features/profile/profile_provider_test.dart:82:7: Error: Method not found: 'otherUserProfileProvider'.
+        otherUserProfileProvider(otherUserDetail.id).future,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+  test/features/profile/profile_provider_test.dart:63:19: Error: The getter 'id' isn't defined for the type 'Object?'.
+   - 'Object' is from 'dart:core'.
+  Try correcting the name to the name of an existing getter, or defining a getter or field named 'id'.
+      expect(detail.id, currentUserDetail.id);
+                    ^^
+  test/features/profile/profile_provider_test.dart:64:19: Error: The getter 'name' isn't defined for the type 'Object?'.
+   - 'Object' is from 'dart:core'.
+  Try correcting the name to the name of an existing getter, or defining a getter or field named 'name'.
+      expect(detail.name, currentUserDetail.name);
+                    ^^^^
+  test/features/profile/profile_provider_test.dart:85:19: Error: The getter 'id' isn't defined for the type 'Object?'.
+   - 'Object' is from 'dart:core'.
+  Try correcting the name to the name of an existing getter, or defining a getter or field named 'id'.
+      expect(detail.id, otherUserDetail.id);
+                    ^^
+  test/features/profile/profile_provider_test.dart:86:19: Error: The getter 'name' isn't defined for the type 'Object?'.
+   - 'Object' is from 'dart:core'.
+  Try correcting the name to the name of an existing getter, or defining a getter or field named 'name'.
+      expect(detail.name, otherUserDetail.name);
+                    ^^^^
+  test/features/profile/profile_provider_test.dart:94:21: Error: 'UserDetail' isn't a type.
+    final Map<String, UserDetail> responses;
+                      ^^^^^^^^^^
+  .
+00:00 +0 -2: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart [E]
+  Error: The Dart compiler exited unexpectedly.
+  package:flutter_tools/src/base/common.dart 34:3  throwToolExit
+  package:flutter_tools/src/compile.dart 939:11    DefaultResidentCompiler._compile.<fn>
+  dart:async/zone_root.dart 48:47                  _rootRunUnary
+  dart:async/zone.dart 733:19                      _CustomZone.runUnary
+  dart:async/future_impl.dart 948:45               Future._propagateToListeners.handleValueCallback
+  dart:async/future_impl.dart 977:13               Future._propagateToListeners
+  dart:async/future_impl.dart 862:9                Future._propagateToListeners
+  dart:async/future_impl.dart 720:5                Future._completeWithValue
+  dart:async/future_impl.dart 804:7                Future._asyncCompleteWithValue.<fn>
+  dart:async/zone_root.dart 35:13                  _rootRun
+  dart:async/zone.dart 726:19                      _CustomZone.run
+  dart:async/zone.dart 625:7                       _CustomZone.runGuarded
+  dart:async/zone.dart 666:23                      _CustomZone.bindCallbackGuarded.<fn>
+  dart:async/schedule_microtask.dart 40:35         _microtaskLoop
+  dart:async/schedule_microtask.dart 49:5          _startMicrotaskLoop
+  dart:isolate-patch/isolate_patch.dart 127:13     _runPendingImmediateCallback
+  dart:isolate-patch/isolate_patch.dart 194:5      _RawReceivePort._handleMessage
+  
+test/features/profile/profile_screen_test.dart:8:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+       ^
+test/features/profile/profile_screen_test.dart:9:8: Error: Error when reading 'lib/features/profile/profile_screen.dart': The system cannot find the path specified
+import 'package:flutter_dating_application_1/features/profile/profile_screen.dart';
+       ^
+test/features/profile/profile_screen_test.dart:10:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+import 'package:flutter_dating_application_1/models/user_detail.dart';
+       ^
+test/features/profile/profile_screen_test.dart:13:18: Error: Method not found: 'UserDetail'.
+  const detail = UserDetail(
+                 ^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:26:24: Error: Method not found: 'UserDetail'.
+  const sparseDetail = UserDetail(
+                       ^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:42:33: Error: 'UserDetail' isn't a type.
+    final completer = Completer<UserDetail>();
+                                ^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:46:21: Error: Undefined name 'profileProvider'.
+        overrides: [profileProvider.overrideWith((ref) => completer.future)],
+                    ^^^^^^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:47:40: Error: Undefined name 'ProfileScreen'.
+        child: const MaterialApp(home: ProfileScreen.currentUser()),
+                                       ^^^^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:47:54: Error: Method invocation is not a constant expression.
+        child: const MaterialApp(home: ProfileScreen.currentUser()),
+                                                     ^^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:63:11: Error: Method not found: 'otherUserProfileProvider'.
+          otherUserProfileProvider(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:68:17: Error: Undefined name 'ProfileScreen'.
+          home: ProfileScreen.otherUser(
+                ^^^^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:93:11: Error: Undefined name 'profileProvider'.
+          profileProvider.overrideWith((ref) async {
+          ^^^^^^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:101:40: Error: Undefined name 'ProfileScreen'.
+        child: const MaterialApp(home: ProfileScreen.currentUser()),
+                                       ^^^^^^^^^^^^^
+test/features/profile/profile_screen_test.dart:101:54: Error: Method invocation is not a constant expression.
+        child: const MaterialApp(home: ProfileScreen.currentUser()),
+                                                     ^^^^^^^^^^^
+00:00 +0 -3: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart [E]
+  Failed to load "C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart":
+  Compilation failed for testPath=C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/profile/profile_screen_test.dart: test/features/profile/profile_screen_test.dart:8:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+  import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+         ^
+  test/features/profile/profile_screen_test.dart:9:8: Error: Error when reading 'lib/features/profile/profile_screen.dart': The system cannot find the path specified
+  import 'package:flutter_dating_application_1/features/profile/profile_screen.dart';
+         ^
+  test/features/profile/profile_screen_test.dart:10:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+  import 'package:flutter_dating_application_1/models/user_detail.dart';
+         ^
+  test/features/profile/profile_screen_test.dart:13:18: Error: Method not found: 'UserDetail'.
+    const detail = UserDetail(
+                   ^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:26:24: Error: Method not found: 'UserDetail'.
+    const sparseDetail = UserDetail(
+                         ^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:42:33: Error: 'UserDetail' isn't a type.
+      final completer = Completer<UserDetail>();
+                                  ^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:46:21: Error: Undefined name 'profileProvider'.
+          overrides: [profileProvider.overrideWith((ref) => completer.future)],
+                      ^^^^^^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:47:40: Error: Undefined name 'ProfileScreen'.
+          child: const MaterialApp(home: ProfileScreen.currentUser()),
+                                         ^^^^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:47:54: Error: Method invocation is not a constant expression.
+          child: const MaterialApp(home: ProfileScreen.currentUser()),
+                                                       ^^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:63:11: Error: Method not found: 'otherUserProfileProvider'.
+            otherUserProfileProvider(
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:68:17: Error: Undefined name 'ProfileScreen'.
+            home: ProfileScreen.otherUser(
+                  ^^^^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:93:11: Error: Undefined name 'profileProvider'.
+            profileProvider.overrideWith((ref) async {
+            ^^^^^^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:101:40: Error: Undefined name 'ProfileScreen'.
+          child: const MaterialApp(home: ProfileScreen.currentUser()),
+                                         ^^^^^^^^^^^^^
+  test/features/profile/profile_screen_test.dart:101:54: Error: Method invocation is not a constant expression.
+          child: const MaterialApp(home: ProfileScreen.currentUser()),
+                                                       ^^^^^^^^^^^
+  .
+00:00 +0 -3: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart [E]
+  Error: The Dart compiler exited unexpectedly.
+  package:flutter_tools/src/base/common.dart 34:3  throwToolExit
+  package:flutter_tools/src/compile.dart 939:11    DefaultResidentCompiler._compile.<fn>
+  dart:async/zone_root.dart 48:47                  _rootRunUnary
+  dart:async/zone.dart 733:19                      _CustomZone.runUnary
+  dart:async/future_impl.dart 948:45               Future._propagateToListeners.handleValueCallback
+  dart:async/future_impl.dart 977:13               Future._propagateToListeners
+  dart:async/future_impl.dart 862:9                Future._propagateToListeners
+  dart:async/future_impl.dart 720:5                Future._completeWithValue
+  dart:async/future_impl.dart 804:7                Future._asyncCompleteWithValue.<fn>
+  dart:async/zone_root.dart 35:13                  _rootRun
+  dart:async/zone.dart 726:19                      _CustomZone.run
+  dart:async/zone.dart 625:7                       _CustomZone.runGuarded
+  dart:async/zone.dart 666:23                      _CustomZone.bindCallbackGuarded.<fn>
+  dart:async/schedule_microtask.dart 40:35         _microtaskLoop
+  dart:async/schedule_microtask.dart 49:5          _startMicrotaskLoop
+  dart:isolate-patch/isolate_patch.dart 127:13     _runPendingImmediateCallback
+  dart:isolate-patch/isolate_patch.dart 194:5      _RawReceivePort._handleMessage
+  
+test/features/home/signed_in_shell_test.dart:10:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+       ^
+test/features/home/signed_in_shell_test.dart:14:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+import 'package:flutter_dating_application_1/models/user_detail.dart';
+       ^
+test/features/home/signed_in_shell_test.dart:25:29: Error: Method not found: 'UserDetail'.
+  const currentUserDetail = UserDetail(
+                            ^^^^^^^^^^
+test/features/home/signed_in_shell_test.dart:66:11: Error: Undefined name 'profileProvider'.
+          profileProvider.overrideWith((ref) async => currentUserDetail),
+          ^^^^^^^^^^^^^^^
+00:00 +0 -4: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/home/signed_in_shell_test.dart [E]
+  Failed to load "C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/home/signed_in_shell_test.dart":
+  Compilation failed for testPath=C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/home/signed_in_shell_test.dart: test/features/home/signed_in_shell_test.dart:10:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+  import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+         ^
+  test/features/home/signed_in_shell_test.dart:14:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+  import 'package:flutter_dating_application_1/models/user_detail.dart';
+         ^
+  test/features/home/signed_in_shell_test.dart:25:29: Error: Method not found: 'UserDetail'.
+    const currentUserDetail = UserDetail(
+                              ^^^^^^^^^^
+  test/features/home/signed_in_shell_test.dart:66:11: Error: Undefined name 'profileProvider'.
+            profileProvider.overrideWith((ref) async => currentUserDetail),
+            ^^^^^^^^^^^^^^^
+  .
+00:00 +0 -4: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart [E]
+  Error: The Dart compiler exited unexpectedly.
+  package:flutter_tools/src/base/common.dart 34:3  throwToolExit
+  package:flutter_tools/src/compile.dart 939:11    DefaultResidentCompiler._compile.<fn>
+  dart:async/zone_root.dart 48:47                  _rootRunUnary
+  dart:async/zone.dart 733:19                      _CustomZone.runUnary
+  dart:async/future_impl.dart 948:45               Future._propagateToListeners.handleValueCallback
+  dart:async/future_impl.dart 977:13               Future._propagateToListeners
+  dart:async/future_impl.dart 862:9                Future._propagateToListeners
+  dart:async/future_impl.dart 720:5                Future._completeWithValue
+  dart:async/future_impl.dart 804:7                Future._asyncCompleteWithValue.<fn>
+  dart:async/zone_root.dart 35:13                  _rootRun
+  dart:async/zone.dart 726:19                      _CustomZone.run
+  dart:async/zone.dart 625:7                       _CustomZone.runGuarded
+  dart:async/zone.dart 666:23                      _CustomZone.bindCallbackGuarded.<fn>
+  dart:async/schedule_microtask.dart 40:35         _microtaskLoop
+  dart:async/schedule_microtask.dart 49:5          _startMicrotaskLoop
+  dart:isolate-patch/isolate_patch.dart 127:13     _runPendingImmediateCallback
+  dart:isolate-patch/isolate_patch.dart 194:5      _RawReceivePort._handleMessage
+  
+test/features/browse/browse_screen_test.dart:11:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+       ^
+test/features/browse/browse_screen_test.dart:17:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+import 'package:flutter_dating_application_1/models/user_detail.dart';
+       ^
+test/features/browse/browse_screen_test.dart:116:11: Error: Method not found: 'otherUserProfileProvider'.
+          otherUserProfileProvider(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+test/features/browse/browse_screen_test.dart:118:47: Error: Couldn't find constructor 'UserDetail'.
+          ).overrideWith((ref) async => const UserDetail(
+                                              ^^^^^^^^^^
+00:00 +0 -5: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart [E]
+  Failed to load "C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart":
+  Compilation failed for testPath=C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/browse/browse_screen_test.dart: test/features/browse/browse_screen_test.dart:11:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+  import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+         ^
+  test/features/browse/browse_screen_test.dart:17:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+  import 'package:flutter_dating_application_1/models/user_detail.dart';
+         ^
+  test/features/browse/browse_screen_test.dart:116:11: Error: Method not found: 'otherUserProfileProvider'.
+            otherUserProfileProvider(
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  test/features/browse/browse_screen_test.dart:118:47: Error: Couldn't find constructor 'UserDetail'.
+            ).overrideWith((ref) async => const UserDetail(
+                                                ^^^^^^^^^^
+  .
+00:00 +0 -5: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart [E]
+  Error: The Dart compiler exited unexpectedly.
+  package:flutter_tools/src/base/common.dart 34:3  throwToolExit
+  package:flutter_tools/src/compile.dart 939:11    DefaultResidentCompiler._compile.<fn>
+  dart:async/zone_root.dart 48:47                  _rootRunUnary
+  dart:async/zone.dart 733:19                      _CustomZone.runUnary
+  dart:async/future_impl.dart 948:45               Future._propagateToListeners.handleValueCallback
+  dart:async/future_impl.dart 977:13               Future._propagateToListeners
+  dart:async/future_impl.dart 862:9                Future._propagateToListeners
+  dart:async/future_impl.dart 720:5                Future._completeWithValue
+  dart:async/future_impl.dart 804:7                Future._asyncCompleteWithValue.<fn>
+  dart:async/zone_root.dart 35:13                  _rootRun
+  dart:async/zone.dart 726:19                      _CustomZone.run
+  dart:async/zone.dart 625:7                       _CustomZone.runGuarded
+  dart:async/zone.dart 666:23                      _CustomZone.bindCallbackGuarded.<fn>
+  dart:async/schedule_microtask.dart 40:35         _microtaskLoop
+  dart:async/schedule_microtask.dart 49:5          _startMicrotaskLoop
+  dart:isolate-patch/isolate_patch.dart 127:13     _runPendingImmediateCallback
+  dart:isolate-patch/isolate_patch.dart 194:5      _RawReceivePort._handleMessage
+  
+test/features/matches/matches_screen_test.dart:8:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+       ^
+test/features/matches/matches_screen_test.dart:12:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+import 'package:flutter_dating_application_1/models/user_detail.dart';
+       ^
+test/features/matches/matches_screen_test.dart:84:11: Error: Method not found: 'otherUserProfileProvider'.
+          otherUserProfileProvider(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+test/features/matches/matches_screen_test.dart:86:47: Error: Couldn't find constructor 'UserDetail'.
+          ).overrideWith((ref) async => const UserDetail(
+                                              ^^^^^^^^^^
+00:00 +0 -6: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/matches/matches_screen_test.dart [E]
+  Failed to load "C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/matches/matches_screen_test.dart":
+  Compilation failed for testPath=C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/matches/matches_screen_test.dart: test/features/matches/matches_screen_test.dart:8:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+  import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+         ^
+  test/features/matches/matches_screen_test.dart:12:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+  import 'package:flutter_dating_application_1/models/user_detail.dart';
+         ^
+  test/features/matches/matches_screen_test.dart:84:11: Error: Method not found: 'otherUserProfileProvider'.
+            otherUserProfileProvider(
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  test/features/matches/matches_screen_test.dart:86:47: Error: Couldn't find constructor 'UserDetail'.
+            ).overrideWith((ref) async => const UserDetail(
+                                                ^^^^^^^^^^
+  .
+00:00 +0 -6: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/models/user_detail_test.dart [E]
+  Error: The Dart compiler exited unexpectedly.
+  package:flutter_tools/src/base/common.dart 34:3  throwToolExit
+  package:flutter_tools/src/compile.dart 939:11    DefaultResidentCompiler._compile.<fn>
+  dart:async/zone_root.dart 48:47                  _rootRunUnary
+  dart:async/zone.dart 733:19                      _CustomZone.runUnary
+  dart:async/future_impl.dart 948:45               Future._propagateToListeners.handleValueCallback
+  dart:async/future_impl.dart 977:13               Future._propagateToListeners
+  dart:async/future_impl.dart 862:9                Future._propagateToListeners
+  dart:async/future_impl.dart 720:5                Future._completeWithValue
+  dart:async/future_impl.dart 804:7                Future._asyncCompleteWithValue.<fn>
+  dart:async/zone_root.dart 35:13                  _rootRun
+  dart:async/zone.dart 726:19                      _CustomZone.run
+  dart:async/zone.dart 625:7                       _CustomZone.runGuarded
+  dart:async/zone.dart 666:23                      _CustomZone.bindCallbackGuarded.<fn>
+  dart:async/schedule_microtask.dart 40:35         _microtaskLoop
+  dart:async/schedule_microtask.dart 49:5          _startMicrotaskLoop
+  dart:isolate-patch/isolate_patch.dart 127:13     _runPendingImmediateCallback
+  dart:isolate-patch/isolate_patch.dart 194:5      _RawReceivePort._handleMessage
+  
+test/features/chat/conversation_thread_screen_test.dart:9:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+       ^
+test/features/chat/conversation_thread_screen_test.dart:12:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+import 'package:flutter_dating_application_1/models/user_detail.dart';
+       ^
+test/features/chat/conversation_thread_screen_test.dart:274:11: Error: Method not found: 'otherUserProfileProvider'.
+          otherUserProfileProvider(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+test/features/chat/conversation_thread_screen_test.dart:276:47: Error: Couldn't find constructor 'UserDetail'.
+          ).overrideWith((ref) async => const UserDetail(
+                                              ^^^^^^^^^^
+00:00 +0 -7: loading C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart [E]
+  Failed to load "C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart":
+  Compilation failed for testPath=C:/Users/tom7s/Desktopp/Claude_Folder_2/New_Flutter_Frontend/flutter_dating_application_1/test/features/chat/conversation_thread_screen_test.dart: test/features/chat/conversation_thread_screen_test.dart:9:8: Error: Error when reading 'lib/features/profile/profile_provider.dart': The system cannot find the path specified
+  import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+         ^
+  test/features/chat/conversation_thread_screen_test.dart:12:8: Error: Error when reading 'lib/models/user_detail.dart': The system cannot find the file specified
+  import 'package:flutter_dating_application_1/models/user_detail.dart';
+         ^
+  test/features/chat/conversation_thread_screen_test.dart:274:11: Error: Method not found: 'otherUserProfileProvider'.
+            otherUserProfileProvider(
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  test/features/chat/conversation_thread_screen_test.dart:276:47: Error: Couldn't find constructor 'UserDetail'.
+            ).overrideWith((ref) async => const UserDetail(
+                                                ^^^^^^^^^^
+  .
+00:00 +0 -7: Some tests failed.

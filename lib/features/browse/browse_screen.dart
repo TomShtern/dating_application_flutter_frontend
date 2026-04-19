@@ -8,9 +8,10 @@ import '../../models/conversation_summary.dart';
 import '../../models/daily_pick.dart';
 import '../../models/user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../auth/selected_user_provider.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../home/backend_health_banner.dart';
+import '../profile/profile_screen.dart';
+import '../safety/safety_action_sheet.dart';
 import 'browse_provider.dart';
 
 class BrowseScreen extends ConsumerStatefulWidget {
@@ -34,14 +35,14 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
         title: const Text('Discover'),
         actions: [
           IconButton(
+            tooltip: 'Undo last swipe',
+            onPressed: _isSubmitting ? null : _handleUndo,
+            icon: const Icon(Icons.undo_rounded),
+          ),
+          IconButton(
             tooltip: 'Refresh browse',
             onPressed: () => ref.read(browseControllerProvider).refresh(),
             icon: const Icon(Icons.refresh),
-          ),
-          IconButton(
-            tooltip: 'Switch user',
-            onPressed: _isSubmitting ? null : _switchUser,
-            icon: const Icon(Icons.switch_account_outlined),
           ),
         ],
       ),
@@ -62,6 +63,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                     isSubmitting: _isSubmitting,
                     onLike: (candidate) => _handleLike(candidate),
                     onPass: (candidate) => _handlePass(candidate),
+                    onViewProfile: (candidate) =>
+                        _openCandidateProfile(candidate),
                   ),
                   loading: () => const AppAsyncState.loading(
                     message: 'Loading candidates…',
@@ -71,7 +74,6 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                       return _BrowseConflictState(
                         message: error.message,
                         onRetry: () => ref.invalidate(browseProvider),
-                        onSwitchUser: _switchUser,
                       );
                     }
 
@@ -196,9 +198,51 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     }
   }
 
-  Future<void> _switchUser() async {
-    await ref.read(selectUserControllerProvider).clearSelection();
-    ref.invalidate(browseProvider);
+  Future<void> _handleUndo() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final result = await ref.read(browseControllerProvider).undoLastSwipe();
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message)));
+    } on ApiError catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _openCandidateProfile(BrowseCandidate candidate) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => ProfileScreen.otherUser(
+          userId: candidate.id,
+          userName: candidate.name,
+        ),
+      ),
+    );
   }
 }
 
@@ -234,12 +278,14 @@ class _BrowseContent extends StatelessWidget {
     required this.isSubmitting,
     required this.onLike,
     required this.onPass,
+    required this.onViewProfile,
   });
 
   final BrowseResponse browse;
   final bool isSubmitting;
   final ValueChanged<BrowseCandidate> onLike;
   final ValueChanged<BrowseCandidate> onPass;
+  final ValueChanged<BrowseCandidate> onViewProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -270,7 +316,10 @@ class _BrowseContent extends StatelessWidget {
                 _DailyPickCard(dailyPick: dailyPick),
                 const SizedBox(height: 16),
               ],
-              _CandidateCard(candidate: currentCandidate),
+              _CandidateCard(
+                candidate: currentCandidate,
+                onViewProfile: () => onViewProfile(currentCandidate),
+              ),
               const SizedBox(height: 12),
               Text(
                 '${browse.candidates.length} candidate(s) ready',
@@ -399,9 +448,10 @@ class _DailyPickCard extends StatelessWidget {
 }
 
 class _CandidateCard extends StatelessWidget {
-  const _CandidateCard({required this.candidate});
+  const _CandidateCard({required this.candidate, required this.onViewProfile});
 
   final BrowseCandidate candidate;
+  final VoidCallback onViewProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -411,9 +461,20 @@ class _CandidateCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              candidate.name,
-              style: Theme.of(context).textTheme.headlineMedium,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    candidate.name,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                ),
+                SafetyActionsButton(
+                  targetUserId: candidate.id,
+                  targetUserName: candidate.name,
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text('Age ${candidate.age} • ${candidate.state}'),
@@ -421,6 +482,12 @@ class _CandidateCard extends StatelessWidget {
             Text(
               'The current browse payload is intentionally lean. More profile richness can come after the backend DTO grows.',
               style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onViewProfile,
+              icon: const Icon(Icons.person_outline_rounded),
+              label: const Text('View profile'),
             ),
           ],
         ),
@@ -455,15 +522,10 @@ class _LocationWarningCard extends StatelessWidget {
 }
 
 class _BrowseConflictState extends StatelessWidget {
-  const _BrowseConflictState({
-    required this.message,
-    required this.onRetry,
-    required this.onSwitchUser,
-  });
+  const _BrowseConflictState({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
-  final VoidCallback onSwitchUser;
 
   @override
   Widget build(BuildContext context) {
@@ -491,10 +553,6 @@ class _BrowseConflictState extends StatelessWidget {
                     FilledButton(
                       onPressed: onRetry,
                       child: const Text('Retry'),
-                    ),
-                    OutlinedButton(
-                      onPressed: onSwitchUser,
-                      child: const Text('Switch user'),
                     ),
                   ],
                 ),

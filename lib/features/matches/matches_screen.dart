@@ -5,9 +5,11 @@ import '../../api/api_error.dart';
 import '../../models/conversation_summary.dart';
 import '../../models/match_summary.dart';
 import '../../models/user_summary.dart';
+import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../auth/selected_user_provider.dart';
 import '../chat/conversation_thread_screen.dart';
+import '../profile/profile_screen.dart';
+import '../safety/safety_action_sheet.dart';
 import 'matches_provider.dart';
 
 class MatchesScreen extends ConsumerWidget {
@@ -27,14 +29,6 @@ class MatchesScreen extends ConsumerWidget {
             tooltip: 'Refresh matches',
             onPressed: () => ref.read(matchesControllerProvider).refresh(),
             icon: const Icon(Icons.refresh),
-          ),
-          IconButton(
-            tooltip: 'Switch user',
-            onPressed: () async {
-              await ref.read(selectUserControllerProvider).clearSelection();
-              ref.invalidate(matchesProvider);
-            },
-            icon: const Icon(Icons.switch_account_outlined),
           ),
         ],
       ),
@@ -102,9 +96,33 @@ class _MatchCard extends StatelessWidget {
         leading: const CircleAvatar(child: Icon(Icons.favorite_rounded)),
         title: Text(match.otherUserName),
         subtitle: Text(
-          'Matched on ${match.createdAt.toLocal().toIso8601String().split('T').first} • ${match.state}',
+          'Matched on ${formatShortDate(match.createdAt)} • ${match.state}',
         ),
-        trailing: const Icon(Icons.chevron_right_rounded),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'View profile',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => ProfileScreen.otherUser(
+                      userId: match.otherUserId,
+                      userName: match.otherUserName,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.person_outline_rounded),
+            ),
+            SafetyActionsButton(
+              targetUserId: match.otherUserId,
+              targetUserName: match.otherUserName,
+              canUnmatch: true,
+            ),
+            const Icon(Icons.chevron_right_rounded),
+          ],
+        ),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
