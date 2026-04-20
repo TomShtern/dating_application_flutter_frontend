@@ -65,7 +65,7 @@ void main() {
       [
         Directory.current.path,
         'test',
-        'visual',
+        'visual_inspection',
         'screenshot_test.dart',
       ].join(Platform.pathSeparator),
     ),
@@ -500,7 +500,7 @@ const _candidateUser = BrowseCandidate(
 );
 
 const _dailyPick = DailyPick(
-  userId: '33333333-3333-3333-333333333333',
+  userId: '33333333-3333-3333-3333-333333333333',
   userName: 'Maya',
   userAge: 30,
   date: '2026-04-18',

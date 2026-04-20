@@ -55,10 +55,9 @@ class ArchiveStateStore {
     final Map<String, dynamic> state = await _readState();
     final int nextRunNumber = state['nextRunNumber'] as int? ?? 1;
 
-    await _writeState(<String, Object?>{
-      'nextRunNumber': nextRunNumber + 1,
-      'updatedAtUtc': capturedAtUtc.toUtc().toIso8601String(),
-    });
+    state['nextRunNumber'] = nextRunNumber + 1;
+    state['updatedAtUtc'] = capturedAtUtc.toUtc().toIso8601String();
+    await _writeState(state);
 
     return RunIdentity(runNumber: nextRunNumber, capturedAtUtc: capturedAtUtc);
   }
