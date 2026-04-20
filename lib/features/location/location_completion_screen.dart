@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:collection/collection.dart';
 
 import '../../api/api_error.dart';
 import '../../models/location_metadata.dart';
@@ -107,7 +106,8 @@ class _LocationCompletionScreenState
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
-                            value: _countryCode,
+                            key: ValueKey<String?>(_countryCode),
+                            initialValue: _countryCode,
                             decoration: const InputDecoration(
                               labelText: 'Country',
                             ),
@@ -253,10 +253,17 @@ class _LocationCompletionScreenState
   }
 
   String? _resolveInitialCountryCode(List<LocationCountry> countries) {
-    final defaultCountry = countries.firstWhereOrNull(
-      (country) => country.defaultSelection,
-    );
-    return defaultCountry?.code ?? countries.firstOrNull?.code;
+    for (final country in countries) {
+      if (country.defaultSelection) {
+        return country.code;
+      }
+    }
+
+    if (countries.isEmpty) {
+      return null;
+    }
+
+    return countries.first.code;
   }
 
   Future<void> _handleSave(BuildContext context) async {

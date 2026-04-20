@@ -7,26 +7,49 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
+import 'package:flutter_dating_application_1/features/browse/pending_likers_provider.dart';
+import 'package:flutter_dating_application_1/features/browse/pending_likers_screen.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
+import 'package:flutter_dating_application_1/features/browse/standouts_provider.dart';
+import 'package:flutter_dating_application_1/features/browse/standouts_screen.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_screen.dart';
 import 'package:flutter_dating_application_1/features/chat/conversations_provider.dart';
 import 'package:flutter_dating_application_1/features/home/app_home_screen.dart';
 import 'package:flutter_dating_application_1/features/home/backend_health_provider.dart';
 import 'package:flutter_dating_application_1/features/home/signed_in_shell.dart';
+import 'package:flutter_dating_application_1/features/location/location_completion_screen.dart';
+import 'package:flutter_dating_application_1/features/location/location_provider.dart';
 import 'package:flutter_dating_application_1/features/matches/matches_provider.dart';
+import 'package:flutter_dating_application_1/features/notifications/notifications_provider.dart';
+import 'package:flutter_dating_application_1/features/notifications/notifications_screen.dart';
+import 'package:flutter_dating_application_1/features/profile/profile_edit_screen.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+import 'package:flutter_dating_application_1/features/profile/profile_screen.dart';
+import 'package:flutter_dating_application_1/features/safety/blocked_users_provider.dart';
+import 'package:flutter_dating_application_1/features/safety/blocked_users_screen.dart';
 import 'package:flutter_dating_application_1/features/settings/app_preferences_store.dart';
+import 'package:flutter_dating_application_1/features/stats/stats_provider.dart';
+import 'package:flutter_dating_application_1/features/stats/stats_screen.dart';
+import 'package:flutter_dating_application_1/features/stats/achievements_screen.dart';
+import 'package:flutter_dating_application_1/features/verification/verification_screen.dart';
 import 'package:flutter_dating_application_1/models/app_preferences.dart';
+import 'package:flutter_dating_application_1/models/achievement_summary.dart';
+import 'package:flutter_dating_application_1/models/blocked_user_summary.dart';
 import 'package:flutter_dating_application_1/models/browse_candidate.dart';
 import 'package:flutter_dating_application_1/models/browse_response.dart';
 import 'package:flutter_dating_application_1/models/conversation_summary.dart';
 import 'package:flutter_dating_application_1/models/daily_pick.dart';
 import 'package:flutter_dating_application_1/models/health_status.dart';
+import 'package:flutter_dating_application_1/models/location_metadata.dart';
 import 'package:flutter_dating_application_1/models/match_summary.dart';
 import 'package:flutter_dating_application_1/models/matches_response.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
+import 'package:flutter_dating_application_1/models/notification_item.dart';
+import 'package:flutter_dating_application_1/models/pending_liker.dart';
+import 'package:flutter_dating_application_1/models/standout.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
+import 'package:flutter_dating_application_1/models/user_stats.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
 import 'package:flutter_dating_application_1/theme/app_theme.dart';
@@ -43,7 +66,7 @@ void main() {
         Directory.current.path,
         'test',
         'visual',
-        'visual_review_golden_test.dart',
+        'screenshot_test.dart',
       ].join(Platform.pathSeparator),
     ),
   );
@@ -234,6 +257,230 @@ void main() {
       fileName: 'conversation_thread.png',
     );
   });
+
+  testWidgets('captures the standouts screen', (WidgetTester tester) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      overrides: [
+        standoutsProvider.overrideWith((ref) async => _standoutsSnapshot),
+      ],
+      child: const StandoutsScreen(),
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'standouts screen',
+      fileName: 'standouts.png',
+    );
+  });
+
+  testWidgets('captures the pending likers screen', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      overrides: [
+        pendingLikersProvider.overrideWith((ref) async => _pendingLikers),
+      ],
+      child: const PendingLikersScreen(),
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'pending likers screen',
+      fileName: 'pending_likers.png',
+    );
+  });
+
+  testWidgets('captures the other-user profile screen', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      overrides: [
+        otherUserProfileProvider(
+          _otherUserProfileDetail.id,
+        ).overrideWith((ref) async => _otherUserProfileDetail),
+      ],
+      child: ProfileScreen.otherUser(
+        userId: _otherUserProfileDetail.id,
+        userName: _otherUserProfileDetail.name,
+      ),
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'other-user profile screen',
+      fileName: 'profile_other_user.png',
+    );
+  });
+
+  testWidgets('captures the profile edit screen', (WidgetTester tester) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      child: ProfileEditScreen(initialDetail: _profileDetail),
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'profile edit screen',
+      fileName: 'profile_edit.png',
+    );
+  });
+
+  testWidgets('captures the location completion screen', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      overrides: [
+        locationCountriesProvider.overrideWith(
+          (ref) async => _locationCountries,
+        ),
+        locationCitySuggestionsProvider(
+          const LocationCitySearchQuery(countryCode: 'IL', query: 'Tel'),
+        ).overrideWith((ref) async => _locationSuggestions),
+      ],
+      child: const LocationCompletionScreen(),
+    );
+
+    await tester.enterText(find.byType(TextField).first, 'Tel');
+    await tester.pumpAndSettle();
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'location completion screen',
+      fileName: 'location_completion.png',
+    );
+  });
+
+  testWidgets('captures the stats screen', (WidgetTester tester) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      overrides: [statsProvider.overrideWith((ref) async => _userStats)],
+      child: const StatsScreen(currentUser: _currentUser),
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'stats screen',
+      fileName: 'stats.png',
+    );
+  });
+
+  testWidgets('captures the achievements screen', (WidgetTester tester) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      overrides: [
+        achievementsProvider.overrideWith((ref) async => _achievements),
+      ],
+      child: const AchievementsScreen(currentUser: _currentUser),
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'achievements screen',
+      fileName: 'achievements.png',
+    );
+  });
+
+  testWidgets('captures the verification screen', (WidgetTester tester) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      child: const VerificationScreen(),
+    );
+
+    await tester.enterText(find.byType(TextField).first, 'dana@example.com');
+    await tester.pumpAndSettle();
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'verification screen',
+      fileName: 'verification.png',
+    );
+  });
+
+  testWidgets('captures the blocked users screen', (WidgetTester tester) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      overrides: [
+        blockedUsersProvider.overrideWith((ref) async => _blockedUsers),
+      ],
+      child: const BlockedUsersScreen(),
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'blocked users screen',
+      fileName: 'blocked_users.png',
+    );
+  });
+
+  testWidgets('captures the notifications screen', (WidgetTester tester) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      overrides: [
+        notificationsProvider.overrideWith((ref) async => _notifications),
+      ],
+      child: const NotificationsScreen(),
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'notifications screen',
+      fileName: 'notifications.png',
+    );
+  });
 }
 
 const _goldenRootKey = ValueKey<String>('visual-review-root');
@@ -309,6 +556,149 @@ final _profileDetail = UserDetail(
   photoUrls: ['/photos/dana-1.jpg'],
   state: 'ACTIVE',
 );
+
+final _otherUserProfileDetail = UserDetail(
+  id: '44444444-4444-4444-4444-444444444444',
+  name: 'Rin',
+  age: 28,
+  bio: 'Weekend climber, playlists curator, and unapologetic brunch optimist.',
+  gender: 'FEMALE',
+  interestedIn: ['FEMALE', 'MALE'],
+  approximateLocation: 'Haifa',
+  maxDistanceKm: 30,
+  photoUrls: const [],
+  state: 'ACTIVE',
+);
+
+const _standoutsSnapshot = StandoutsSnapshot(
+  standouts: [
+    Standout(
+      id: 'standout-1',
+      standoutUserId: '55555555-5555-5555-5555-555555555555',
+      standoutUserName: 'Leah',
+      standoutUserAge: 31,
+      rank: 1,
+      score: 98,
+      reason:
+          'Shared pace, music taste, and a strong match on conversation style.',
+      createdAt: null,
+      interactedAt: null,
+    ),
+    Standout(
+      id: 'standout-2',
+      standoutUserId: '66666666-6666-6666-6666-666666666666',
+      standoutUserName: 'Ari',
+      standoutUserAge: 29,
+      rank: 2,
+      score: 94,
+      reason: 'Backend rank suggests high reply odds this week.',
+      createdAt: null,
+      interactedAt: null,
+    ),
+  ],
+  totalCandidates: 2,
+  fromCache: false,
+  message: 'Fresh standout picks based on current activity.',
+);
+
+const _pendingLikers = [
+  PendingLiker(
+    userId: '77777777-7777-7777-7777-777777777777',
+    name: 'Nina',
+    age: 26,
+    likedAt: null,
+  ),
+  PendingLiker(
+    userId: '88888888-8888-8888-8888-888888888888',
+    name: 'Omer',
+    age: 30,
+    likedAt: null,
+  ),
+];
+
+const _locationCountries = [
+  LocationCountry(
+    code: 'IL',
+    name: 'Israel',
+    flagEmoji: '🇮🇱',
+    available: true,
+    defaultSelection: true,
+  ),
+  LocationCountry(
+    code: 'US',
+    name: 'United States',
+    flagEmoji: '🇺🇸',
+    available: true,
+    defaultSelection: false,
+  ),
+];
+
+const _locationSuggestions = [
+  LocationCity(
+    name: 'Tel Aviv',
+    district: 'Tel Aviv District',
+    countryCode: 'IL',
+    priority: 1,
+  ),
+  LocationCity(
+    name: 'Tel Mond',
+    district: 'Central District',
+    countryCode: 'IL',
+    priority: 2,
+  ),
+];
+
+const _userStats = UserStats(
+  items: [
+    UserStatItem(label: 'Likes sent', value: '18'),
+    UserStatItem(label: 'Matches this week', value: '4'),
+    UserStatItem(label: 'Conversation reply rate', value: '87%'),
+  ],
+);
+
+const _achievements = [
+  AchievementSummary(
+    title: 'First match streak',
+    subtitle: 'Matched with someone three days in a row',
+    progress: '3 / 3',
+    isUnlocked: true,
+  ),
+  AchievementSummary(
+    title: 'Conversation closer',
+    subtitle: 'Keep reply rates above 80%',
+    progress: '87%',
+    isUnlocked: false,
+  ),
+];
+
+const _blockedUsers = [
+  BlockedUserSummary(
+    userId: '99999999-9999-9999-9999-999999999999',
+    name: 'Kai',
+    statusLabel: 'Blocked after repeated spam',
+  ),
+];
+
+final _notifications = [
+  NotificationItem(
+    id: 'notification-1',
+    type: 'MATCH',
+    title: 'New match',
+    message: 'You and Maya matched a few minutes ago.',
+    createdAt: DateTime.parse('2026-04-20T15:55:00Z'),
+    isRead: false,
+    data: const {'matchId': 'match-2'},
+  ),
+  NotificationItem(
+    id: 'notification-2',
+    type: 'MESSAGE',
+    title: 'New message from Noa',
+    message: 'Noa replied and wants to plan the coffee date.',
+    createdAt: DateTime.parse('2026-04-20T15:59:00Z'),
+    isRead: true,
+    data: const {'conversationId': 'conversation-1'},
+  ),
+];
 
 Future<SharedPreferences> _preferencesWithTheme(
   AppThemeModePreference themeMode,
@@ -395,6 +785,31 @@ Future<void> _pumpSignedInShell(
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.light,
         home: SignedInShell(currentUser: _currentUser),
+      ),
+    ),
+  );
+}
+
+Future<void> _pumpSignedInVisualScreen(
+  WidgetTester tester, {
+  required SharedPreferences preferences,
+  required Widget child,
+  List overrides = const <dynamic>[],
+}) async {
+  await _pumpVisualHarness(
+    tester,
+    child: ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        selectedUserProvider.overrideWith((ref) async => _currentUser),
+        ...overrides,
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.light,
+        home: child,
       ),
     ),
   );

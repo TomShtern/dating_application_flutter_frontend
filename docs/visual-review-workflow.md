@@ -1,65 +1,140 @@
 # Visual Review Workflow
 
-This repo now has a repeatable screenshot-based UI review loop.
+This repository now uses an **observability-first** screenshot workflow.
 
-## What it covers
+The goal is simple:
 
-The canonical visual baseline lives in `test/visual/visual_review_golden_test.dart` and captures:
+1. change code
+2. run the visual review suite
+3. inspect the newly rendered screenshots
+4. understand what the UI looks like right now
 
-- app startup with the dev-user picker
-- signed-in shell tabs: Discover, Matches, Chats, Profile, and Settings
-- a populated conversation thread
+This workflow is **not** about comparing old screenshots to new screenshots.
+It is about producing a fresh, reviewable snapshot of the current UI for humans and AI agents.
 
-The reference baseline images live in `test/visual/goldens/`.
-Each run also writes a fresh screenshot set to `build/visual_review/latest/`.
+## Canonical entrypoint
 
-## How to run the workflow
-
-Run the visual suite normally:
+Run the visual suite with:
 
 ```bash
-flutter test test/visual/visual_review_golden_test.dart
+flutter test test/visual/screenshot_test.dart
 ```
 
-Every run now:
+When driving this from automation or an AI agent, prefer running the command with a timeout so a hung test process cannot stall the workflow indefinitely.
 
+## What each run produces
+
+Every invocation:
+
+- allocates the next monotonic run number from `build/visual_review/archive_state.json`
 - clears and recreates `build/visual_review/latest/`
-- writes a fresh PNG for every covered screen
-- writes `build/visual_review/latest/manifest.json` with the captured files
-- compares the rendered UI against the baseline goldens in `test/visual/goldens/`
-- loads real Material/Roboto fonts for `test/visual` via `test/visual/flutter_test_config.dart`
+- writes a fresh PNG for every covered screen into `build/visual_review/latest/`
+- names latest screenshots like `shell_matches__run-0007.png`
+- writes a fresh HTML gallery to `build/visual_review/latest/index.html`
+- writes a fresh manifest to `build/visual_review/latest/manifest.json`
+- archives the same run under `build/visual_review/runs/<runId>/`
+- names archived screenshots like `shell_matches__run-0007__2026-04-20__16-12-05.png`
+- prunes stale archived runs before creating run 51, or earlier if the archive bank exceeds `500 MB`
+- removes the older legacy output root `build/visual_screenshots/` so there is only one canonical place to inspect
 
-Even if the golden comparison fails, the fresh files in `build/visual_review/latest/` are still written first, so the newest screenshots remain available for review and debugging.
+The manifest includes:
 
-This means the review images the agent inspects are always newly rendered, even when the baseline goldens are unchanged.
+- `runId`
+- `runNumber`
+- `runLabel`
+- `workflow`
+- `latestDirectory`
+- `runDirectory`
+- `archiveStateFile`
+- one entry per screenshot with scenario name, scenario slug, latest file name, archived file name, run directory name, timestamps, byte size, and both latest/archived paths
 
-If a golden comparison fails, Flutter may also emit diff/debug files under `test/visual/failures/`. Those are transient diagnostics and should not be treated as the primary review artifact.
+## Output layout
 
-## How to refresh baseline goldens
+Use these paths after the suite finishes:
 
-Run the golden suite and regenerate PNGs when the UI changes:
+- `build/visual_review/latest/` — newest screenshots for quick inspection
+- `build/visual_review/latest/index.html` — lightweight gallery page
+- `build/visual_review/latest/manifest.json` — machine-readable run metadata
+- `build/visual_review/archive_state.json` — persistent monotonic run counter and archive bookkeeping
+- `build/visual_review/runs/<runId>/` — archived copy of that exact run
 
-```bash
-flutter test test/visual/visual_review_golden_test.dart --update-goldens
-```
+Current naming examples:
 
-Then inspect the updated PNGs in `test/visual/goldens/` before merging.
+- latest screenshot: `build/visual_review/latest/shell_matches__run-0007.png`
+- archived run folder: `build/visual_review/runs/run-0007__2026-04-20__16-12-05/`
+- archived screenshot: `build/visual_review/runs/run-0007__2026-04-20__16-12-05/shell_matches__run-0007__2026-04-20__16-12-05.png`
 
-The run will still emit a fresh set of review screenshots under `build/visual_review/latest/`.
+## Archive cleanup
 
-## What to look for
+Cleanup applies only to archived runs under `build/visual_review/runs/`.
 
-When reviewing screenshots, check for:
+The newest `latest/` output is never pruned by retention logic; it is simply replaced by the next successful run.
+
+Before creating run 51, or whenever the archived run bank grows beyond `500 MB`, the workflow prunes the archive and keeps only:
+
+- the oldest 3 archived runs
+- the middle 3 archived runs
+- the latest 4 archived runs
+
+This preserves the starting point, a middle checkpoint, and the newest history while preventing the archive from growing without bound.
+
+## Automation guidance
+
+Humans and AI agents should inspect the newest run first:
+
+- `build/visual_review/latest/manifest.json`
+- `build/visual_review/latest/index.html`
+
+Archived runs should be ignored unless you explicitly need historical context, cleanup verification, or recovery from a missing/corrupt latest run.
+
+## Covered screens
+
+The suite currently captures these UI surfaces at a fixed phone viewport:
+
+- app startup / dev-user picker
+- Discover tab
+- Matches tab
+- Chats tab
+- current-user Profile tab
+- Settings tab
+- conversation thread
+- Standouts
+- People who liked you
+- other-user profile
+- profile edit
+- location completion
+- stats
+- achievements
+- verification
+- blocked users
+- notifications
+
+## Review checklist
+
+When inspecting the screenshots, check for:
 
 - clipped or overflowing text
-- awkward spacing at phone widths
-- broken hierarchy in the hero cards
-- bottom navigation alignment
-- message thread readability
+- awkward spacing and padding
+- broken hierarchy in cards and headers
+- navigation chrome alignment
+- button sizing and readability
+- forms that feel too cramped or too sparse
+- obviously stale or missing data
+
+## Extending coverage
+
+To add more screenshot coverage:
+
+1. add a new `testWidgets` scenario in `test/visual/screenshot_test.dart`
+2. pump the target screen with deterministic provider overrides
+3. call `_captureAndSave(...)` with a unique file name
+4. rerun the suite and inspect the new PNG in `build/visual_review/latest/`
+
+The helper infrastructure in `test/visual/support/` handles output directories, manifests, run archives, and the review gallery.
 
 ## Notes
 
-- The screenshots are intentionally phone-sized so the app can be reviewed at a realistic mobile width.
-- `build/visual_review/latest/` is disposable run output for AI/human review; `test/visual/goldens/` remains the regression baseline directory.
-- `test/visual/flutter_test_config.dart` loads Material icons and Roboto from the local Flutter SDK cache so the screenshots use real UI text and icons instead of the default test font.
-- For live interactive review, you can still run the app in Chrome or on an emulator, but the golden files are the repeatable baseline.
+- The screenshots use a fixed `412 x 915` phone-sized surface so the review stays consistent between runs.
+- `test/visual/flutter_test_config.dart` loads Material icons and Roboto from the local Flutter SDK cache so the screenshots render with realistic fonts and icons.
+- `build/visual_review/latest/` is disposable output; the archived run folders under `build/visual_review/runs/` are useful when you need to refer back to a specific invocation.
+- For interactive exploration you can still run the app on Chrome, Windows, or an emulator, but the visual review suite is the repeatable observability artifact.
