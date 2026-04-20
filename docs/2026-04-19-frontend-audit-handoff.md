@@ -359,10 +359,9 @@ The backend supports friend request flows, but there is no UI or provider implem
 ### 14. Blocked-users management is incomplete
 
 **Type:** Partial feature
-**Severity:** P1
+**Severity:** P2
 
 Block actions exist, but the blocked-users list and unblock flow are still incomplete in the normal UI.
-
 **Why this matters**
 
 Users can block, but cannot review or reverse that choice from normal UI.

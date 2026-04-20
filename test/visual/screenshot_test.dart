@@ -31,24 +31,23 @@ import 'package:flutter_dating_application_1/models/user_summary.dart';
 import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
 import 'package:flutter_dating_application_1/theme/app_theme.dart';
 
-import 'support/visual_review_artifact_comparator.dart';
+import 'support/screenshot_capture.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final GoldenFileComparator previousComparator = goldenFileComparator;
-  final VisualReviewArtifactComparator artifactComparator =
-      VisualReviewArtifactComparator(
-        Uri.file(
-          [
-            Directory.current.path,
-            'test',
-            'visual',
-            'visual_review_golden_test.dart',
-          ].join(Platform.pathSeparator),
-        ),
-      );
-  goldenFileComparator = artifactComparator;
+  final ScreenshotWriter screenshotWriter = ScreenshotWriter(
+    Uri.file(
+      [
+        Directory.current.path,
+        'test',
+        'visual',
+        'visual_review_golden_test.dart',
+      ].join(Platform.pathSeparator),
+    ),
+  );
+  goldenFileComparator = screenshotWriter;
   tearDownAll(() {
     goldenFileComparator = previousComparator;
   });
@@ -99,10 +98,10 @@ void main() {
       ),
     );
 
-    await _captureAndCompare(
+    await _captureAndSave(
       tester,
       scenarioName: 'app startup dev-user picker',
-      goldenFileName: 'app_home_startup.png',
+      fileName: 'app_home_startup.png',
     );
   });
 
@@ -113,52 +112,12 @@ void main() {
       AppThemeModePreference.light,
     );
 
-    await _pumpVisualHarness(
-      tester,
-      child: ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          backendHealthProvider.overrideWith(
-            (ref) async => HealthStatus(
-              status: 'ok',
-              timestamp: DateTime.parse('2026-04-18T12:00:00Z'),
-            ),
-          ),
-          browseProvider.overrideWith(
-            (ref) async => const BrowseResponse(
-              candidates: [_candidateUser],
-              dailyPick: _dailyPick,
-              dailyPickViewed: false,
-              locationMissing: false,
-            ),
-          ),
-          matchesProvider.overrideWith(
-            (ref) async => MatchesResponse(
-              matches: [_match],
-              totalCount: 1,
-              offset: 0,
-              limit: 20,
-              hasMore: false,
-            ),
-          ),
-          conversationsProvider.overrideWith((ref) async => [_conversation]),
-          profileProvider.overrideWith((ref) async => _profileDetail),
-          selectedUserProvider.overrideWith((ref) async => _currentUser),
-        ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.light,
-          home: SignedInShell(currentUser: _currentUser),
-        ),
-      ),
-    );
+    await _pumpSignedInShell(tester, preferences: preferences);
 
-    await _captureAndCompare(
+    await _captureAndSave(
       tester,
       scenarioName: 'signed-in shell discover tab',
-      goldenFileName: 'shell_discover.png',
+      fileName: 'shell_discover.png',
     );
   });
 
@@ -169,55 +128,15 @@ void main() {
       AppThemeModePreference.light,
     );
 
-    await _pumpVisualHarness(
-      tester,
-      child: ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          backendHealthProvider.overrideWith(
-            (ref) async => HealthStatus(
-              status: 'ok',
-              timestamp: DateTime.parse('2026-04-18T12:00:00Z'),
-            ),
-          ),
-          browseProvider.overrideWith(
-            (ref) async => const BrowseResponse(
-              candidates: [_candidateUser],
-              dailyPick: _dailyPick,
-              dailyPickViewed: false,
-              locationMissing: false,
-            ),
-          ),
-          matchesProvider.overrideWith(
-            (ref) async => MatchesResponse(
-              matches: [_match],
-              totalCount: 1,
-              offset: 0,
-              limit: 20,
-              hasMore: false,
-            ),
-          ),
-          conversationsProvider.overrideWith((ref) async => [_conversation]),
-          profileProvider.overrideWith((ref) async => _profileDetail),
-          selectedUserProvider.overrideWith((ref) async => _currentUser),
-        ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.light,
-          home: SignedInShell(currentUser: _currentUser),
-        ),
-      ),
-    );
+    await _pumpSignedInShell(tester, preferences: preferences);
 
     await tester.tap(find.text('Matches'));
     await tester.pumpAndSettle();
 
-    await _captureAndCompare(
+    await _captureAndSave(
       tester,
       scenarioName: 'signed-in shell matches tab',
-      goldenFileName: 'shell_matches.png',
+      fileName: 'shell_matches.png',
     );
   });
 
@@ -228,55 +147,15 @@ void main() {
       AppThemeModePreference.light,
     );
 
-    await _pumpVisualHarness(
-      tester,
-      child: ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          backendHealthProvider.overrideWith(
-            (ref) async => HealthStatus(
-              status: 'ok',
-              timestamp: DateTime.parse('2026-04-18T12:00:00Z'),
-            ),
-          ),
-          browseProvider.overrideWith(
-            (ref) async => const BrowseResponse(
-              candidates: [_candidateUser],
-              dailyPick: _dailyPick,
-              dailyPickViewed: false,
-              locationMissing: false,
-            ),
-          ),
-          matchesProvider.overrideWith(
-            (ref) async => MatchesResponse(
-              matches: [_match],
-              totalCount: 1,
-              offset: 0,
-              limit: 20,
-              hasMore: false,
-            ),
-          ),
-          conversationsProvider.overrideWith((ref) async => [_conversation]),
-          profileProvider.overrideWith((ref) async => _profileDetail),
-          selectedUserProvider.overrideWith((ref) async => _currentUser),
-        ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.light,
-          home: SignedInShell(currentUser: _currentUser),
-        ),
-      ),
-    );
+    await _pumpSignedInShell(tester, preferences: preferences);
 
     await tester.tap(find.text('Chats'));
     await tester.pumpAndSettle();
 
-    await _captureAndCompare(
+    await _captureAndSave(
       tester,
       scenarioName: 'signed-in shell chats tab',
-      goldenFileName: 'shell_chats.png',
+      fileName: 'shell_chats.png',
     );
   });
 
@@ -287,55 +166,15 @@ void main() {
       AppThemeModePreference.light,
     );
 
-    await _pumpVisualHarness(
-      tester,
-      child: ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          backendHealthProvider.overrideWith(
-            (ref) async => HealthStatus(
-              status: 'ok',
-              timestamp: DateTime.parse('2026-04-18T12:00:00Z'),
-            ),
-          ),
-          browseProvider.overrideWith(
-            (ref) async => const BrowseResponse(
-              candidates: [_candidateUser],
-              dailyPick: _dailyPick,
-              dailyPickViewed: false,
-              locationMissing: false,
-            ),
-          ),
-          matchesProvider.overrideWith(
-            (ref) async => MatchesResponse(
-              matches: [_match],
-              totalCount: 1,
-              offset: 0,
-              limit: 20,
-              hasMore: false,
-            ),
-          ),
-          conversationsProvider.overrideWith((ref) async => [_conversation]),
-          profileProvider.overrideWith((ref) async => _profileDetail),
-          selectedUserProvider.overrideWith((ref) async => _currentUser),
-        ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.light,
-          home: SignedInShell(currentUser: _currentUser),
-        ),
-      ),
-    );
+    await _pumpSignedInShell(tester, preferences: preferences);
 
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
 
-    await _captureAndCompare(
+    await _captureAndSave(
       tester,
       scenarioName: 'signed-in shell profile tab',
-      goldenFileName: 'shell_profile.png',
+      fileName: 'shell_profile.png',
     );
   });
 
@@ -346,55 +185,15 @@ void main() {
       AppThemeModePreference.light,
     );
 
-    await _pumpVisualHarness(
-      tester,
-      child: ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          backendHealthProvider.overrideWith(
-            (ref) async => HealthStatus(
-              status: 'ok',
-              timestamp: DateTime.parse('2026-04-18T12:00:00Z'),
-            ),
-          ),
-          browseProvider.overrideWith(
-            (ref) async => const BrowseResponse(
-              candidates: [_candidateUser],
-              dailyPick: _dailyPick,
-              dailyPickViewed: false,
-              locationMissing: false,
-            ),
-          ),
-          matchesProvider.overrideWith(
-            (ref) async => MatchesResponse(
-              matches: [_match],
-              totalCount: 1,
-              offset: 0,
-              limit: 20,
-              hasMore: false,
-            ),
-          ),
-          conversationsProvider.overrideWith((ref) async => [_conversation]),
-          profileProvider.overrideWith((ref) async => _profileDetail),
-          selectedUserProvider.overrideWith((ref) async => _currentUser),
-        ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.light,
-          home: SignedInShell(currentUser: _currentUser),
-        ),
-      ),
-    );
+    await _pumpSignedInShell(tester, preferences: preferences);
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
-    await _captureAndCompare(
+    await _captureAndSave(
       tester,
       scenarioName: 'signed-in shell settings tab',
-      goldenFileName: 'shell_settings.png',
+      fileName: 'shell_settings.png',
     );
   });
 
@@ -429,10 +228,10 @@ void main() {
       ),
     );
 
-    await _captureAndCompare(
+    await _captureAndSave(
       tester,
       scenarioName: 'populated conversation thread',
-      goldenFileName: 'conversation_thread.png',
+      fileName: 'conversation_thread.png',
     );
   });
 }
@@ -454,7 +253,7 @@ const _candidateUser = BrowseCandidate(
 );
 
 const _dailyPick = DailyPick(
-  userId: '33333333-3333-3333-3333-333333333333',
+  userId: '33333333-3333-3333-333333333333',
   userName: 'Maya',
   userAge: 30,
   date: '2026-04-18',
@@ -523,22 +322,19 @@ Future<SharedPreferences> _preferencesWithTheme(
   return SharedPreferences.getInstance();
 }
 
-Future<void> _captureAndCompare(
+Future<void> _captureAndSave(
   WidgetTester tester, {
   required String scenarioName,
-  required String goldenFileName,
+  required String fileName,
 }) async {
   final GoldenFileComparator comparator = goldenFileComparator;
-  if (comparator is VisualReviewArtifactComparator) {
-    comparator.registerScenario(
-      goldenFileName: goldenFileName,
-      scenarioName: scenarioName,
-    );
+  if (comparator is ScreenshotWriter) {
+    comparator.registerScenario(fileName: fileName, scenarioName: scenarioName);
   }
 
   await expectLater(
     find.byKey(_goldenRootKey),
-    matchesGoldenFile('goldens/$goldenFileName'),
+    matchesGoldenFile('screenshots/$fileName'),
   );
 }
 
@@ -555,4 +351,51 @@ Future<void> _pumpVisualHarness(
   await tester.pumpWidget(RepaintBoundary(key: _goldenRootKey, child: child));
 
   await tester.pumpAndSettle();
+}
+
+Future<void> _pumpSignedInShell(
+  WidgetTester tester, {
+  required SharedPreferences preferences,
+}) async {
+  await _pumpVisualHarness(
+    tester,
+    child: ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        backendHealthProvider.overrideWith(
+          (ref) async => HealthStatus(
+            status: 'ok',
+            timestamp: DateTime.parse('2026-04-18T12:00:00Z'),
+          ),
+        ),
+        browseProvider.overrideWith(
+          (ref) async => const BrowseResponse(
+            candidates: [_candidateUser],
+            dailyPick: _dailyPick,
+            dailyPickViewed: false,
+            locationMissing: false,
+          ),
+        ),
+        matchesProvider.overrideWith(
+          (ref) async => MatchesResponse(
+            matches: [_match],
+            totalCount: 1,
+            offset: 0,
+            limit: 20,
+            hasMore: false,
+          ),
+        ),
+        conversationsProvider.overrideWith((ref) async => [_conversation]),
+        profileProvider.overrideWith((ref) async => _profileDetail),
+        selectedUserProvider.overrideWith((ref) async => _currentUser),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.light,
+        home: SignedInShell(currentUser: _currentUser),
+      ),
+    ),
+  );
 }

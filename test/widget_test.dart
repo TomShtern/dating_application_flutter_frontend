@@ -218,7 +218,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ConversationThreadScreen), findsOneWidget);
     expect(find.text('Hey Dana'), findsOneWidget);
-    expect(find.text('Hey Dana'), findsOneWidget);
   });
 
   testWidgets('shows daily pick even when no browse candidates are available', (

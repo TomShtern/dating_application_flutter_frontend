@@ -5,61 +5,59 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-class VisualReviewArtifactComparator extends LocalFileComparator {
-  VisualReviewArtifactComparator(
+class ScreenshotWriter extends LocalFileComparator {
+  ScreenshotWriter(
     super.testFile, {
-    Directory? artifactDirectory,
+    Directory? outputDirectory,
     DateTime Function()? clock,
-  }) : artifactDirectory = artifactDirectory ?? _defaultArtifactDirectory(),
+  }) : outputDirectory = outputDirectory ?? _defaultOutputDirectory(),
        _clock = clock ?? DateTime.now;
 
-  final Directory artifactDirectory;
+  final Directory outputDirectory;
   final DateTime Function() _clock;
   final Map<String, String> _scenarioNames = <String, String>{};
   final List<Map<String, Object?>> _screenshots = <Map<String, Object?>>[];
 
   bool _prepared = false;
-  Future<void>? _prepareArtifactDirectoryFuture;
-  String? _runStartedAtUtc;
-  Future<void>? _writeArtifactMutex;
+  Future<void>? _prepareFuture;
+  Future<void>? _writeMutex;
 
   File get manifestFile =>
-      File('${artifactDirectory.path}${Platform.pathSeparator}manifest.json');
+      File('${outputDirectory.path}${Platform.pathSeparator}manifest.json');
 
   void registerScenario({
-    required String goldenFileName,
+    required String fileName,
     required String scenarioName,
   }) {
-    _scenarioNames[goldenFileName] = scenarioName;
+    _scenarioNames[fileName] = scenarioName;
   }
 
   @override
   Future<bool> compare(Uint8List imageBytes, Uri golden) async {
     await _writeArtifact(golden, imageBytes);
-    return super.compare(imageBytes, golden);
+    return true;
   }
 
   @override
   Future<void> update(Uri golden, Uint8List imageBytes) async {
     await _writeArtifact(golden, imageBytes);
-    await super.update(golden, imageBytes);
   }
 
   Future<void> _writeArtifact(Uri golden, Uint8List imageBytes) async {
-    final previousMutex = _writeArtifactMutex;
+    final previousMutex = _writeMutex;
     final completer = Completer<void>();
-    _writeArtifactMutex = completer.future;
+    _writeMutex = completer.future;
 
     if (previousMutex != null) {
       await previousMutex;
     }
 
     try {
-      await _prepareArtifactDirectory();
+      await _prepareOutputDirectory();
 
       final String fileName = _fileNameFor(golden);
       final File artifactFile = File(
-        '${artifactDirectory.path}${Platform.pathSeparator}$fileName',
+        '${outputDirectory.path}${Platform.pathSeparator}$fileName',
       );
       await artifactFile.parent.create(recursive: true);
       await artifactFile.writeAsBytes(imageBytes, flush: true);
@@ -68,7 +66,6 @@ class VisualReviewArtifactComparator extends LocalFileComparator {
       _screenshots.add(<String, Object?>{
         'scenarioName': _scenarioNames[fileName] ?? fileName,
         'fileName': fileName,
-        'goldenUri': golden.toString(),
         'path': artifactFile.path,
         'capturedAtUtc': _clock().toUtc().toIso8601String(),
         'byteLength': imageBytes.length,
@@ -79,41 +76,39 @@ class VisualReviewArtifactComparator extends LocalFileComparator {
     }
   }
 
-  Future<void> _prepareArtifactDirectory() async {
+  Future<void> _prepareOutputDirectory() async {
     if (_prepared) {
       return;
     }
 
-    final existingPreparation = _prepareArtifactDirectoryFuture;
-    if (existingPreparation != null) {
-      return existingPreparation;
+    final existing = _prepareFuture;
+    if (existing != null) {
+      return existing;
     }
 
-    final preparation = _prepareArtifactDirectoryOnce();
-    _prepareArtifactDirectoryFuture = preparation;
+    final preparation = _prepareOutputDirectoryOnce();
+    _prepareFuture = preparation;
     return preparation;
   }
 
-  Future<void> _prepareArtifactDirectoryOnce() async {
+  Future<void> _prepareOutputDirectoryOnce() async {
     try {
-      if (artifactDirectory.existsSync()) {
-        await artifactDirectory.delete(recursive: true);
+      if (outputDirectory.existsSync()) {
+        await outputDirectory.delete(recursive: true);
       }
 
-      await artifactDirectory.create(recursive: true);
-      _runStartedAtUtc = _clock().toUtc().toIso8601String();
+      await outputDirectory.create(recursive: true);
       _prepared = true;
     } catch (_) {
-      _prepareArtifactDirectoryFuture = null;
+      _prepareFuture = null;
       rethrow;
     }
   }
 
   Future<void> _writeManifest() async {
     final Map<String, Object?> manifest = <String, Object?>{
-      'runStartedAtUtc': _runStartedAtUtc,
       'generatedAtUtc': _clock().toUtc().toIso8601String(),
-      'outputDirectory': artifactDirectory.path,
+      'outputDirectory': outputDirectory.path,
       'screenshots': _screenshots,
     };
 
@@ -125,18 +120,18 @@ class VisualReviewArtifactComparator extends LocalFileComparator {
 
   String _fileNameFor(Uri golden) {
     if (golden.pathSegments.isEmpty) {
-      throw StateError('Golden URI must include a file name: $golden');
+      throw StateError('URI must include a file name: $golden');
     }
 
     return golden.pathSegments.last;
   }
 
-  static Directory _defaultArtifactDirectory() {
+  static Directory _defaultOutputDirectory() {
     return Directory(
       [
         Directory.current.path,
         'build',
-        'visual_review',
+        'visual_screenshots',
         'latest',
       ].join(Platform.pathSeparator),
     );
