@@ -7,9 +7,10 @@ enum _AppAsyncStateVariant { loading, empty, error }
 class AppAsyncState extends StatelessWidget {
   const AppAsyncState.loading({super.key, this.message = 'Loading…'})
     : onRetry = null,
+      onRefresh = null,
       _variant = _AppAsyncStateVariant.loading;
 
-  const AppAsyncState.empty({super.key, required this.message})
+  const AppAsyncState.empty({super.key, required this.message, this.onRefresh})
     : onRetry = null,
       _variant = _AppAsyncStateVariant.empty;
 
@@ -17,10 +18,12 @@ class AppAsyncState extends StatelessWidget {
     super.key,
     required this.message,
     required this.onRetry,
-  }) : _variant = _AppAsyncStateVariant.error;
+  }) : onRefresh = null,
+       _variant = _AppAsyncStateVariant.error;
 
   final String message;
   final VoidCallback? onRetry;
+  final VoidCallback? onRefresh;
   final _AppAsyncStateVariant _variant;
 
   @override
@@ -35,6 +38,11 @@ class AppAsyncState extends StatelessWidget {
       _AppAsyncStateVariant.loading => Icons.hourglass_bottom_rounded,
       _AppAsyncStateVariant.empty => Icons.inbox_outlined,
       _AppAsyncStateVariant.error => Icons.error_outline_rounded,
+    };
+    final iconColor = switch (_variant) {
+      _AppAsyncStateVariant.loading => colorScheme.onPrimaryContainer,
+      _AppAsyncStateVariant.empty => colorScheme.onSecondaryContainer,
+      _AppAsyncStateVariant.error => colorScheme.onErrorContainer,
     };
     final highlightColors = switch (_variant) {
       _AppAsyncStateVariant.loading => [
@@ -81,7 +89,7 @@ class AppAsyncState extends StatelessWidget {
                         child: Icon(
                           icon,
                           size: compact ? 24 : 32,
-                          color: colorScheme.onPrimaryContainer,
+                          color: iconColor,
                         ),
                       ),
                       SizedBox(height: compact ? 12 : 16),
@@ -100,14 +108,22 @@ class AppAsyncState extends StatelessWidget {
                         const SizedBox(height: 16),
                         const CircularProgressIndicator(),
                       ],
-                      if (_variant == _AppAsyncStateVariant.empty &&
-                          !compact) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          'Take a quick refresh when you want to check again.',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
+                      if (_variant == _AppAsyncStateVariant.empty) ...[
+                        if (onRefresh != null) ...[
+                          const SizedBox(height: 16),
+                          TextButton.icon(
+                            onPressed: onRefresh,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Refresh'),
+                          ),
+                        ] else if (!compact) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Check back later for updates.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
                       ],
                       if (_variant == _AppAsyncStateVariant.error &&
                           onRetry != null) ...[

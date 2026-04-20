@@ -5,8 +5,8 @@ import '../../models/standout.dart';
 import '../../shared/providers/selected_user_guard.dart' as user_guard;
 
 final standoutsProvider = FutureProvider<StandoutsSnapshot>((ref) async {
-  final currentUser = await user_guard.watchSelectedUser(ref);
   final apiClient = ref.watch(apiClientProvider);
+  final currentUser = await user_guard.watchSelectedUser(ref);
   return apiClient.getStandouts(userId: currentUser.id);
 });
 
@@ -19,7 +19,7 @@ class StandoutsController {
 
   final Ref _ref;
 
-  void refresh() {
-    _ref.invalidate(standoutsProvider);
+  Future<void> refresh() {
+    return _ref.refresh(standoutsProvider.future);
   }
 }

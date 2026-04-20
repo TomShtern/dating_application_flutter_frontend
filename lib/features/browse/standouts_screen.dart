@@ -33,7 +33,7 @@ class StandoutsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(24),
           child: standoutsState.when(
             data: (snapshot) => RefreshIndicator(
-              onRefresh: () async => controller.refresh(),
+              onRefresh: controller.refresh,
               child: ListView(
                 children: [
                   Card(
@@ -51,8 +51,9 @@ class StandoutsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   if (snapshot.standouts.isEmpty)
-                    const AppAsyncState.empty(
+                    AppAsyncState.empty(
                       message: 'No standouts are available right now.',
+                      onRefresh: controller.refresh,
                     )
                   else
                     ...snapshot.standouts.map(

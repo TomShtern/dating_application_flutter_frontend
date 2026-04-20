@@ -52,10 +52,8 @@ class StandoutsSnapshot {
   factory StandoutsSnapshot.fromJson(Map<String, dynamic> json) {
     return StandoutsSnapshot(
       standouts: (json['standouts'] as List<dynamic>? ?? const [])
-          .whereType<Object?>()
-          .map(
-            (item) => Standout.fromJson(Map<String, dynamic>.from(item as Map)),
-          )
+          .whereType<Map<String, dynamic>>()
+          .map(Standout.fromJson)
           .toList(growable: false),
       totalCandidates: (json['totalCandidates'] as num?)?.toInt() ?? 0,
       fromCache: json['fromCache'] as bool? ?? false,

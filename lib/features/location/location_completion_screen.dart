@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:collection/collection.dart';
 
 import '../../api/api_error.dart';
 import '../../models/location_metadata.dart';
@@ -18,13 +19,48 @@ class _LocationCompletionScreenState
     extends ConsumerState<LocationCompletionScreen> {
   final _cityController = TextEditingController();
   final _zipController = TextEditingController();
+  late final ProviderSubscription<AsyncValue<List<LocationCountry>>>
+  _countriesSubscription;
   bool _allowApproximate = true;
   bool _saving = false;
   String? _countryCode;
   String? _selectedCityLabel;
 
   @override
+  void initState() {
+    super.initState();
+    _countriesSubscription = ref
+        .listenManual<AsyncValue<List<LocationCountry>>>(
+          locationCountriesProvider,
+          (previous, next) {
+            final countries = next.maybeWhen(
+              data: (countries) => countries,
+              orElse: () => null,
+            );
+            if (countries == null || countries.isEmpty) {
+              return;
+            }
+
+            final availableCountries = countries
+                .where((c) => c.available)
+                .toList();
+            final nextCountryCode = _resolveInitialCountryCode(
+              availableCountries,
+            );
+            if (nextCountryCode != _countryCode) {
+              setState(() {
+                _countryCode = nextCountryCode;
+                _selectedCityLabel = null;
+              });
+            }
+          },
+          fireImmediately: true,
+        );
+  }
+
+  @override
   void dispose() {
+    _countriesSubscription.close();
     _cityController.dispose();
     _zipController.dispose();
     super.dispose();
@@ -52,9 +88,6 @@ class _LocationCompletionScreenState
               final availableCountries = countries
                   .where((country) => country.available)
                   .toList(growable: false);
-              final selectedCountry = _resolveSelectedCountry(
-                availableCountries,
-              );
 
               return ListView(
                 children: [
@@ -74,7 +107,7 @@ class _LocationCompletionScreenState
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
-                            initialValue: selectedCountry?.code,
+                            value: _countryCode,
                             decoration: const InputDecoration(
                               labelText: 'Country',
                             ),
@@ -219,22 +252,11 @@ class _LocationCompletionScreenState
     );
   }
 
-  LocationCountry? _resolveSelectedCountry(List<LocationCountry> countries) {
-    if (_countryCode != null) {
-      return countries
-          .where((country) => country.code == _countryCode)
-          .firstOrNull;
-    }
-
-    final defaultCountry = countries
-        .where((country) => country.defaultSelection)
-        .firstOrNull;
-    _countryCode =
-        defaultCountry?.code ??
-        (countries.isNotEmpty ? countries.first.code : null);
-    return countries
-        .where((country) => country.code == _countryCode)
-        .firstOrNull;
+  String? _resolveInitialCountryCode(List<LocationCountry> countries) {
+    final defaultCountry = countries.firstWhereOrNull(
+      (country) => country.defaultSelection,
+    );
+    return defaultCountry?.code ?? countries.firstOrNull?.code;
   }
 
   Future<void> _handleSave(BuildContext context) async {

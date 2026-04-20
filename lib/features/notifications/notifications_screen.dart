@@ -76,7 +76,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               Expanded(
                 child: notificationsState.when(
                   data: (notifications) => RefreshIndicator(
-                    onRefresh: () async => controller.refresh(),
+                    onRefresh: controller.refresh,
                     child: notifications.isEmpty
                         ? ListView(
                             children: [
@@ -84,6 +84,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                 message: unreadOnly
                                     ? 'No unread notifications right now.'
                                     : 'No notifications yet.',
+                                onRefresh: controller.refresh,
                               ),
                             ],
                           )

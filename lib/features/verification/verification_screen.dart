@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -108,11 +109,13 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                       const SizedBox(height: 8),
                       Text('Method: ${_startResult!.method}'),
                       Text('Contact: ${_startResult!.contact}'),
-                      const SizedBox(height: 12),
-                      SelectableText(
-                        _startResult!.devVerificationCode,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
+                      if (kDebugMode) ...[
+                        const SizedBox(height: 12),
+                        SelectableText(
+                          _startResult!.devVerificationCode,
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       TextField(
                         controller: _codeController,
@@ -183,7 +186,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       }
       setState(() {
         _startResult = result;
-        _codeController.text = result.devVerificationCode;
+        if (kDebugMode) {
+          _codeController.text = result.devVerificationCode;
+        }
       });
     } on ApiError catch (error) {
       if (!mounted) {

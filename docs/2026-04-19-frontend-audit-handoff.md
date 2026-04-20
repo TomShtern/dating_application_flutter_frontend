@@ -356,12 +356,12 @@ The backend exposes match quality, but the frontend has no way to surface compat
 
 The backend supports friend request flows, but there is no UI or provider implementation for them.
 
-### 14. Blocked-users management is missing
+### 14. Blocked-users management is incomplete
 
 **Type:** Partial feature
 **Severity:** P1
 
-Block actions exist, but there is no blocked-users screen and no clear unblock flow exposed to users.
+Block actions exist, but the blocked-users list and unblock flow are still incomplete in the normal UI.
 
 **Why this matters**
 

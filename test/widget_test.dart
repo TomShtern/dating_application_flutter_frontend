@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dating_application_1/app/app.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
+import 'package:flutter_dating_application_1/features/chat/conversation_thread_screen.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversations_screen.dart';
 import 'package:flutter_dating_application_1/features/chat/conversations_provider.dart';
@@ -86,6 +87,13 @@ void main() {
       age: 27,
       state: 'ACTIVE',
     );
+
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
 
     SharedPreferences.setMockInitialValues({
       SelectedUserStore.storageKey: jsonEncode(savedUser.toJson()),
@@ -193,16 +201,23 @@ void main() {
     expect(find.widgetWithText(AppBar, 'Conversations'), findsOneWidget);
 
     final openChatButton = find.widgetWithText(FilledButton, 'Open chat');
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       openChatButton,
-      200,
-      scrollable: conversationsScrollable(),
+      conversationsScrollable(),
+      const Offset(0, -100),
     );
-    await tester.drag(conversationsScrollable(), const Offset(0, -120));
     await tester.pumpAndSettle();
-    tester.widget<FilledButton>(openChatButton).onPressed!.call();
+    expect(
+      tester.widget<FilledButton>(openChatButton).onPressed,
+      isNotNull,
+      reason: 'Open chat button should be enabled',
+    );
+    await tester.ensureVisible(openChatButton);
+    await tester.pump();
+    await tester.tap(openChatButton);
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(AppBar, 'Noa'), findsOneWidget);
+    expect(find.byType(ConversationThreadScreen), findsOneWidget);
+    expect(find.text('Hey Dana'), findsOneWidget);
     expect(find.text('Hey Dana'), findsOneWidget);
   });
 

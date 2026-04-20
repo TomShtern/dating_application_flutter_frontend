@@ -10,8 +10,8 @@ import '../chat/conversations_provider.dart';
 import '../matches/matches_provider.dart';
 
 final browseProvider = FutureProvider<BrowseResponse>((ref) async {
-  final currentUser = await user_guard.watchSelectedUser(ref);
   final apiClient = ref.watch(apiClientProvider);
+  final currentUser = await user_guard.watchSelectedUser(ref);
   return apiClient.getBrowse(userId: currentUser.id);
 });
 
@@ -61,8 +61,8 @@ class BrowseController {
     return result;
   }
 
-  void refresh() {
-    _ref.invalidate(browseProvider);
+  Future<void> refresh() {
+    return _ref.refresh(browseProvider.future);
   }
 
   Future<UserSummary> _requireSelectedUser() async {

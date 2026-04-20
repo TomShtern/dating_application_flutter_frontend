@@ -655,20 +655,17 @@ class ApiClient {
         }
       }
 
-      final unlocked = _extractAchievementSnapshotItems(
-        map['unlocked'],
-        context: context,
-      );
-      if (unlocked.isNotEmpty) {
-        return unlocked;
-      }
-
-      final newlyUnlocked = _extractAchievementSnapshotItems(
-        map['newlyUnlocked'],
-        context: context,
-      );
-      if (map.containsKey('unlocked') || map.containsKey('newlyUnlocked')) {
-        return newlyUnlocked;
+      if (map.containsKey('unlocked') ||
+          map.containsKey('newlyUnlocked') ||
+          map.containsKey('unlockedCount') ||
+          map.containsKey('newlyUnlockedCount')) {
+        return _combineAchievementSnapshotItems(
+          _extractAchievementSnapshotItems(map['unlocked'], context: context),
+          _extractAchievementSnapshotItems(
+            map['newlyUnlocked'],
+            context: context,
+          ),
+        );
       }
     }
 
@@ -718,6 +715,55 @@ class ApiClient {
           return <String, dynamic>{...map, 'unlocked': true};
         })
         .toList(growable: false);
+  }
+
+  List<Map<String, dynamic>> _combineAchievementSnapshotItems(
+    List<Map<String, dynamic>> unlocked,
+    List<Map<String, dynamic>> newlyUnlocked,
+  ) {
+    if (unlocked.isEmpty && newlyUnlocked.isEmpty) {
+      return const <Map<String, dynamic>>[];
+    }
+
+    final seen = <String>{};
+    final combined = <Map<String, dynamic>>[];
+
+    for (final item in [...unlocked, ...newlyUnlocked]) {
+      final key = _achievementSnapshotItemKey(item);
+      if (seen.add(key)) {
+        combined.add(item);
+      }
+    }
+
+    return combined;
+  }
+
+  String _achievementSnapshotItemKey(Map<String, dynamic> item) {
+    for (final keyName in const [
+      'id',
+      'achievementId',
+      'achievementKey',
+      'title',
+      'achievementName',
+      'name',
+    ]) {
+      final value = item[keyName];
+      if (value is String) {
+        final trimmed = value.trim();
+        if (trimmed.isNotEmpty) {
+          return '$keyName:$trimmed';
+        }
+      } else if (value != null) {
+        return '$keyName:$value';
+      }
+    }
+
+    final entries =
+        item.entries
+            .map((entry) => '${entry.key}=${entry.value}')
+            .toList(growable: false)
+          ..sort();
+    return entries.join('|');
   }
 
   String _extractMessage(dynamic payload, {required String fallback}) {

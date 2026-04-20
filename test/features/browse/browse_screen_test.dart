@@ -184,7 +184,8 @@ void main() {
     final safetyActionsButton = find.byTooltip('Safety actions');
     await tester.ensureVisible(safetyActionsButton);
     await tester.pumpAndSettle();
-    await tester.tap(safetyActionsButton, warnIfMissed: false);
+    expect(safetyActionsButton, findsOneWidget);
+    await tester.tap(safetyActionsButton);
     await tester.pumpAndSettle();
 
     expect(find.text('Block user'), findsOneWidget);

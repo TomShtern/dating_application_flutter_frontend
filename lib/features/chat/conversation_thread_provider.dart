@@ -12,8 +12,8 @@ final conversationThreadProvider =
       ref,
       conversationId,
     ) async {
-      final currentUser = await user_guard.watchSelectedUser(ref);
       final apiClient = ref.watch(apiClientProvider);
+      final currentUser = await user_guard.watchSelectedUser(ref);
       return apiClient.getMessages(
         conversationId: conversationId,
         userId: currentUser.id,
@@ -34,8 +34,8 @@ class ConversationThreadController {
   final Ref _ref;
   final String _conversationId;
 
-  void refresh() {
-    _ref.invalidate(conversationThreadProvider(_conversationId));
+  Future<void> refresh() {
+    return _ref.refresh(conversationThreadProvider(_conversationId).future);
   }
 
   Future<MessageDto> sendMessage(String content) async {

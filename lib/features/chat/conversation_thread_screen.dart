@@ -144,9 +144,16 @@ class _ConversationThreadScreenState
                 child: threadState.when(
                   data: (messages) {
                     if (messages.isEmpty) {
-                      return const AppAsyncState.empty(
+                      return AppAsyncState.empty(
                         message:
                             'No messages yet. Say hello to start the conversation.',
+                        onRefresh: () => ref
+                            .read(
+                              conversationThreadControllerProvider(
+                                widget.conversation.id,
+                              ),
+                            )
+                            .refresh(),
                       );
                     }
 
@@ -335,12 +342,12 @@ class _MessageList extends StatelessWidget {
   final List<MessageDto> messages;
   final String currentUserId;
   final String otherUserName;
-  final VoidCallback onRefresh;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      onRefresh: () async => onRefresh(),
+      onRefresh: onRefresh,
       child: ListView.separated(
         controller: scrollController,
         itemCount: messages.length,

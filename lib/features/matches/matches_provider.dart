@@ -6,8 +6,8 @@ import '../../models/user_summary.dart';
 import '../../shared/providers/selected_user_guard.dart' as user_guard;
 
 final matchesProvider = FutureProvider<MatchesResponse>((ref) async {
-  final currentUser = await user_guard.watchSelectedUser(ref);
   final apiClient = ref.watch(apiClientProvider);
+  final currentUser = await user_guard.watchSelectedUser(ref);
   return apiClient.getMatches(userId: currentUser.id);
 });
 
@@ -20,8 +20,8 @@ class MatchesController {
 
   final Ref _ref;
 
-  void refresh() {
-    _ref.invalidate(matchesProvider);
+  Future<void> refresh() {
+    return _ref.refresh(matchesProvider.future);
   }
 
   Future<UserSummary> requireSelectedUser() async {

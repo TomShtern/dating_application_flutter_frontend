@@ -38,10 +38,12 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
           padding: const EdgeInsets.all(24),
           child: blockedUsersState.when(
             data: (users) => RefreshIndicator(
-              onRefresh: () async => controller.refresh(),
+              onRefresh: controller.refresh,
               child: users.isEmpty
                   ? ListView(
                       children: const [
+                        // The empty state stays simple here because the
+                        // surrounding RefreshIndicator already exposes a reload.
                         AppAsyncState.empty(
                           message: 'You have not blocked anyone right now.',
                         ),
@@ -96,6 +98,13 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to unblock this user right now.')),
+      );
     } finally {
       if (mounted) {
         setState(() {

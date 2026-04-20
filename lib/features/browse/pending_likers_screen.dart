@@ -33,12 +33,13 @@ class PendingLikersScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(24),
           child: likersState.when(
             data: (likers) => RefreshIndicator(
-              onRefresh: () async => controller.refresh(),
+              onRefresh: controller.refresh,
               child: likers.isEmpty
                   ? ListView(
-                      children: const [
+                      children: [
                         AppAsyncState.empty(
                           message: 'No pending likes are waiting right now.',
+                          onRefresh: controller.refresh,
                         ),
                       ],
                     )

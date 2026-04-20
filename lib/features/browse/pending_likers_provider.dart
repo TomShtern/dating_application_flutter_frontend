@@ -5,8 +5,8 @@ import '../../models/pending_liker.dart';
 import '../../shared/providers/selected_user_guard.dart' as user_guard;
 
 final pendingLikersProvider = FutureProvider<List<PendingLiker>>((ref) async {
-  final currentUser = await user_guard.watchSelectedUser(ref);
   final apiClient = ref.watch(apiClientProvider);
+  final currentUser = await user_guard.watchSelectedUser(ref);
   return apiClient.getPendingLikers(userId: currentUser.id);
 });
 
@@ -21,7 +21,7 @@ class PendingLikersController {
 
   final Ref _ref;
 
-  void refresh() {
-    _ref.invalidate(pendingLikersProvider);
+  Future<void> refresh() {
+    return _ref.refresh(pendingLikersProvider.future);
   }
 }

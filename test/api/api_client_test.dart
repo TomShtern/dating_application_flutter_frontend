@@ -212,6 +212,48 @@ void main() {
     },
   );
 
+  test(
+    'getAchievements merges unlocked and newly unlocked achievements without duplicates',
+    () async {
+      final recorder = _RequestRecorder();
+      const userId = '11111111-1111-1111-1111-111111111111';
+      final client = ApiClient(
+        dio: _buildTestDio(
+          recorder: recorder,
+          responder: (options) => {
+            'unlocked': [
+              {
+                'id': 'achievement-1',
+                'achievementName': 'Conversation Starter',
+                'description': 'Sent the first message',
+              },
+            ],
+            'newlyUnlocked': [
+              {
+                'id': 'achievement-1',
+                'achievementName': 'Conversation Starter',
+                'description': 'Sent the first message',
+              },
+              {
+                'id': 'achievement-2',
+                'achievementName': 'First Match',
+                'description': 'Matched with someone new',
+              },
+            ],
+          },
+        ),
+      );
+
+      final achievements = await client.getAchievements(userId: userId);
+
+      expect(achievements, hasLength(2));
+      expect(achievements.map((achievement) => achievement.title).toList(), [
+        'Conversation Starter',
+        'First Match',
+      ]);
+    },
+  );
+
   test('getBlockedUsers unwraps the blockedUsers payload', () async {
     final recorder = _RequestRecorder();
     const userId = '11111111-1111-1111-1111-111111111111';

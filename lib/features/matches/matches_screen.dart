@@ -50,16 +50,17 @@ class MatchesScreen extends ConsumerWidget {
                 child: matchesState.when(
                   data: (response) {
                     if (response.matches.isEmpty) {
-                      return const AppAsyncState.empty(
+                      return AppAsyncState.empty(
                         message:
                             'No matches yet. Keep exploring to find mutual likes.',
+                        onRefresh: () =>
+                            ref.read(matchesControllerProvider).refresh(),
                       );
                     }
 
                     return RefreshIndicator(
-                      onRefresh: () async {
-                        ref.read(matchesControllerProvider).refresh();
-                      },
+                      onRefresh: () =>
+                          ref.read(matchesControllerProvider).refresh(),
                       child: ListView.separated(
                         itemCount: response.matches.length,
                         separatorBuilder: (context, index) =>

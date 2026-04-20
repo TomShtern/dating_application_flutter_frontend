@@ -332,6 +332,7 @@ class _DiscoveryHero extends StatelessWidget {
         prominent: true,
       ),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Positioned(
             top: -28,
@@ -491,13 +492,13 @@ class _BrowseContent extends StatelessWidget {
   final VoidCallback onOpenPendingLikers;
   final VoidCallback onOpenStandouts;
   final VoidCallback onFixLocation;
-  final VoidCallback onRefresh;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     if (browse.candidates.isEmpty) {
       return RefreshIndicator(
-        onRefresh: () async => onRefresh(),
+        onRefresh: onRefresh,
         child: ListView(
           children: [
             if (browse.dailyPick case final dailyPick?) ...[
@@ -527,7 +528,7 @@ class _BrowseContent extends StatelessWidget {
       children: [
         Expanded(
           child: RefreshIndicator(
-            onRefresh: () async => onRefresh(),
+            onRefresh: onRefresh,
             child: ListView(
               children: [
                 if (browse.dailyPick case final dailyPick?) ...[
@@ -862,6 +863,7 @@ class _CandidateCard extends StatelessWidget {
                 prominent: true,
               ),
               child: Stack(
+                clipBehavior: Clip.none,
                 children: [
                   Positioned(
                     top: -36,

@@ -51,16 +51,17 @@ class ConversationsScreen extends ConsumerWidget {
                 child: conversationsState.when(
                   data: (conversations) {
                     if (conversations.isEmpty) {
-                      return const AppAsyncState.empty(
+                      return AppAsyncState.empty(
                         message:
                             'No conversations yet. Once you match and message, they will show up here.',
+                        onRefresh: () =>
+                            ref.read(conversationsControllerProvider).refresh(),
                       );
                     }
 
                     return RefreshIndicator(
-                      onRefresh: () async {
-                        ref.read(conversationsControllerProvider).refresh();
-                      },
+                      onRefresh: () =>
+                          ref.read(conversationsControllerProvider).refresh(),
                       child: ListView.separated(
                         itemCount: conversations.length,
                         separatorBuilder: (context, index) =>

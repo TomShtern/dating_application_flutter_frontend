@@ -10,8 +10,13 @@ class BlockedUserSummary {
   final String statusLabel;
 
   factory BlockedUserSummary.fromJson(Map<String, dynamic> json) {
+    final userId = json['userId'] as String?;
+    if (userId == null || userId.trim().isEmpty) {
+      throw StateError('Missing userId in BlockedUserSummary.fromJson');
+    }
+
     return BlockedUserSummary(
-      userId: json['userId'] as String? ?? '',
+      userId: userId,
       name: json['name'] as String? ?? 'Unknown user',
       statusLabel: json['statusLabel'] as String? ?? 'Blocked profile',
     );

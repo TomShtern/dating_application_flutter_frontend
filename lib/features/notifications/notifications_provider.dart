@@ -12,9 +12,9 @@ final notificationsUnreadOnlyProvider =
 final notificationsProvider = FutureProvider<List<NotificationItem>>((
   ref,
 ) async {
-  final currentUser = await user_guard.watchSelectedUser(ref);
-  final unreadOnly = ref.watch(notificationsUnreadOnlyProvider);
   final apiClient = ref.watch(apiClientProvider);
+  final unreadOnly = ref.watch(notificationsUnreadOnlyProvider);
+  final currentUser = await user_guard.watchSelectedUser(ref);
   return apiClient.getNotifications(
     userId: currentUser.id,
     unreadOnly: unreadOnly,
@@ -52,8 +52,8 @@ class NotificationsController {
     return updatedCount;
   }
 
-  void refresh() {
-    _ref.invalidate(notificationsProvider);
+  Future<void> refresh() {
+    return _ref.refresh(notificationsProvider.future);
   }
 
   void setUnreadOnly(bool value) {

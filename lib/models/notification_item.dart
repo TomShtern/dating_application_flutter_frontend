@@ -18,6 +18,9 @@ class NotificationItem {
   final Map<String, String> data;
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
+    final rawData = json['data'];
+    final data = rawData is Map ? rawData : const <dynamic, dynamic>{};
+
     return NotificationItem(
       id: json['id'] as String? ?? '',
       type: json['type'] as String? ?? 'UNKNOWN',
@@ -25,9 +28,9 @@ class NotificationItem {
       message: json['message'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
       isRead: json['isRead'] as bool? ?? false,
-      data:
-          (json['data'] as Map<dynamic, dynamic>? ?? const <dynamic, dynamic>{})
-              .map((key, value) => MapEntry(key.toString(), value.toString())),
+      data: data.map(
+        (key, value) => MapEntry(key.toString(), value.toString()),
+      ),
     );
   }
 }
