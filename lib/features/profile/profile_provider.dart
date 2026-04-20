@@ -6,7 +6,7 @@ import '../../models/user_detail.dart';
 import '../../shared/providers/selected_user_guard.dart' as user_guard;
 
 final profileProvider = FutureProvider<UserDetail>((ref) async {
-  final currentUser = await user_guard.requireSelectedUser(ref);
+  final currentUser = await user_guard.watchSelectedUser(ref);
   final apiClient = ref.watch(apiClientProvider);
   return apiClient.getUserDetail(
     userId: currentUser.id,
@@ -18,7 +18,7 @@ final otherUserProfileProvider = FutureProvider.family<UserDetail, String>((
   ref,
   userId,
 ) async {
-  final currentUser = await user_guard.requireSelectedUser(ref);
+  final currentUser = await user_guard.watchSelectedUser(ref);
   final apiClient = ref.watch(apiClientProvider);
   return apiClient.getUserDetail(userId: userId, actingUserId: currentUser.id);
 });

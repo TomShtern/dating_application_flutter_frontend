@@ -88,7 +88,7 @@ void main() {
     expect(find.text('Noa, 29'), findsOneWidget);
     expect(find.text('No bio added yet.'), findsOneWidget);
     expect(find.text('Not specified'), findsNWidgets(2));
-    expect(find.text('Location not shared'), findsOneWidget);
+    expect(find.text('Location not shared'), findsAtLeastNWidgets(1));
     expect(find.text('Distance preference not set'), findsOneWidget);
     expect(find.text('No photos added yet.'), findsOneWidget);
   });

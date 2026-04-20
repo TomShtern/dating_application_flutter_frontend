@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dating_application_1/app/app.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_provider.dart';
+import 'package:flutter_dating_application_1/features/chat/conversations_screen.dart';
 import 'package:flutter_dating_application_1/features/chat/conversations_provider.dart';
 import 'package:flutter_dating_application_1/features/home/backend_health_provider.dart';
 import 'package:flutter_dating_application_1/features/matches/matches_provider.dart';
@@ -26,6 +27,11 @@ import 'package:flutter_dating_application_1/shared/persistence/shared_preferenc
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  Finder conversationsScrollable() => find.descendant(
+    of: find.byType(ConversationsScreen),
+    matching: find.byType(Scrollable),
+  );
 
   testWidgets('shows the dev user picker when no dev user is persisted', (
     WidgetTester tester,
@@ -170,6 +176,8 @@ void main() {
     expect(find.widgetWithText(AppBar, 'Discover'), findsOneWidget);
     expect(find.textContaining('Browsing as Dana'), findsOneWidget);
     expect(find.text('Today\'s daily pick'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Noa'), 200);
+    await tester.pumpAndSettle();
     expect(find.text('Noa'), findsOneWidget);
     expect(find.text('Like'), findsOneWidget);
     expect(find.text('Pass'), findsOneWidget);
@@ -182,9 +190,17 @@ void main() {
 
     await tester.tap(find.text('Chats'));
     await tester.pumpAndSettle();
-    expect(find.text('Conversations'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'Conversations'), findsOneWidget);
 
-    await tester.tap(find.text('Noa'));
+    final openChatButton = find.widgetWithText(FilledButton, 'Open chat');
+    await tester.scrollUntilVisible(
+      openChatButton,
+      200,
+      scrollable: conversationsScrollable(),
+    );
+    await tester.drag(conversationsScrollable(), const Offset(0, -120));
+    await tester.pumpAndSettle();
+    tester.widget<FilledButton>(openChatButton).onPressed!.call();
     await tester.pumpAndSettle();
     expect(find.widgetWithText(AppBar, 'Noa'), findsOneWidget);
     expect(find.text('Hey Dana'), findsOneWidget);
@@ -248,6 +264,13 @@ void main() {
 
     expect(find.text('Today\'s daily pick'), findsOneWidget);
     expect(find.text('Maya, 30'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text(
+        'No candidates are available right now. Try refreshing in a bit.',
+      ),
+      200,
+    );
+    await tester.pumpAndSettle();
     expect(
       find.text(
         'No candidates are available right now. Try refreshing in a bit.',

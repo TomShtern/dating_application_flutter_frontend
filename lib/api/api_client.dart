@@ -2,18 +2,24 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/app_config.dart';
+import '../models/blocked_user_summary.dart';
 import '../models/browse_response.dart';
 import '../models/conversation_summary.dart';
 import '../models/health_status.dart';
 import '../models/like_result.dart';
+import '../models/location_metadata.dart';
 import '../models/message_dto.dart';
 import '../models/matches_response.dart';
 import '../models/achievement_summary.dart';
+import '../models/notification_item.dart';
+import '../models/pending_liker.dart';
 import '../models/profile_update_request.dart';
+import '../models/standout.dart';
 import '../models/undo_swipe_result.dart';
 import '../models/user_stats.dart';
 import '../models/user_detail.dart';
 import '../models/user_summary.dart';
+import '../models/verification_result.dart';
 import 'api_endpoints.dart';
 import 'api_error.dart';
 import 'api_headers.dart';
@@ -117,6 +123,82 @@ class ApiClient {
         ApiEndpoints.updateProfile(userId),
         data: request.toJson(),
         options: Options(extra: {'userId': userId}),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<List<LocationCountry>> getLocationCountries() async {
+    try {
+      final response = await _dio.get<dynamic>(ApiEndpoints.locationCountries);
+      final payload = _expectList(
+        response.data,
+        context: 'loading location countries',
+      );
+
+      return payload
+          .map(
+            (item) => LocationCountry.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(growable: false);
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<List<LocationCity>> getLocationCities({
+    String? countryCode,
+    String query = '',
+    int limit = 10,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.locationCities,
+        queryParameters: {
+          if (countryCode != null && countryCode.isNotEmpty)
+            'countryCode': countryCode,
+          if (query.isNotEmpty) 'query': query,
+          'limit': limit,
+        },
+      );
+      final payload = _expectList(
+        response.data,
+        context: 'loading location cities',
+      );
+
+      return payload
+          .map(
+            (item) =>
+                LocationCity.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList(growable: false);
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<ResolvedLocation> resolveLocation({
+    required String countryCode,
+    required String cityName,
+    String? zipCode,
+    bool allowApproximate = false,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.resolveLocation,
+        data: {
+          'countryCode': countryCode,
+          'cityName': cityName,
+          if (zipCode != null && zipCode.isNotEmpty) 'zipCode': zipCode,
+          'allowApproximate': allowApproximate,
+        },
+      );
+
+      return ResolvedLocation.fromJson(
+        _expectMap(response.data, context: 'resolving a location selection'),
       );
     } on DioException catch (error) {
       throw _toApiError(error);
@@ -315,6 +397,27 @@ class ApiClient {
     }
   }
 
+  Future<List<BlockedUserSummary>> getBlockedUsers({
+    required String userId,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.blockedUsers(userId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      final payload = _extractWrappedList(
+        response.data,
+        key: 'blockedUsers',
+        context: 'loading blocked users',
+      );
+
+      return payload.map(BlockedUserSummary.fromJson).toList(growable: false);
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
   Future<List<AchievementSummary>> getAchievements({
     required String userId,
   }) async {
@@ -324,18 +427,144 @@ class ApiClient {
         options: Options(extra: {'userId': userId}),
       );
 
-      final payload = _expectAchievementsList(
+      final payload = _extractAchievementItems(
         response.data,
         context: 'loading achievements',
       );
 
+      return payload.map(AchievementSummary.fromJson).toList(growable: false);
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<List<PendingLiker>> getPendingLikers({required String userId}) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.pendingLikers(userId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      final payload = _extractWrappedList(
+        response.data,
+        key: 'pendingLikers',
+        context: 'loading people who liked you',
+      );
+
+      return payload.map(PendingLiker.fromJson).toList(growable: false);
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<StandoutsSnapshot> getStandouts({required String userId}) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.standouts(userId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return StandoutsSnapshot.fromJson(
+        _expectMap(response.data, context: 'loading standouts'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<List<NotificationItem>> getNotifications({
+    required String userId,
+    bool unreadOnly = false,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.notifications(userId),
+        queryParameters: {'unreadOnly': unreadOnly},
+        options: Options(extra: {'userId': userId}),
+      );
+
+      final payload = _expectList(
+        response.data,
+        context: 'loading notifications',
+      );
+
       return payload
           .map(
-            (item) => AchievementSummary.fromJson(
+            (item) => NotificationItem.fromJson(
               Map<String, dynamic>.from(item as Map),
             ),
           )
           .toList(growable: false);
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<void> markNotificationRead({
+    required String userId,
+    required String notificationId,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        ApiEndpoints.markNotificationRead(userId, notificationId),
+        options: Options(extra: {'userId': userId}),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<int> markAllNotificationsRead({required String userId}) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.markAllNotificationsRead(userId),
+        options: Options(extra: {'userId': userId}),
+      );
+      final payload = _expectMap(
+        response.data,
+        context: 'marking all notifications as read',
+      );
+
+      return (payload['updatedCount'] as num?)?.toInt() ?? 0;
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<VerificationStartResult> startVerification({
+    required String userId,
+    required String method,
+    required String contact,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.startVerification(userId),
+        data: {'method': method, 'contact': contact},
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return VerificationStartResult.fromJson(
+        _expectMap(response.data, context: 'starting verification'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<VerificationConfirmationResult> confirmVerification({
+    required String userId,
+    required String verificationCode,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.confirmVerification(userId),
+        data: {'verificationCode': verificationCode},
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return VerificationConfirmationResult.fromJson(
+        _expectMap(response.data, context: 'confirming verification'),
+      );
     } on DioException catch (error) {
       throw _toApiError(error);
     }
@@ -407,25 +636,88 @@ class ApiClient {
     return payload;
   }
 
-  List<dynamic> _expectAchievementsList(
+  List<Map<String, dynamic>> _extractAchievementItems(
     dynamic payload, {
     required String context,
   }) {
     if (payload is List) {
-      return payload;
+      return payload
+          .map((item) => _expectMap(item, context: context))
+          .toList(growable: false);
     }
 
     if (payload is Map) {
       final map = Map<String, dynamic>.from(payload);
       for (final key in const ['achievements', 'items', 'content', 'results']) {
         final value = map[key];
-        if (value is List) {
-          return value;
+        if (value != null) {
+          return _extractAchievementItems(value, context: context);
         }
+      }
+
+      final unlocked = _extractAchievementSnapshotItems(
+        map['unlocked'],
+        context: context,
+      );
+      if (unlocked.isNotEmpty) {
+        return unlocked;
+      }
+
+      final newlyUnlocked = _extractAchievementSnapshotItems(
+        map['newlyUnlocked'],
+        context: context,
+      );
+      if (map.containsKey('unlocked') || map.containsKey('newlyUnlocked')) {
+        return newlyUnlocked;
       }
     }
 
     throw ApiError(message: 'Unexpected response while $context.');
+  }
+
+  List<Map<String, dynamic>> _extractWrappedList(
+    dynamic payload, {
+    required String key,
+    required String context,
+  }) {
+    if (payload is List) {
+      return payload
+          .map((item) => _expectMap(item, context: context))
+          .toList(growable: false);
+    }
+
+    if (payload is Map) {
+      final map = _expectMap(payload, context: context);
+      return _expectList(map[key], context: context)
+          .map((item) => _expectMap(item, context: context))
+          .toList(growable: false);
+    }
+
+    throw ApiError(message: 'Unexpected response while $context.');
+  }
+
+  List<Map<String, dynamic>> _extractAchievementSnapshotItems(
+    dynamic payload, {
+    required String context,
+  }) {
+    if (payload == null) {
+      return const <Map<String, dynamic>>[];
+    }
+
+    if (payload is! List) {
+      throw ApiError(message: 'Unexpected response while $context.');
+    }
+
+    return payload
+        .map((item) {
+          final map = _expectMap(item, context: context);
+          if (map['unlocked'] is bool) {
+            return map;
+          }
+
+          return <String, dynamic>{...map, 'unlocked': true};
+        })
+        .toList(growable: false);
   }
 
   String _extractMessage(dynamic payload, {required String fallback}) {

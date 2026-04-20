@@ -9,6 +9,7 @@ import '../../models/message_dto.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/user_avatar.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'conversation_thread_provider.dart';
@@ -85,7 +86,13 @@ class _ConversationThreadScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.conversation.otherUserName),
+        title: Row(
+          children: [
+            UserAvatar(name: widget.conversation.otherUserName, radius: 16),
+            const SizedBox(width: 12),
+            Expanded(child: Text(widget.conversation.otherUserName)),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'View profile',
@@ -150,6 +157,13 @@ class _ConversationThreadScreenState
                       messages: messages,
                       currentUserId: widget.currentUser.id,
                       otherUserName: widget.conversation.otherUserName,
+                      onRefresh: () => ref
+                          .read(
+                            conversationThreadControllerProvider(
+                              widget.conversation.id,
+                            ),
+                          )
+                          .refresh(),
                     );
                   },
                   loading: () =>
@@ -286,14 +300,23 @@ class _ConversationThreadScreenState
       return;
     }
 
+    final isInitialAutoScroll = _lastAutoScrolledMessageCount == -1;
     _lastAutoScrolledMessageCount = messageCount;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_messagesScrollController.hasClients) {
         return;
       }
 
-      _messagesScrollController.jumpTo(
-        _messagesScrollController.position.maxScrollExtent,
+      final position = _messagesScrollController.position;
+      final isNearLatest = position.maxScrollExtent - position.pixels < 80;
+      if (!isInitialAutoScroll && !isNearLatest && messageCount > 1) {
+        return;
+      }
+
+      _messagesScrollController.animateTo(
+        position.maxScrollExtent,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
       );
     });
   }
@@ -305,54 +328,61 @@ class _MessageList extends StatelessWidget {
     required this.messages,
     required this.currentUserId,
     required this.otherUserName,
+    required this.onRefresh,
   });
 
   final ScrollController scrollController;
   final List<MessageDto> messages;
   final String currentUserId;
   final String otherUserName;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      controller: scrollController,
-      itemCount: messages.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final message = messages[index];
-        final isOutgoing = message.senderId == currentUserId;
+    return RefreshIndicator(
+      onRefresh: () async => onRefresh(),
+      child: ListView.separated(
+        controller: scrollController,
+        itemCount: messages.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final message = messages[index];
+          final isOutgoing = message.senderId == currentUserId;
 
-        return Align(
-          alignment: isOutgoing ? Alignment.centerRight : Alignment.centerLeft,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320),
-            child: Card(
-              color: isOutgoing
-                  ? Theme.of(context).colorScheme.primaryContainer
-                  : null,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isOutgoing ? 'You' : otherUserName,
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(message.content),
-                    const SizedBox(height: 8),
-                    Text(
-                      formatDateTimeStamp(message.sentAt),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+          return Align(
+            alignment: isOutgoing
+                ? Alignment.centerRight
+                : Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: Card(
+                color: isOutgoing
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isOutgoing ? 'You' : otherUserName,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(message.content),
+                      const SizedBox(height: 8),
+                      Text(
+                        formatDateTimeStamp(message.sentAt),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

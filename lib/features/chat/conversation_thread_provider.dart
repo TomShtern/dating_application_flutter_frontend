@@ -12,7 +12,7 @@ final conversationThreadProvider =
       ref,
       conversationId,
     ) async {
-      final currentUser = await user_guard.requireSelectedUser(ref);
+      final currentUser = await user_guard.watchSelectedUser(ref);
       final apiClient = ref.watch(apiClientProvider);
       return apiClient.getMessages(
         conversationId: conversationId,

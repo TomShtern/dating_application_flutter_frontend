@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/profile_update_request.dart';
 import '../../models/user_detail.dart';
+import '../location/location_completion_screen.dart';
 import 'profile_provider.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late final TextEditingController _genderController;
   late final TextEditingController _interestedInController;
   late final TextEditingController _maxDistanceController;
+  late final TextEditingController _minAgeController;
+  late final TextEditingController _maxAgeController;
+  late final TextEditingController _heightController;
   bool _isSaving = false;
 
   @override
@@ -38,6 +42,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
           ? widget.initialDetail.maxDistanceKm.toString()
           : '',
     );
+    _minAgeController = TextEditingController();
+    _maxAgeController = TextEditingController();
+    _heightController = TextEditingController();
   }
 
   @override
@@ -46,6 +53,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _genderController.dispose();
     _interestedInController.dispose();
     _maxDistanceController.dispose();
+    _minAgeController.dispose();
+    _maxAgeController.dispose();
+    _heightController.dispose();
     super.dispose();
   }
 
@@ -53,6 +63,13 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Edit profile')),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        child: FilledButton(
+          onPressed: _isSaving ? null : _handleSave,
+          child: Text(_isSaving ? 'Saving…' : 'Save changes'),
+        ),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -60,7 +77,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             padding: const EdgeInsets.all(24),
             children: [
               Text(
-                'Update the profile details currently surfaced in the mobile app. Leave a field blank if you want it to stay unspecified.',
+                'Update the profile details currently surfaced in the mobile app. Leave a field blank if you want it omitted from the update payload.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
@@ -141,11 +158,61 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _isSaving ? null : _handleSave,
-                child: Text(_isSaving ? 'Saving…' : 'Save changes'),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _minAgeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Minimum preferred age',
+                  hintText: '25',
+                ),
+                validator: _validatePositiveInteger,
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _maxAgeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Maximum preferred age',
+                  hintText: '35',
+                ),
+                validator: _validatePositiveInteger,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _heightController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Height (cm)',
+                  hintText: '172',
+                ),
+                validator: _validatePositiveInteger,
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  leading: const Icon(Icons.location_on_outlined),
+                  title: const Text('Update location'),
+                  subtitle: Text(
+                    widget.initialDetail.approximateLocation.trim().isEmpty
+                        ? 'No location saved yet.'
+                        : 'Current: ${widget.initialDetail.approximateLocation}',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const LocationCompletionScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -164,10 +231,13 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     });
 
     final request = ProfileUpdateRequest(
-      bio: _bioController.text.trim(),
-      gender: _normalizeGender(_genderController.text),
-      interestedIn: _parseInterestedIn(_interestedInController.text),
-      maxDistanceKm: int.tryParse(_maxDistanceController.text.trim()) ?? 0,
+      bio: _trimmedOrNull(_bioController.text),
+      gender: _normalizedOrNull(_genderController.text),
+      interestedIn: _interestedInOrNull(_interestedInController.text),
+      maxDistanceKm: _parseOptionalInt(_maxDistanceController.text),
+      minAge: _parseOptionalInt(_minAgeController.text),
+      maxAge: _parseOptionalInt(_maxAgeController.text),
+      heightCm: _parseOptionalInt(_heightController.text),
     );
 
     try {
@@ -202,6 +272,43 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       }
     }
   }
+}
+
+String? _validatePositiveInteger(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return null;
+  }
+
+  final parsed = int.tryParse(value.trim());
+  if (parsed == null || parsed <= 0) {
+    return 'Please enter a valid positive number.';
+  }
+
+  return null;
+}
+
+String? _trimmedOrNull(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+String? _normalizedOrNull(String value) {
+  final normalized = _normalizeGender(value);
+  return normalized.isEmpty ? null : normalized;
+}
+
+List<String>? _interestedInOrNull(String value) {
+  final interestedIn = _parseInterestedIn(value);
+  return interestedIn.isEmpty ? null : interestedIn;
+}
+
+int? _parseOptionalInt(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+
+  return int.tryParse(trimmed);
 }
 
 List<String> _parseInterestedIn(String? value) {

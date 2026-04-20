@@ -36,6 +36,13 @@ void main() {
     return SharedPreferences.getInstance();
   }
 
+  Finder settingsScrollable() {
+    return find.descendant(
+      of: find.byType(SettingsScreen),
+      matching: find.byType(Scrollable),
+    );
+  }
+
   testWidgets(
     'renders the current user, theme controls, and switch user action',
     (WidgetTester tester) async {
@@ -52,10 +59,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(AppBar, 'Settings'), findsOneWidget);
+      expect(find.text('Current dev session'), findsOneWidget);
+      expect(find.text('Signed in as Dana'), findsOneWidget);
       expect(find.text('Dana'), findsOneWidget);
       expect(find.text('Switch user'), findsOneWidget);
       expect(find.text('View stats'), findsOneWidget);
       expect(find.text('View achievements'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Use system theme'),
+        200,
+        scrollable: settingsScrollable(),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('Use system theme'), findsOneWidget);
       expect(find.text('Light'), findsOneWidget);
       expect(find.text('Dark'), findsOneWidget);
@@ -78,8 +93,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await tester.scrollUntilVisible(
+        find.text('Dark'),
+        200,
+        scrollable: settingsScrollable(),
+      );
+      await tester.pumpAndSettle();
       final darkOption = find.text('Dark');
-      await tester.ensureVisible(darkOption);
       await tester.pumpAndSettle();
       await tester.tap(darkOption);
       await tester.pumpAndSettle();
@@ -140,7 +160,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('View stats'));
+    await tester.scrollUntilVisible(
+      find.text('View stats'),
+      200,
+      scrollable: settingsScrollable(),
+    );
+    await tester.pumpAndSettle();
+    final statsButton = find.text('View stats');
+    await tester.pumpAndSettle();
+    await tester.tap(statsButton);
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Stats'), findsOneWidget);
@@ -174,7 +202,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('View achievements'));
+    await tester.scrollUntilVisible(
+      find.text('View achievements'),
+      200,
+      scrollable: settingsScrollable(),
+    );
+    await tester.pumpAndSettle();
+    final achievementsButton = find.text('View achievements');
+    await tester.pumpAndSettle();
+    await tester.tap(achievementsButton);
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Achievements'), findsOneWidget);

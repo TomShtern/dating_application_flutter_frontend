@@ -9,6 +9,7 @@ import 'package:flutter_dating_application_1/features/home/backend_health_provid
 import 'package:flutter_dating_application_1/features/home/signed_in_shell.dart';
 import 'package:flutter_dating_application_1/features/matches/matches_provider.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+import 'package:flutter_dating_application_1/features/settings/settings_screen.dart';
 import 'package:flutter_dating_application_1/models/browse_response.dart';
 import 'package:flutter_dating_application_1/models/health_status.dart';
 import 'package:flutter_dating_application_1/models/matches_response.dart';
@@ -38,6 +39,13 @@ void main() {
     photoUrls: ['/photos/dana-1.jpg'],
     state: 'ACTIVE',
   );
+
+  Finder settingsScrollable() {
+    return find.descendant(
+      of: find.byType(SettingsScreen),
+      matching: find.byType(Scrollable),
+    );
+  }
 
   testWidgets('opens the current user profile from the shell navigation', (
     WidgetTester tester,
@@ -78,8 +86,25 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('shell-active-destination-label')),
+        matching: find.text('Discover'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Signed in as Dana'), findsOneWidget);
+
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('shell-active-destination-label')),
+        matching: find.text('Profile'),
+      ),
+      findsOneWidget,
+    );
 
     expect(find.text('Dana, 27'), findsOneWidget);
     expect(find.text('Loves coffee and beach walks.'), findsOneWidget);
@@ -127,8 +152,22 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('shell-active-destination-label')),
+        matching: find.text('Settings'),
+      ),
+      findsOneWidget,
+    );
+
     expect(find.widgetWithText(AppBar, 'Settings'), findsOneWidget);
     expect(find.text('Switch user'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('View stats'),
+      200,
+      scrollable: settingsScrollable(),
+    );
+    await tester.pumpAndSettle();
     expect(find.text('View stats'), findsOneWidget);
   });
 }

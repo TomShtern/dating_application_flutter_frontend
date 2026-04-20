@@ -57,8 +57,12 @@ void main() {
 
     expect(find.text('Your matches'), findsOneWidget);
     expect(find.text('Noa'), findsOneWidget);
+    expect(find.text('Message now'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ListTile, 'Noa'));
+    final messageNowButton = find.widgetWithText(FilledButton, 'Message now');
+    await tester.scrollUntilVisible(messageNowButton, 200);
+    await tester.pumpAndSettle();
+    await tester.tap(messageNowButton);
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Noa'), findsOneWidget);

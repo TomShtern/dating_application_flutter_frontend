@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/app_preferences.dart';
 import '../../models/user_summary.dart';
+import '../../theme/app_theme.dart';
+import '../auth/selected_user_provider.dart';
+import '../notifications/notifications_screen.dart';
+import '../safety/blocked_users_screen.dart';
 import '../stats/achievements_screen.dart';
 import '../stats/stats_screen.dart';
-import '../auth/selected_user_provider.dart';
+import '../verification/verification_screen.dart';
 import 'app_preferences_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -21,149 +25,405 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Current dev user',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      currentUser.name,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text('Age ${currentUser.age} • ${currentUser.state}'),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () async {
-                        await ref
-                            .read(selectUserControllerProvider)
-                            .clearSelection();
-                      },
-                      icon: const Icon(Icons.switch_account_outlined),
-                      label: const Text('Switch user'),
-                    ),
-                  ],
-                ),
+            _SettingsHeroCard(
+              currentUser: currentUser,
+              selectedThemeMode: selectedThemeMode,
+              onSwitchUser: () async {
+                await ref.read(selectUserControllerProvider).clearSelection();
+              },
+            ),
+            const SizedBox(height: 18),
+            _SettingsSectionCard(
+              icon: Icons.query_stats_rounded,
+              title: 'Insights',
+              subtitle:
+                  'Check stats and achievements that the backend already tracks for this user.',
+              child: Column(
+                children: [
+                  _SettingsLinkTile(
+                    icon: Icons.query_stats_rounded,
+                    title: 'View stats',
+                    subtitle: 'Read-only progress and engagement metrics',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) =>
+                              StatsScreen(currentUser: currentUser),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _SettingsLinkTile(
+                    icon: Icons.workspace_premium_outlined,
+                    title: 'View achievements',
+                    subtitle: 'Read-only milestone progress',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) =>
+                              AchievementsScreen(currentUser: currentUser),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        'Insights',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        'Check stats and achievements that the backend already tracks for this user.',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ListTile(
-                      leading: const Icon(Icons.query_stats_rounded),
-                      title: const Text('View stats'),
-                      subtitle: const Text(
-                        'Read-only progress and engagement metrics',
-                      ),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (context) =>
-                                StatsScreen(currentUser: currentUser),
+            const SizedBox(height: 18),
+            _SettingsSectionCard(
+              icon: Icons.palette_outlined,
+              title: 'Appearance',
+              subtitle: 'Choose how the app should look on this device.',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SegmentedButton<AppThemeModePreference>(
+                    segments: AppThemeModePreference.values
+                        .map(
+                          (themeMode) => ButtonSegment<AppThemeModePreference>(
+                            value: themeMode,
+                            label: Text(_label(themeMode)),
                           ),
-                        );
-                      },
+                        )
+                        .toList(growable: false),
+                    selected: {selectedThemeMode},
+                    onSelectionChanged: (selection) async {
+                      final value = selection.first;
+                      await ref
+                          .read(appPreferencesControllerProvider)
+                          .setThemeMode(value);
+                    },
+                    showSelectedIcon: false,
+                  ),
+                  const SizedBox(height: 16),
+                  DecoratedBox(
+                    decoration: AppTheme.surfaceDecoration(
+                      context,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surface.withValues(alpha: 0.84),
+                      borderRadius: const BorderRadius.all(Radius.circular(24)),
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.workspace_premium_outlined),
-                      title: const Text('View achievements'),
-                      subtitle: const Text('Read-only milestone progress'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (context) =>
-                                AchievementsScreen(currentUser: currentUser),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        'Appearance',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        'Choose how the app should look on this device.',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: SegmentedButton<AppThemeModePreference>(
-                        segments: AppThemeModePreference.values
-                            .map(
-                              (themeMode) =>
-                                  ButtonSegment<AppThemeModePreference>(
-                                    value: themeMode,
-                                    label: Text(_label(themeMode)),
-                                  ),
-                            )
-                            .toList(),
-                        selected: {selectedThemeMode},
-                        onSelectionChanged: (selection) async {
-                          final value = selection.first;
-                          await ref
-                              .read(appPreferencesControllerProvider)
-                              .setThemeMode(value);
-                        },
-                        showSelectedIcon: false,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
                       child: Text(_description(selectedThemeMode)),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            _SettingsSectionCard(
+              icon: Icons.shield_outlined,
+              title: 'Safety and activity',
+              subtitle:
+                  'Manage the extra backend-backed surfaces that are useful during development and QA.',
+              child: Column(
+                children: [
+                  _SettingsLinkTile(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'Notifications',
+                    subtitle: 'Review unread activity and mark items as read',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _SettingsLinkTile(
+                    icon: Icons.verified_user_outlined,
+                    title: 'Verification',
+                    subtitle: 'Start and confirm email or phone verification',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const VerificationScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _SettingsLinkTile(
+                    icon: Icons.block_outlined,
+                    title: 'Blocked users',
+                    subtitle: 'Review blocked profiles and unblock if needed',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const BlockedUsersScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsHeroCard extends StatelessWidget {
+  const _SettingsHeroCard({
+    required this.currentUser,
+    required this.selectedThemeMode,
+    required this.onSwitchUser,
+  });
+
+  final UserSummary currentUser;
+  final AppThemeModePreference selectedThemeMode;
+  final VoidCallback onSwitchUser;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        gradient: AppTheme.heroGradient(context),
+        prominent: true,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _SettingsHeroPill(
+              icon: Icons.tune_rounded,
+              label: 'Current dev session',
+            ),
+            const SizedBox(height: 18),
+            Text(
+              currentUser.name,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Signed in as ${currentUser.name}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tune the app for this device, keep QA workflows tidy, and keep the important controls close at hand.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _SettingsHeroPill(
+                  icon: Icons.verified_user_outlined,
+                  label: currentUser.state,
+                ),
+                _SettingsHeroPill(
+                  icon: Icons.cake_outlined,
+                  label: 'Age ${currentUser.age}',
+                ),
+                _SettingsHeroPill(
+                  icon: Icons.palette_outlined,
+                  label: _shortLabel(selectedThemeMode),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: onSwitchUser,
+              icon: const Icon(Icons.switch_account_outlined),
+              label: const Text('Switch user'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsHeroPill extends StatelessWidget {
+  const _SettingsHeroPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: AppTheme.glassDecoration(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSectionCard extends StatelessWidget {
+  const _SettingsSectionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surface.withValues(alpha: 0.9),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Icon(icon, color: colorScheme.primary),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsLinkTile extends StatelessWidget {
+  const _SettingsLinkTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surface.withValues(alpha: 0.84),
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: const BorderRadius.all(Radius.circular(24)),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Icon(icon, color: colorScheme.primary),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(Icons.chevron_right_rounded),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -184,5 +444,13 @@ String _description(AppThemeModePreference themeMode) {
       'Follow your device setting automatically.',
     AppThemeModePreference.light => 'Always use the light appearance.',
     AppThemeModePreference.dark => 'Always use the dark appearance.',
+  };
+}
+
+String _shortLabel(AppThemeModePreference themeMode) {
+  return switch (themeMode) {
+    AppThemeModePreference.system => 'System sync',
+    AppThemeModePreference.light => 'Light mode',
+    AppThemeModePreference.dark => 'Dark mode',
   };
 }

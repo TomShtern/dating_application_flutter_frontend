@@ -6,13 +6,13 @@ import '../../models/user_stats.dart';
 import '../../shared/providers/selected_user_guard.dart';
 
 final statsProvider = FutureProvider<UserStats>((ref) async {
-  final currentUser = await requireSelectedUser(ref);
+  final currentUser = await watchSelectedUser(ref);
   return ref.watch(apiClientProvider).getStats(userId: currentUser.id);
 });
 
 final achievementsProvider = FutureProvider<List<AchievementSummary>>((
   ref,
 ) async {
-  final currentUser = await requireSelectedUser(ref);
+  final currentUser = await watchSelectedUser(ref);
   return ref.watch(apiClientProvider).getAchievements(userId: currentUser.id);
 });

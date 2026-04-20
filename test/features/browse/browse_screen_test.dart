@@ -2,13 +2,16 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_screen.dart';
+import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_provider.dart';
 import 'package:flutter_dating_application_1/features/home/backend_health_provider.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
 import 'package:flutter_dating_application_1/models/browse_candidate.dart';
 import 'package:flutter_dating_application_1/models/browse_response.dart';
 import 'package:flutter_dating_application_1/models/health_status.dart';
@@ -36,16 +39,21 @@ void main() {
   const matchId =
       '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222';
 
+  const browseResponse = BrowseResponse(
+    candidates: [candidate],
+    dailyPick: null,
+    dailyPickViewed: false,
+    locationMissing: false,
+  );
+
   testWidgets('offers a message handoff when a like becomes a match', (
     WidgetTester tester,
   ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
     final apiClient = _FakeBrowseApiClient(
-      browseResponse: const BrowseResponse(
-        candidates: [candidate],
-        dailyPick: null,
-        dailyPickViewed: false,
-        locationMissing: false,
-      ),
+      browseResponse: browseResponse,
       likeResult: const LikeResult(
         isMatch: true,
         message: 'It\'s a match!',
@@ -58,7 +66,9 @@ void main() {
       ProviderScope(
         overrides: [
           apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
           selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
           backendHealthProvider.overrideWith(
             (ref) async =>
                 HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
@@ -92,13 +102,11 @@ void main() {
   testWidgets('opens the viewed candidate profile from browse', (
     WidgetTester tester,
   ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
     final apiClient = _FakeBrowseApiClient(
-      browseResponse: const BrowseResponse(
-        candidates: [candidate],
-        dailyPick: null,
-        dailyPickViewed: false,
-        locationMissing: false,
-      ),
+      browseResponse: browseResponse,
       likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
     );
 
@@ -106,7 +114,9 @@ void main() {
       ProviderScope(
         overrides: [
           apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
           selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
           backendHealthProvider.overrideWith(
             (ref) async =>
                 HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
@@ -146,13 +156,11 @@ void main() {
   testWidgets('opens safety actions for the current browse candidate', (
     WidgetTester tester,
   ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
     final apiClient = _FakeBrowseApiClient(
-      browseResponse: const BrowseResponse(
-        candidates: [candidate],
-        dailyPick: null,
-        dailyPickViewed: false,
-        locationMissing: false,
-      ),
+      browseResponse: browseResponse,
       likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
     );
 
@@ -160,7 +168,9 @@ void main() {
       ProviderScope(
         overrides: [
           apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
           selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
           backendHealthProvider.overrideWith(
             (ref) async =>
                 HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
@@ -171,7 +181,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Safety actions'));
+    final safetyActionsButton = find.byTooltip('Safety actions');
+    await tester.ensureVisible(safetyActionsButton);
+    await tester.pumpAndSettle();
+    await tester.tap(safetyActionsButton, warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(find.text('Block user'), findsOneWidget);
@@ -182,13 +195,11 @@ void main() {
   testWidgets('offers an undo action and shows the backend message', (
     WidgetTester tester,
   ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
     final apiClient = _FakeBrowseApiClient(
-      browseResponse: const BrowseResponse(
-        candidates: [candidate],
-        dailyPick: null,
-        dailyPickViewed: false,
-        locationMissing: false,
-      ),
+      browseResponse: browseResponse,
       likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
       undoResult: const UndoSwipeResult(
         success: true,
@@ -201,7 +212,9 @@ void main() {
       ProviderScope(
         overrides: [
           apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
           selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
           backendHealthProvider.overrideWith(
             (ref) async =>
                 HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
@@ -216,6 +229,83 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Last swipe undone'), findsOneWidget);
+  });
+
+  testWidgets('removes developer-facing copy from the candidate card', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
+    final apiClient = _FakeBrowseApiClient(
+      browseResponse: browseResponse,
+      likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
+          backendHealthProvider.overrideWith(
+            (ref) async =>
+                HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
+          ),
+        ],
+        child: const MaterialApp(home: BrowseScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('browse payload is intentionally lean'),
+      findsNothing,
+    );
+    expect(find.text('View profile'), findsOneWidget);
+  });
+
+  testWidgets('supports swiping the candidate card to pass', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
+    final apiClient = _FakeBrowseApiClient(
+      browseResponse: browseResponse,
+      likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
+          backendHealthProvider.overrideWith(
+            (ref) async =>
+                HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
+          ),
+        ],
+        child: const MaterialApp(home: BrowseScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final candidateName = find.text(candidate.name).first;
+    await tester.ensureVisible(candidateName);
+    await tester.pumpAndSettle();
+    await tester.drag(
+      candidateName,
+      const Offset(-500, 0),
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Passed'), findsOneWidget);
+    expect(apiClient.passCalls, 1);
   });
 }
 
@@ -233,6 +323,7 @@ class _FakeBrowseApiClient extends ApiClient {
   final BrowseResponse browseResponse;
   final LikeResult likeResult;
   final UndoSwipeResult undoResult;
+  int passCalls = 0;
 
   @override
   Future<BrowseResponse> getBrowse({required String userId}) async {
@@ -245,6 +336,15 @@ class _FakeBrowseApiClient extends ApiClient {
     required String targetId,
   }) async {
     return likeResult;
+  }
+
+  @override
+  Future<String> passUser({
+    required String userId,
+    required String targetId,
+  }) async {
+    passCalls++;
+    return 'Passed';
   }
 
   @override

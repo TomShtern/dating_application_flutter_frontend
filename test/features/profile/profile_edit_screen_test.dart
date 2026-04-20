@@ -146,12 +146,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(apiClient.updatedRequests, const [
-        ProfileUpdateRequest(
-          bio: 'A short bio for a sparse profile.',
-          gender: '',
-          interestedIn: [],
-          maxDistanceKm: 0,
-        ),
+        ProfileUpdateRequest(bio: 'A short bio for a sparse profile.'),
       ]);
     },
   );

@@ -8,7 +8,7 @@ import '../../shared/providers/selected_user_guard.dart' as user_guard;
 final conversationsProvider = FutureProvider<List<ConversationSummary>>((
   ref,
 ) async {
-  final currentUser = await user_guard.requireSelectedUser(ref);
+  final currentUser = await user_guard.watchSelectedUser(ref);
   final apiClient = ref.watch(apiClientProvider);
   return apiClient.getConversations(userId: currentUser.id);
 });

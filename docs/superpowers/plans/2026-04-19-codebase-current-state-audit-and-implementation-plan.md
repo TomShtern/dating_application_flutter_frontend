@@ -504,16 +504,16 @@ Upgrade discovery, matches, chats, and profile visuals without violating the thi
 - `lib/shared/widgets/` (new reusable visual widgets)
 - `pubspec.yaml` (only if a package such as `intl` or `cached_network_image` is truly justified)
 
-- [ ] Improve browse card hierarchy and layout so the primary surface feels less admin-like and more discovery-oriented.
-- [ ] Improve daily pick presentation so it reads like a featured dating surface rather than a plain info card.
-- [ ] Improve avatar/photo treatment across matches, chats, and profiles.
-- [ ] Add stronger loading, empty, and error visuals for the current main screens.
+- [x] Improve browse card hierarchy and layout so the primary surface feels less admin-like and more discovery-oriented.
+- [x] Improve daily pick presentation so it reads like a featured dating surface rather than a plain info card.
+- [x] Improve avatar/photo treatment across matches, chats, and profiles.
+- [x] Add stronger loading, empty, and error visuals for the current main screens.
 - [x] Improve timestamp formatting and list readability in matches and conversations.
 - [x] Extract duplicated date/time formatting into `lib/shared/formatting/date_formatting.dart` instead of repeating `_formatDateTime()` in multiple screens.
 - [x] Reduce the repeated selected-user guard logic across controllers with a small shared helper if that meaningfully simplifies the current Riverpod pattern.
 - [x] Wire the backend-supported undo action into browse as an early quick win after the baseline is green again.
-- [ ] Add better thread quality-of-life behavior in chat (composer polish, scroll behavior confirmation, refresh affordances).
-- [ ] Consider gesture-based swipe interaction only if it can be added cleanly without faking unsupported backend behavior.
+- [x] Add better thread quality-of-life behavior in chat (composer polish, scroll behavior confirmation, refresh affordances).
+- [x] Consider gesture-based swipe interaction only if it can be added cleanly without faking unsupported backend behavior.
 
 **Important constraint:**
 Do not invent fake discovery richness that the backend does not currently supply. If browse cards need more data than the browse DTO exposes, log that as a backend-enrichment dependency.
@@ -546,12 +546,12 @@ Fill in the highest-value screens that already align with the backend contract.
 - matching model files under `lib/models/`
 - matching tests under `test/features/**` and `test/models/**`
 
-- [ ] Add blocked-users management if the documented backend endpoint is confirmed and stable.
-- [ ] Add verification UI if the documented verification endpoints are confirmed and stable.
-- [ ] Add notifications center if the documented notification endpoints are confirmed and stable.
+- [x] Add blocked-users management if the documented backend endpoint is confirmed and stable.
+- [x] Add verification UI if the documented verification endpoints are confirmed and stable.
+- [x] Add notifications center if the documented notification endpoints are confirmed and stable.
 - [x] Add stats / achievements surfaces if the documented endpoints are confirmed and stable.
-- [ ] Add standouts and pending-likers discovery surfaces if the documented endpoints are confirmed and stable.
-- [ ] Add a location completion / remediation flow instead of only showing `locationMissing` as a passive warning.
+- [x] Add standouts and pending-likers discovery surfaces if the documented endpoints are confirmed and stable.
+- [x] Add a location completion / remediation flow instead of only showing `locationMissing` as a passive warning.
 
 **Important constraint:**
 For each surface above, confirm the actual backend contract before implementation. Do not assume the handoff docs are enough on their own.
@@ -583,9 +583,9 @@ The current mobile profile edit flow already supports `bio`, `gender`, `interest
 - relevant new models/tests
 
 - [ ] Add discovery preferences/filter UI if the backend supports the necessary write/read paths.
-- [ ] Add location editing/resolution flow if the backend supports it for mobile.
-- [ ] Expand editable profile fields only where the backend contract is clear and safe.
-- [ ] Add profile completeness cues so users know what they still need to finish.
+- [x] Add location editing/resolution flow if the backend supports it for mobile.
+- [x] Expand editable profile fields only where the backend contract is clear and safe.
+- [x] Add profile completeness cues so users know what they still need to finish.
 - [ ] Add a proper photo management flow if and only if the backend exposes a real upload/manage contract.
 
 **Important dependency:**
