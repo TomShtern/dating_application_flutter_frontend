@@ -52,11 +52,11 @@ No router package. `AppHomeScreen` watches `selectedUserProvider`:
 
 ### State Management (Riverpod)
 
-| Pattern | Used for |
-|---|---|
-| `FutureProvider` | Async data fetches (browse candidates, matches, messages) |
-| `NotifierProvider` | Mutable state with methods (app preferences) |
-| `Provider` | DI and sync derived values (ApiClient, SharedPreferences) |
+| Pattern            | Used for                                                  |
+|--------------------|-----------------------------------------------------------|
+| `FutureProvider`   | Async data fetches (browse candidates, matches, messages) |
+| `NotifierProvider` | Mutable state with methods (app preferences)              |
+| `Provider`         | DI and sync derived values (ApiClient, SharedPreferences) |
 
 Controllers handle side effects (API calls, `ref.invalidate`). Screens only read/watch providers.
 
@@ -70,7 +70,7 @@ Controllers handle side effects (API calls, `ref.invalidate`). Screens only read
 
 ### Testing
 
-Tests mirror the `lib/` folder structure under `test/`. Visual/screenshot golden tests live in `test/visual/` and require font loading via `flutter_test_config.dart`.
+Tests mirror the `lib/` folder structure under `test/`. Visual/screenshot golden tests live in `test/visual_inspection/` and require font loading via `test/visual_inspection/flutter_test_config.dart`.
 
 ## Key Constraints
 

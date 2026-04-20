@@ -17,7 +17,7 @@ It is about producing a fresh, reviewable snapshot of the current UI for humans 
 Run the visual suite with:
 
 ```bash
-flutter test test/visual/screenshot_test.dart
+flutter test test/visual_inspection/screenshot_test.dart
 ```
 
 When driving this from automation or an AI agent, prefer running the command with a timeout so a hung test process cannot stall the workflow indefinitely.
@@ -125,16 +125,16 @@ When inspecting the screenshots, check for:
 
 To add more screenshot coverage:
 
-1. add a new `testWidgets` scenario in `test/visual/screenshot_test.dart`
+1. add a new `testWidgets` scenario in `test/visual_inspection/screenshot_test.dart`
 2. pump the target screen with deterministic provider overrides
 3. call `_captureAndSave(...)` with a unique file name
 4. rerun the suite and inspect the new PNG in `build/visual_review/latest/`
 
-The helper infrastructure in `test/visual/support/` handles output directories, manifests, run archives, and the review gallery.
+The helper infrastructure in `test/visual_inspection/support/` handles output directories, manifests, run archives, and the review gallery.
 
 ## Notes
 
 - The screenshots use a fixed `412 x 915` phone-sized surface so the review stays consistent between runs.
-- `test/visual/flutter_test_config.dart` loads Material icons and Roboto from the local Flutter SDK cache so the screenshots render with realistic fonts and icons.
+- `test/visual_inspection/flutter_test_config.dart` loads Material icons and Roboto from the local Flutter SDK cache so the screenshots render with realistic fonts and icons.
 - `build/visual_review/latest/` is disposable output; the archived run folders under `build/visual_review/runs/` are useful when you need to refer back to a specific invocation.
 - For interactive exploration you can still run the app on Chrome, Windows, or an emulator, but the visual review suite is the repeatable observability artifact.

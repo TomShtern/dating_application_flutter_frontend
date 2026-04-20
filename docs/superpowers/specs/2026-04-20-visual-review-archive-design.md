@@ -8,7 +8,7 @@ Extend the existing Flutter visual review workflow so every successful run produ
 
 The repository already has an observability-first screenshot workflow with these properties:
 
-- the canonical entrypoint is `flutter test test/visual/screenshot_test.dart`
+- the canonical entrypoint is `flutter test test/visual_inspection/screenshot_test.dart`
 - the latest run is written to `build/visual_review/latest/`
 - an archived copy is written to `build/visual_review/runs/<runId>/`
 - `manifest.json` and `index.html` are generated for review

@@ -22,7 +22,7 @@ class RunIdentity {
         '${utc.second.toString().padLeft(2, '0')}';
   }
 
-  String get runDirectoryName => '${runLabel}__${timestampLabel}';
+  String get runDirectoryName => '$runLabel${'__'}$timestampLabel';
 }
 
 String buildLatestScreenshotFileName(String originalFileName, RunIdentity run) {
