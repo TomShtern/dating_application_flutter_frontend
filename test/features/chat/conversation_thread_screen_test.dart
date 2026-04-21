@@ -84,7 +84,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Conversation with Noa'), findsOneWidget);
+    expect(find.text('Conversation with Noa'), findsNothing);
+    expect(find.text('Write a message'), findsOneWidget);
+    expect(
+      find.text('Share a detail, ask a question, or make a plan'),
+      findsOneWidget,
+    );
     expect(find.text('Hey Dana'), findsOneWidget);
 
     final initialSendButton = tester.widget<FilledButton>(
@@ -104,7 +109,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(apiClient.lastSentContent, 'Hey there');
-    expect(find.text('You'), findsOneWidget);
+    expect(find.text('You'), findsNothing);
     expect(find.text('Hey there'), findsOneWidget);
 
     final messageField = tester.widget<TextField>(find.byType(TextField));

@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/app_config.dart';
 import '../../api/api_error.dart';
 import '../../models/user_detail.dart';
+import '../../shared/formatting/display_text.dart';
 import '../../shared/media/media_url.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/section_intro_card.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../location/location_completion_screen.dart';
 import '../safety/safety_action_sheet.dart';
@@ -90,7 +93,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppTheme.screenPadding(),
           child: profileState.when(
             data: (detail) => _ProfileContent(
               detail: detail,
@@ -159,14 +162,24 @@ class _ProfileContent extends StatelessWidget {
         children: [
           _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
           if (isCurrentUser) ...[
-            const SizedBox(height: 18),
+            SizedBox(height: AppTheme.sectionSpacing()),
             _ProfileCompletenessCard(
               detail: detail,
               onEditProfile: onEditProfile,
               onFixLocation: onFixLocation,
             ),
           ],
-          const SizedBox(height: 18),
+          SizedBox(height: AppTheme.sectionSpacing()),
+          SectionIntroCard(
+            icon: Icons.person_search_outlined,
+            title: isCurrentUser
+                ? 'What people can see'
+                : 'Shared profile details',
+            description: isCurrentUser
+                ? 'These details shape how discovery and profile previews feel to other people.'
+                : 'A quick read on the basics, preferences, and photos shared on this profile.',
+          ),
+          SizedBox(height: AppTheme.sectionSpacing()),
           _ProfileSection(
             icon: Icons.notes_rounded,
             title: 'Bio',
@@ -194,7 +207,7 @@ class _ProfileContent extends StatelessWidget {
           ),
           _ProfileSection(
             icon: Icons.verified_user_outlined,
-            title: 'State',
+            title: 'Profile status',
             value: _state(detail),
           ),
           _PhotoSection(photoUrls: detail.photoUrls),
@@ -212,109 +225,31 @@ class _ProfileHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        gradient: AppTheme.heroGradient(context),
-        prominent: true,
+    return ShellHero(
+      title: _headline(detail),
+      description: isCurrentUser
+          ? 'A quick view of the details other people can currently discover about you.'
+          : 'Bio, preferences, and photos shared on this profile.',
+      eyebrowLabel: isCurrentUser ? 'Your profile' : 'Profile snapshot',
+      eyebrowIcon: isCurrentUser
+          ? Icons.person_rounded
+          : Icons.visibility_outlined,
+      centerContent: true,
+      header: UserAvatar(
+        name: _displayName(detail),
+        photoUrl: detail.photoUrls.isEmpty ? null : detail.photoUrls.first,
+        radius: 48,
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -24,
-            right: -6,
-            child: Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.tertiary.withValues(alpha: 0.14),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                UserAvatar(
-                  name: _displayName(detail),
-                  photoUrl: detail.photoUrls.isEmpty
-                      ? null
-                      : detail.photoUrls.first,
-                  radius: 48,
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  _headline(detail),
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  isCurrentUser
-                      ? 'This is how your profile appears right now.'
-                      : 'Viewing ${_displayName(detail)}\'s profile.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _ProfileMetaPill(
-                      icon: Icons.verified_user_outlined,
-                      label: _state(detail),
-                    ),
-                    _ProfileMetaPill(
-                      icon: Icons.location_on_outlined,
-                      label: _approximateLocation(detail),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileMetaPill extends StatelessWidget {
-  const _ProfileMetaPill({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.glassDecoration(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+      badges: [
+        ShellHeroPill(
+          icon: Icons.verified_user_outlined,
+          label: _state(detail),
         ),
-      ),
+        ShellHeroPill(
+          icon: Icons.location_on_outlined,
+          label: _approximateLocation(detail),
+        ),
+      ],
     );
   }
 }
@@ -342,6 +277,7 @@ class _ProfileCompletenessCard extends StatelessWidget {
     final progress = checklist.isEmpty
         ? 0.0
         : completedCount / checklist.length;
+    final isComplete = progress >= 1;
     final missingLocation = !checklist['Choose a location']!;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -377,12 +313,14 @@ class _ProfileCompletenessCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Profile completeness',
+                        isComplete ? 'Profile ready' : 'Profile completeness',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '$completedCount of ${checklist.length} essentials are filled in.',
+                        isComplete
+                            ? 'All of the essentials are in place. Refresh it whenever you want to keep things feeling current.'
+                            : '$completedCount of ${checklist.length} essentials are filled in.',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -390,45 +328,62 @@ class _ProfileCompletenessCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-              child: LinearProgressIndicator(minHeight: 10, value: progress),
-            ),
-            const SizedBox(height: 18),
-            ...checklist.entries.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: entry.value
-                            ? colorScheme.primaryContainer
-                            : colorScheme.surfaceContainerHigh,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: Icon(
-                          entry.value
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          size: 18,
+            SizedBox(height: AppTheme.sectionSpacing()),
+            if (isComplete) ...[
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  const ShellHeroPill(
+                    icon: Icons.check_circle_rounded,
+                    label: '4 essentials complete',
+                  ),
+                  const ShellHeroPill(
+                    icon: Icons.explore_rounded,
+                    label: 'Ready for discovery',
+                  ),
+                ],
+              ),
+            ] else ...[
+              ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(999)),
+                child: LinearProgressIndicator(minHeight: 10, value: progress),
+              ),
+              SizedBox(height: AppTheme.sectionSpacing()),
+              ...checklist.entries.map(
+                (entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      DecoratedBox(
+                        decoration: BoxDecoration(
                           color: entry.value
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
+                              ? colorScheme.primaryContainer
+                              : colorScheme.surfaceContainerHigh,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(
+                            entry.value
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            size: 18,
+                            color: entry.value
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(entry.key, overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(entry.key, overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
             const SizedBox(height: 8),
             Wrap(
               spacing: 12,
@@ -470,7 +425,7 @@ class _ProfileSection extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: AppTheme.listSpacing()),
       child: Card(
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(
@@ -656,20 +611,11 @@ String _bio(UserDetail detail) {
 }
 
 String _gender(UserDetail detail) {
-  final gender = detail.gender.trim();
-  if (gender.isEmpty) {
-    return 'Not specified';
-  }
-
-  return gender;
+  return formatDisplayLabel(detail.gender);
 }
 
 String _interestedIn(UserDetail detail) {
-  if (detail.interestedIn.isEmpty) {
-    return 'Not specified';
-  }
-
-  return detail.interestedIn.join(', ');
+  return formatDisplayLabelList(detail.interestedIn);
 }
 
 String _approximateLocation(UserDetail detail) {
@@ -690,10 +636,5 @@ String _distancePreference(UserDetail detail) {
 }
 
 String _state(UserDetail detail) {
-  final state = detail.state.trim();
-  if (state.isEmpty) {
-    return 'UNKNOWN';
-  }
-
-  return state;
+  return formatDisplayLabel(detail.state, fallback: 'Unknown');
 }

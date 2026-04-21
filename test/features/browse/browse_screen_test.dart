@@ -20,6 +20,7 @@ import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/undo_swipe_result.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
+import 'package:flutter_dating_application_1/shared/widgets/shell_hero.dart';
 
 void main() {
   const currentUser = UserSummary(
@@ -143,7 +144,7 @@ void main() {
 
     final viewProfileButton = find.widgetWithText(
       OutlinedButton,
-      'View profile',
+      'See full profile',
     );
     await tester.ensureVisible(viewProfileButton);
     await tester.pumpAndSettle();
@@ -260,11 +261,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byType(ShellHero), findsOneWidget);
+    expect(find.text('Meet people worth your next hello'), findsOneWidget);
+    expect(find.text('Active profile'), findsWidgets);
+    expect(find.textContaining('backend-driven'), findsNothing);
     expect(
       find.textContaining('browse payload is intentionally lean'),
       findsNothing,
     );
-    expect(find.text('View profile'), findsOneWidget);
+    expect(find.text('See full profile'), findsOneWidget);
   });
 
   testWidgets('supports swiping the candidate card to pass', (

@@ -7,8 +7,10 @@ import '../../models/browse_response.dart';
 import '../../models/conversation_summary.dart';
 import '../../models/daily_pick.dart';
 import '../../models/user_summary.dart';
+import '../../shared/formatting/display_text.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../home/backend_health_banner.dart';
@@ -55,14 +57,33 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxHeight < 520;
+            final sectionSpacing = AppTheme.sectionSpacing(compact: compact);
 
             return Padding(
-              padding: EdgeInsets.all(compact ? 16 : 24),
+              padding: AppTheme.screenPadding(compact: compact),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _DiscoveryHero(user: widget.currentUser, compact: compact),
-                  SizedBox(height: compact ? 12 : 20),
+                  ShellHero(
+                    compact: true,
+                    eyebrowLabel: 'Discover',
+                    eyebrowIcon: Icons.auto_awesome_rounded,
+                    title: 'Meet people worth your next hello',
+                    description:
+                        'Fresh picks, standout profiles, and a quicker path to like or pass.',
+                    badges: [
+                      ShellHeroPill(
+                        icon: Icons.favorite_outline_rounded,
+                        label: 'Browsing as ${widget.currentUser.name}',
+                      ),
+                      ShellHeroPill(
+                        icon: Icons.verified_user_outlined,
+                        label:
+                            '${formatDisplayLabel(widget.currentUser.state)} profile',
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: sectionSpacing),
                   Expanded(
                     child: browseState.when(
                       data: (browse) => _BrowseContent(
@@ -285,133 +306,6 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   }
 }
 
-class _SessionBadge extends StatelessWidget {
-  const _SessionBadge({required this.user});
-
-  final UserSummary user;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _InfoCapsule(
-          icon: Icons.favorite_outline_rounded,
-          label: 'Browsing as ${user.name}',
-        ),
-        _InfoCapsule(
-          icon: Icons.check_circle_outline_rounded,
-          label: user.state,
-        ),
-      ],
-    );
-  }
-}
-
-class _DiscoveryHero extends StatelessWidget {
-  const _DiscoveryHero({required this.user, required this.compact});
-
-  final UserSummary user;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final headlineStyle = compact
-        ? Theme.of(context).textTheme.titleLarge
-        : Theme.of(context).textTheme.headlineSmall;
-    final bodyText = compact
-        ? 'Premium discovery, tuned for quicker scanning as ${user.name}.'
-        : 'Sharper hierarchy, calmer chrome, and better swipe focus — while keeping the backend-driven flow intact for ${user.name}.';
-
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        gradient: AppTheme.heroGradient(context),
-        prominent: true,
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            top: -28,
-            right: -12,
-            child: _AmbientGlow(
-              size: compact ? 88 : 120,
-              color: colorScheme.tertiary.withValues(alpha: 0.16),
-            ),
-          ),
-          Positioned(
-            bottom: -26,
-            left: -10,
-            child: _AmbientGlow(
-              size: compact ? 72 : 92,
-              color: colorScheme.primary.withValues(alpha: 0.14),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(compact ? 18 : 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _InfoCapsule(
-                  icon: Icons.auto_awesome_rounded,
-                  label: 'Fresh premium discovery',
-                ),
-                SizedBox(height: compact ? 12 : 18),
-                Text('Find your next great conversation', style: headlineStyle),
-                SizedBox(height: compact ? 8 : 10),
-                Text(
-                  bodyText,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                SizedBox(height: compact ? 12 : 18),
-                _SessionBadge(user: user),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoCapsule extends StatelessWidget {
-  const _InfoCapsule({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.glassDecoration(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _AmbientGlow extends StatelessWidget {
   const _AmbientGlow({required this.size, required this.color});
 
@@ -450,16 +344,16 @@ class _DeveloperSessionPanel extends StatelessWidget {
           tilePadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
           childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           leading: Icon(
-            Icons.developer_mode_rounded,
+            Icons.monitor_heart_outlined,
             color: colorScheme.primary,
           ),
-          title: const Text('Developer diagnostics'),
-          subtitle: Text('Session user: ${user.name}'),
+          title: const Text('Session details'),
+          subtitle: Text('${user.name} is active on this device'),
           children: [
             const BackendHealthBanner(),
             const SizedBox(height: 12),
             Text(
-              'Keep backend status and dev-user details available without letting them crowd the main discovery experience.',
+              'Check connection status and confirm the profile currently in use without taking focus away from discovery.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
@@ -705,7 +599,7 @@ class _BrowseEmptyCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _InfoCapsule(
+            const ShellHeroPill(
               icon: Icons.coffee_rounded,
               label: 'Quiet moment',
             ),
@@ -799,7 +693,7 @@ class _DailyPickCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _InfoCapsule(
+            const ShellHeroPill(
               icon: Icons.auto_awesome_rounded,
               label: 'Today\'s daily pick',
             ),
@@ -898,7 +792,7 @@ class _CandidateCard extends StatelessWidget {
                                 vertical: 10,
                               ),
                               child: Text(
-                                'Fresh profile',
+                                'New for you',
                                 style: Theme.of(context).textTheme.labelLarge
                                     ?.copyWith(color: Colors.white),
                               ),
@@ -921,7 +815,7 @@ class _CandidateCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${candidate.age} • Ready for a fresh conversation',
+                        '${candidate.age} • ${formatDisplayLabel(candidate.state)} profile',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.white.withValues(alpha: 0.9),
                         ),
@@ -932,7 +826,10 @@ class _CandidateCard extends StatelessWidget {
                         runSpacing: 8,
                         children: [
                           _HeroTag(label: 'Age ${candidate.age}'),
-                          _HeroTag(label: candidate.state),
+                          _HeroTag(
+                            label:
+                                '${formatDisplayLabel(candidate.state)} profile',
+                          ),
                         ],
                       ),
                     ],
@@ -942,7 +839,7 @@ class _CandidateCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Swipe right to like, left to pass, or open the full profile first.',
+              'Take a quick look, then like, pass, or open the full profile before you decide.',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -954,7 +851,7 @@ class _CandidateCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: onViewProfile,
                     icon: const Icon(Icons.person_outline_rounded),
-                    label: const Text('View profile'),
+                    label: const Text('See full profile'),
                   ),
                 ),
               ],
@@ -1131,7 +1028,7 @@ class _BrowseConflictState extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _InfoCapsule(
+                const ShellHeroPill(
                   icon: Icons.lock_outline_rounded,
                   label: 'Profile conflict',
                 ),

@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../home/backend_health_banner.dart';
 import '../../models/user_summary.dart';
+import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/shell_hero.dart';
+import '../../shared/widgets/user_avatar.dart';
+import '../../theme/app_theme.dart';
 import 'selected_user_provider.dart';
 
 class DevUserPickerScreen extends ConsumerWidget {
@@ -14,16 +18,17 @@ class DevUserPickerScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final availableUsers = ref.watch(availableUsersProvider);
     final selectedUser = ref.watch(selectedUserProvider);
+    final selectedUserId = selectedUser.asData?.value?.id;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Choose a dev user')),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: AppTheme.screenPadding(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Pick an existing backend user profile to act as while real authentication is still out of scope.',
+              'Pick a profile to preview the app with. Your choice stays saved on this device between launches.',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
@@ -52,6 +57,7 @@ class DevUserPickerScreen extends ConsumerWidget {
                       final user = users[index];
                       return _UserCard(
                         user: user,
+                        isSelected: selectedUserId == user.id,
                         onSelect: () => _handleUserSelected(context, ref, user),
                       );
                     },
@@ -103,25 +109,40 @@ class _CurrentUserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserLabel = user == null
+    final title = user == null
         ? 'Current user: none selected'
-        : 'Current user: ${user!.name}';
+        : 'Current profile';
+    final summary = user == null
+        ? 'Choose one below to jump straight into the app. Your selection stays saved on this device.'
+        : '${user!.name} • Age ${user!.age} • ${formatDisplayLabel(user!.state)} profile';
+    final supportingCopy = user == null
+        ? 'You can switch profiles again anytime from Settings.'
+        : 'You can switch profiles again anytime from Settings.';
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              currentUserLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              user == null
-                  ? 'Select one of the backend users below to start the core mobile loop.'
-                  : 'Persisted selection: ${user!.id}',
+            if (user != null) ...[
+              UserAvatar(name: user!.name, radius: 24),
+              const SizedBox(width: 14),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  Text(summary),
+                  const SizedBox(height: 6),
+                  Text(
+                    supportingCopy,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -131,38 +152,86 @@ class _CurrentUserCard extends StatelessWidget {
 }
 
 class _UserCard extends StatelessWidget {
-  const _UserCard({required this.user, required this.onSelect});
+  const _UserCard({
+    required this.user,
+    required this.onSelect,
+    required this.isSelected,
+  });
 
   final UserSummary user;
   final VoidCallback onSelect;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(child: Text(user.name.characters.first.toUpperCase())),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.name,
-                    style: Theme.of(context).textTheme.titleMedium,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onSelect,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                UserAvatar(name: user.name, radius: 24),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              user.name,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                          if (isSelected)
+                            const ShellHeroPill(
+                              icon: Icons.check_circle_rounded,
+                              label: 'Current',
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Age ${user.age} • ${formatDisplayLabel(user.state)} profile',
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        isSelected
+                            ? 'Saved on this device right now.'
+                            : 'Tap anywhere to continue as ${user.name}.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Continue as ${user.name}',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text('Age ${user.age} • ${user.state}'),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Icon(Icons.chevron_right_rounded),
+                  ),
+                ),
+              ],
             ),
-            FilledButton(
-              onPressed: onSelect,
-              child: Text('Continue as ${user.name}'),
-            ),
-          ],
+          ),
         ),
       ),
     );

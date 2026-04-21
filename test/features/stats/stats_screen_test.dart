@@ -17,6 +17,20 @@ void main() {
     state: 'ACTIVE',
   );
 
+  Finder statsScrollable() {
+    return find.descendant(
+      of: find.byType(StatsScreen),
+      matching: find.byType(Scrollable),
+    );
+  }
+
+  Finder achievementsScrollable() {
+    return find.descendant(
+      of: find.byType(AchievementsScreen),
+      matching: find.byType(Scrollable),
+    );
+  }
+
   testWidgets('renders stats and opens the achievements screen', (
     WidgetTester tester,
   ) async {
@@ -47,6 +61,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Stats'), findsOneWidget);
+    expect(find.text("Dana's progress at a glance"), findsOneWidget);
+    expect(find.text('2 tracked stats'), findsOneWidget);
+    expect(find.text('What these stats show'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Likes Sent'),
+      200,
+      scrollable: statsScrollable(),
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('Likes Sent'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
 
@@ -54,6 +79,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AchievementsScreen), findsOneWidget);
+    expect(find.text('Achievement progress for Dana'), findsOneWidget);
+    expect(find.text('1 unlocked'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Early Bird'),
+      200,
+      scrollable: achievementsScrollable(),
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('Early Bird'), findsOneWidget);
   });
 }

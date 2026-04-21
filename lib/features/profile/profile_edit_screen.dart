@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/profile_update_request.dart';
 import '../../models/user_detail.dart';
+import '../../shared/formatting/display_text.dart';
 import '../location/location_completion_screen.dart';
 import 'profile_provider.dart';
 
@@ -32,10 +33,13 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     super.initState();
     _bioController = TextEditingController(text: widget.initialDetail.bio);
     _genderController = TextEditingController(
-      text: widget.initialDetail.gender,
+      text: formatDisplayLabel(widget.initialDetail.gender, fallback: ''),
     );
     _interestedInController = TextEditingController(
-      text: widget.initialDetail.interestedIn.join(', '),
+      text: formatDisplayLabelList(
+        widget.initialDetail.interestedIn,
+        fallback: '',
+      ),
     );
     _maxDistanceController = TextEditingController(
       text: widget.initialDetail.maxDistanceKm > 0
@@ -62,7 +66,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit profile')),
+      appBar: AppBar(title: const Text('Edit your profile')),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: FilledButton(
@@ -77,7 +81,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             padding: const EdgeInsets.all(24),
             children: [
               Text(
-                'Update the profile details currently surfaced in the mobile app. Leave a field blank if you want it omitted from the update payload.',
+                'Show people a version of you that feels true.',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Update the details you want to share, and leave anything blank if you'd rather skip it for now.",
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
@@ -87,7 +96,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 maxLines: 5,
                 decoration: const InputDecoration(
                   labelText: 'Bio',
-                  hintText: 'Tell people a bit about yourself',
+                  hintText:
+                      'Share a little about your vibe, interests, or ideal first date',
                 ),
               ),
               const SizedBox(height: 16),
@@ -95,7 +105,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 controller: _genderController,
                 decoration: const InputDecoration(
                   labelText: 'Gender',
-                  hintText: 'FEMALE, MALE, NON_BINARY, OTHER',
+                  hintText: 'Female, Male, Non-binary, Other',
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -103,7 +113,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   }
 
                   if (!_allowedGenderValues.contains(_normalizeGender(value))) {
-                    return 'Use FEMALE, MALE, NON_BINARY, or OTHER.';
+                    return 'Choose Female, Male, Non-binary, or Other.';
                   }
 
                   return null;
@@ -114,7 +124,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 controller: _interestedInController,
                 decoration: const InputDecoration(
                   labelText: 'Interested in',
-                  hintText: 'MALE, FEMALE, NON_BINARY, OTHER',
+                  hintText: 'Female, Male, Non-binary, Other',
                 ),
                 validator: (value) {
                   if ((value ?? '').trim().isEmpty) {
@@ -131,7 +141,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   if (interests.any(
                     (entry) => !_allowedGenderValues.contains(entry),
                   )) {
-                    return 'Use MALE, FEMALE, NON_BINARY, or OTHER.';
+                    return 'Choose Female, Male, Non-binary, or Other.';
                   }
 
                   return null;
@@ -196,11 +206,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                     vertical: 8,
                   ),
                   leading: const Icon(Icons.location_on_outlined),
-                  title: const Text('Update location'),
+                  title: const Text('Choose location'),
                   subtitle: Text(
                     widget.initialDetail.approximateLocation.trim().isEmpty
-                        ? 'No location saved yet.'
-                        : 'Current: ${widget.initialDetail.approximateLocation}',
+                        ? 'Add the area where you want to meet people.'
+                        : 'Currently showing people near ${widget.initialDetail.approximateLocation}.',
                   ),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {
@@ -319,7 +329,19 @@ List<String> _parseInterestedIn(String? value) {
       .toList(growable: false);
 }
 
-String _normalizeGender(String value) => value.trim().toUpperCase();
+String _normalizeGender(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return '';
+  }
+
+  final normalized = trimmed.replaceAll(RegExp(r'[\s-]+'), '_').toUpperCase();
+  if (normalized == 'NONBINARY') {
+    return 'NON_BINARY';
+  }
+
+  return normalized;
+}
 
 const Set<String> _allowedGenderValues = <String>{
   'FEMALE',

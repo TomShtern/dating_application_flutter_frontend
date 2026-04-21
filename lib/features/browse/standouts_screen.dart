@@ -5,6 +5,7 @@ import '../../api/api_error.dart';
 import '../../models/standout.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/section_intro_card.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../profile/profile_screen.dart';
 import 'standouts_provider.dart';
@@ -36,23 +37,29 @@ class StandoutsScreen extends ConsumerWidget {
               onRefresh: controller.refresh,
               child: ListView(
                 children: [
-                  Card(
-                    child: ListTile(
-                      title: const Text('Why these profiles stand out'),
-                      subtitle: Text(
-                        snapshot.message.isEmpty
-                            ? '${snapshot.totalCandidates} standout candidates are ready to review.'
-                            : snapshot.message,
+                  SectionIntroCard(
+                    icon: Icons.auto_awesome_rounded,
+                    title: 'Profiles worth a closer look',
+                    description: snapshot.message.isEmpty
+                        ? 'These picks stood out in your recommendations, so you can start with the strongest signals first.'
+                        : snapshot.message,
+                    badges: [
+                      Chip(
+                        label: Text(
+                          snapshot.totalCandidates == 1
+                              ? '1 standout ready'
+                              : '${snapshot.totalCandidates} standouts ready',
+                        ),
                       ),
-                      trailing: snapshot.fromCache
-                          ? const Chip(label: Text('Cached'))
-                          : null,
-                    ),
+                      if (snapshot.fromCache)
+                        const Chip(label: Text('Cached results')),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   if (snapshot.standouts.isEmpty)
                     AppAsyncState.empty(
-                      message: 'No standouts are available right now.',
+                      message:
+                          'No standouts are ready right now. Check back soon for a fresh set of highlights.',
                       onRefresh: controller.refresh,
                     )
                   else
@@ -85,67 +92,92 @@ class _StandoutCard extends StatelessWidget {
 
   final Standout standout;
 
+  void _openProfile(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => ProfileScreen.otherUser(
+          userId: standout.standoutUserId,
+          userName: standout.standoutUserName,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                UserAvatar(name: standout.standoutUserName, radius: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        standout.standoutUserAge > 0
-                            ? '${standout.standoutUserName}, ${standout.standoutUserAge}'
-                            : standout.standoutUserName,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 4),
-                      Text('Rank #${standout.rank} • Score ${standout.score}'),
-                    ],
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _openProfile(context),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  UserAvatar(name: standout.standoutUserName, radius: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          standout.standoutUserAge > 0
+                              ? '${standout.standoutUserName}, ${standout.standoutUserAge}'
+                              : standout.standoutUserName,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Strong match signal',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              standout.reason.isEmpty
-                  ? 'The backend highlighted this profile for you.'
-                  : standout.reason,
-            ),
-            if (standout.createdAt != null) ...[
+                  const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
               const SizedBox(height: 12),
               Text(
-                'Created ${formatDateTimeStamp(standout.createdAt!)}',
-                style: Theme.of(context).textTheme.bodySmall,
+                standout.reason.isEmpty
+                    ? 'We picked this profile because it stood out in your recommendations.'
+                    : standout.reason,
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
-            ],
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (context) => ProfileScreen.otherUser(
-                        userId: standout.standoutUserId,
-                        userName: standout.standoutUserName,
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Chip(label: Text('Rank #${standout.rank}')),
+                  Chip(label: Text('Score ${standout.score}')),
+                  if (standout.createdAt != null)
+                    Chip(
+                      label: Text(
+                        'Suggested ${formatShortDate(standout.createdAt!)}',
                       ),
                     ),
-                  );
-                },
-                icon: const Icon(Icons.person_outline_rounded),
-                label: const Text('View profile'),
+                  if (standout.interactedAt != null)
+                    Chip(
+                      label: Text(
+                        'Opened ${formatShortDate(standout.interactedAt!)}',
+                      ),
+                    ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => _openProfile(context),
+                  icon: const Icon(Icons.person_outline_rounded),
+                  label: const Text('Open profile'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

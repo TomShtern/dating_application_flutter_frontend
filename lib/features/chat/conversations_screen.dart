@@ -5,6 +5,7 @@ import '../../api/api_error.dart';
 import '../../models/conversation_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/user_avatar.dart';
@@ -38,15 +39,33 @@ class ConversationsScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppTheme.screenPadding(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _ConversationsHero(
-                currentUser: currentUser,
-                conversationCount: conversationCount,
+              ShellHero(
+                compact: true,
+                eyebrowLabel: 'Chats',
+                eyebrowIcon: Icons.chat_bubble_outline_rounded,
+                title: 'Pick up where you left off',
+                description:
+                    'Your active conversations stay easy to scan, so the next reply is only a tap away.',
+                badges: [
+                  ShellHeroPill(
+                    icon: Icons.mark_chat_unread_outlined,
+                    label: switch (conversationCount) {
+                      null => 'Updating your inbox',
+                      1 => '1 conversation ready',
+                      final count => '$count conversations ready',
+                    },
+                  ),
+                  const ShellHeroPill(
+                    icon: Icons.schedule_rounded,
+                    label: 'Latest activity first',
+                  ),
+                ],
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: AppTheme.sectionSpacing()),
               Expanded(
                 child: conversationsState.when(
                   data: (conversations) {
@@ -94,103 +113,6 @@ class ConversationsScreen extends ConsumerWidget {
   }
 }
 
-class _ConversationsHero extends StatelessWidget {
-  const _ConversationsHero({required this.currentUser, this.conversationCount});
-
-  final UserSummary currentUser;
-  final int? conversationCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final countLabel = switch (conversationCount) {
-      null => 'Updating your inbox',
-      1 => '1 conversation ready',
-      final count => '$count conversations ready',
-    };
-
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        gradient: AppTheme.heroGradient(context),
-        prominent: true,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _ConversationBadge(
-              icon: Icons.chat_bubble_outline_rounded,
-              label: 'Conversations',
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Chats available to ${currentUser.name}',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'The list is cleaner now, but the same backend-driven threads are still doing the talking underneath.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _ConversationBadge(
-                  icon: Icons.mark_chat_unread_outlined,
-                  label: countLabel,
-                ),
-                const _ConversationBadge(
-                  icon: Icons.bolt_rounded,
-                  label: 'Sorted by recent activity',
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ConversationBadge extends StatelessWidget {
-  const _ConversationBadge({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.glassDecoration(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ConversationCard extends StatelessWidget {
   const _ConversationCard({required this.currentUser, required this.summary});
 
@@ -211,9 +133,11 @@ class _ConversationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final supportingCopy = summary.messageCount == 0
-        ? 'Fresh match, clean slate — lead with something memorable.'
-        : 'Keep the momentum going while the conversation is still warm.';
+    final messagePreview = switch (summary.messageCount) {
+      0 => 'New match, ready for the first message',
+      1 => '1 message so far',
+      final count => '$count messages so far',
+    };
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
@@ -224,73 +148,69 @@ class _ConversationCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: AppTheme.cardRadius,
-          onTap: () => _openConversation(context),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    UserAvatar(name: summary.otherUserName, radius: 30),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
+                UserAvatar(name: summary.otherUserName, radius: 30),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            summary.otherUserName,
-                            style: Theme.of(context).textTheme.titleLarge,
+                          Expanded(
+                            child: Text(
+                              summary.otherUserName,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(width: 12),
                           Text(
-                            supportingCopy,
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            formatShortDate(summary.lastMessageAt),
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(color: colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
+                      const SizedBox(height: 4),
+                      Text(
+                        messagePreview,
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(Icons.chevron_right_rounded),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _ConversationBadge(
-                      icon: Icons.mail_outline_rounded,
-                      label: '${summary.messageCount} message(s)',
-                    ),
-                    _ConversationBadge(
-                      icon: Icons.schedule_rounded,
-                      label: formatDateTimeStamp(summary.lastMessageAt),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                FilledButton.tonalIcon(
-                  onPressed: () => _openConversation(context),
-                  icon: const Icon(Icons.chat_bubble_rounded),
-                  label: const Text('Open chat'),
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ShellHeroPill(
+                  icon: Icons.mail_outline_rounded,
+                  label: messagePreview,
+                ),
+                ShellHeroPill(
+                  icon: Icons.schedule_rounded,
+                  label: 'Updated ${formatShortDate(summary.lastMessageAt)}',
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => _openConversation(context),
+              icon: const Icon(Icons.chat_bubble_rounded),
+              label: const Text('Open chat'),
+            ),
+          ],
         ),
       ),
     );

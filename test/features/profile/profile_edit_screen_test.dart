@@ -55,6 +55,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
+      find.text('Show people a version of you that feels true.'),
+      findsOneWidget,
+    );
+
+    expect(
       tester
           .widget<TextFormField>(find.byType(TextFormField).at(0))
           .controller
@@ -66,14 +71,14 @@ void main() {
           .widget<TextFormField>(find.byType(TextFormField).at(1))
           .controller
           ?.text,
-      detail.gender,
+      'Female',
     );
     expect(
       tester
           .widget<TextFormField>(find.byType(TextFormField).at(2))
           .controller
           ?.text,
-      detail.interestedIn.join(', '),
+      'Male',
     );
     expect(
       tester
@@ -109,12 +114,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Use FEMALE, MALE, NON_BINARY, or OTHER.'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Use MALE, FEMALE, NON_BINARY, or OTHER.'),
-      findsOneWidget,
+      find.text('Choose Female, Male, Non-binary, or Other.'),
+      findsNWidgets(2),
     );
     expect(find.text('Please enter a valid maximum distance.'), findsOneWidget);
     expect(apiClient.updatedRequests, isEmpty);
@@ -192,8 +193,11 @@ void main() {
       find.byType(TextFormField).first,
       'Updated bio for the edit flow.',
     );
-    await tester.enterText(find.byType(TextFormField).at(1), 'FEMALE');
-    await tester.enterText(find.byType(TextFormField).at(2), 'MALE, FEMALE');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Non-binary');
+    await tester.enterText(
+      find.byType(TextFormField).at(2),
+      'Male, Non-binary',
+    );
     await tester.enterText(find.byType(TextFormField).at(3), '15');
     await tester.tap(find.widgetWithText(FilledButton, 'Save changes'));
     await tester.pumpAndSettle();
@@ -202,8 +206,8 @@ void main() {
     expect(apiClient.updatedRequests, const [
       ProfileUpdateRequest(
         bio: 'Updated bio for the edit flow.',
-        gender: 'FEMALE',
-        interestedIn: ['MALE', 'FEMALE'],
+        gender: 'NON_BINARY',
+        interestedIn: ['MALE', 'NON_BINARY'],
         maxDistanceKm: 15,
       ),
     ]);

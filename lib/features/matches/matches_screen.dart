@@ -6,6 +6,8 @@ import '../../models/conversation_summary.dart';
 import '../../models/match_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
+import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/user_avatar.dart';
@@ -40,12 +42,33 @@ class MatchesScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppTheme.screenPadding(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _MatchesHero(currentUser: currentUser, matchCount: matchCount),
-              const SizedBox(height: 18),
+              ShellHero(
+                compact: true,
+                eyebrowLabel: 'Matches',
+                eyebrowIcon: Icons.favorite_rounded,
+                title: 'Matches ready for a first hello',
+                description:
+                    'When the interest goes both ways, your next message should feel easy to start.',
+                badges: [
+                  ShellHeroPill(
+                    icon: Icons.bolt_rounded,
+                    label: switch (matchCount) {
+                      null => 'Syncing matches',
+                      1 => '1 mutual connection',
+                      final count => '$count mutual connections',
+                    },
+                  ),
+                  ShellHeroPill(
+                    icon: Icons.person_outline_rounded,
+                    label: 'For ${currentUser.name}',
+                  ),
+                ],
+              ),
+              SizedBox(height: AppTheme.sectionSpacing()),
               Expanded(
                 child: matchesState.when(
                   data: (response) {
@@ -86,100 +109,6 @@ class MatchesScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MatchesHero extends StatelessWidget {
-  const _MatchesHero({required this.currentUser, this.matchCount});
-
-  final UserSummary currentUser;
-  final int? matchCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final countLabel = switch (matchCount) {
-      null => 'Syncing matches',
-      1 => '1 mutual connection',
-      final count => '$count mutual connections',
-    };
-
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        gradient: AppTheme.heroGradient(context),
-        prominent: true,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _MatchBadge(
-              icon: Icons.favorite_rounded,
-              label: 'Mutual spark',
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Mutual matches for ${currentUser.name}',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'These are the strongest signals in the app, so they deserve more visual love than a plain list.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _MatchBadge(icon: Icons.bolt_rounded, label: countLabel),
-                _MatchBadge(
-                  icon: Icons.schedule_rounded,
-                  label: 'Freshest mutual likes first',
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MatchBadge extends StatelessWidget {
-  const _MatchBadge({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.glassDecoration(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -258,7 +187,7 @@ class _MatchCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Mutual interest is already locked in — all that is left is saying hello.',
+                            'Mutual interest is already there — now it is time for a real hello.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
@@ -282,22 +211,22 @@ class _MatchCard extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _MatchBadge(
+                    ShellHeroPill(
                       icon: Icons.favorite_border_rounded,
-                      label: 'Matched on ${formatShortDate(match.createdAt)}',
+                      label: 'Matched ${formatShortDate(match.createdAt)}',
                     ),
-                    _MatchBadge(
+                    ShellHeroPill(
                       icon: Icons.verified_user_outlined,
-                      label: match.state,
+                      label: formatDisplayLabel(match.state),
                     ),
-                    const _MatchBadge(
+                    const ShellHeroPill(
                       icon: Icons.chat_bubble_outline_rounded,
                       label: 'Ready to message',
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                FilledButton.tonalIcon(
+                FilledButton.icon(
                   onPressed: () => _openConversation(context),
                   icon: const Icon(Icons.forum_rounded),
                   label: const Text('Message now'),

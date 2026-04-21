@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/blocked_user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/section_intro_card.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../../theme/app_theme.dart';
 import 'blocked_users_provider.dart';
 
 class BlockedUsersScreen extends ConsumerStatefulWidget {
@@ -34,37 +37,67 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: blockedUsersState.when(
-            data: (users) => RefreshIndicator(
-              onRefresh: controller.refresh,
-              child: users.isEmpty
-                  ? ListView(
-                      children: const [
-                        // The empty state stays simple here because the
-                        // surrounding RefreshIndicator already exposes a reload.
-                        AppAsyncState.empty(
-                          message: 'You have not blocked anyone right now.',
-                        ),
-                      ],
-                    )
-                  : ListView.separated(
-                      itemCount: users.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final user = users[index];
-                        return _BlockedUserTile(
-                          user: user,
-                          isBusy: _busyUserId == user.userId,
-                          onUnblock: () => _handleUnblock(user),
-                        );
-                      },
+        child: blockedUsersState.when(
+          data: (users) => RefreshIndicator(
+            onRefresh: controller.refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: AppTheme.screenPadding(),
+              children: [
+                ShellHero(
+                  eyebrowLabel: 'Safety controls',
+                  eyebrowIcon: Icons.block_outlined,
+                  title: 'Blocked users',
+                  description:
+                      'Review the profiles you have removed from discovery, matches, and chat. Unblock anyone here when you are ready to reopen that door.',
+                  badges: [
+                    ShellHeroPill(
+                      icon: Icons.block_rounded,
+                      label: users.isEmpty
+                          ? 'No blocked profiles'
+                          : '${users.length} blocked',
                     ),
+                    const ShellHeroPill(
+                      icon: Icons.refresh_rounded,
+                      label: 'Pull to refresh',
+                    ),
+                  ],
+                ),
+                SizedBox(height: AppTheme.sectionSpacing()),
+                const SectionIntroCard(
+                  icon: Icons.shield_outlined,
+                  title: 'What happens here',
+                  description:
+                      'Blocked profiles stay out of your activity surfaces until you unblock them. This list is the quickest place to reverse that choice.',
+                ),
+                SizedBox(height: AppTheme.sectionSpacing()),
+                if (users.isEmpty)
+                  const AppAsyncState.empty(
+                    message: 'You have not blocked anyone right now.',
+                  )
+                else ...[
+                  for (var index = 0; index < users.length; index++) ...[
+                    _BlockedUserTile(
+                      user: users[index],
+                      isBusy: _busyUserId == users[index].userId,
+                      onUnblock: () => _handleUnblock(users[index]),
+                    ),
+                    if (index != users.length - 1)
+                      SizedBox(height: AppTheme.listSpacing()),
+                  ],
+                ],
+              ],
             ),
-            loading: () =>
-                const AppAsyncState.loading(message: 'Loading blocked users…'),
-            error: (error, _) => AppAsyncState.error(
+          ),
+          loading: () => Padding(
+            padding: AppTheme.screenPadding(),
+            child: const AppAsyncState.loading(
+              message: 'Loading blocked users…',
+            ),
+          ),
+          error: (error, _) => Padding(
+            padding: AppTheme.screenPadding(),
+            child: AppAsyncState.error(
               message: error is ApiError
                   ? error.message
                   : 'Unable to load blocked users right now.',
@@ -128,15 +161,42 @@ class _BlockedUserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: UserAvatar(name: user.name, radius: 22),
-        title: Text(user.name),
-        subtitle: Text(user.statusLabel),
-        trailing: FilledButton.tonal(
-          onPressed: isBusy ? null : onUnblock,
-          child: Text(isBusy ? 'Working…' : 'Unblock'),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surface.withValues(alpha: 0.9),
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            UserAvatar(name: user.name, radius: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(user.name, style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  Text(user.statusLabel, style: theme.textTheme.bodyMedium),
+                  const SizedBox(height: 8),
+                  Text(
+                    'You will stop seeing each other in browse, matches, and chat until this block is removed.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilledButton.tonal(
+              onPressed: isBusy ? null : onUnblock,
+              child: Text(isBusy ? 'Working…' : 'Unblock'),
+            ),
+          ],
         ),
       ),
     );

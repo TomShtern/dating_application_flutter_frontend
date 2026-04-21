@@ -14,6 +14,7 @@ import 'package:flutter_dating_application_1/models/achievement_summary.dart';
 import 'package:flutter_dating_application_1/models/user_stats.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
+import 'package:flutter_dating_application_1/shared/widgets/shell_hero.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -59,10 +60,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(AppBar, 'Settings'), findsOneWidget);
-      expect(find.text('Current dev session'), findsOneWidget);
-      expect(find.text('Signed in as Dana'), findsOneWidget);
+      expect(find.byType(ShellHero), findsOneWidget);
+      expect(find.text('Current session'), findsOneWidget);
+      expect(find.text('Current dev session'), findsNothing);
       expect(find.text('Dana'), findsOneWidget);
-      expect(find.text('Switch user'), findsOneWidget);
+      expect(find.text('Active profile'), findsOneWidget);
+      expect(
+        find.widgetWithText(OutlinedButton, 'Switch profile'),
+        findsOneWidget,
+      );
       expect(find.text('View stats'), findsOneWidget);
       expect(find.text('View achievements'), findsOneWidget);
       await tester.scrollUntilVisible(
@@ -127,7 +133,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Switch user'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Switch profile'));
     await tester.pumpAndSettle();
 
     expect(await selectedUserStore.readSelectedUser(), isNull);
@@ -172,6 +178,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Stats'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Matches'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Matches'), findsOneWidget);
   });
 

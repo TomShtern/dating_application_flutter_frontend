@@ -6,12 +6,12 @@ void main() {
   test('formats a local timestamp for list and thread surfaces', () {
     final formatted = formatDateTimeStamp(DateTime(2026, 4, 18, 14, 20));
 
-    expect(formatted, '2026-04-18 14:20');
+    expect(formatted, 'Apr 18, 2026 · 2:20 PM');
   });
 
   test('formats a short local date for match summaries', () {
     final formatted = formatShortDate(DateTime(2026, 4, 18, 14, 20));
 
-    expect(formatted, '2026-04-18');
+    expect(formatted, 'Apr 18, 2026');
   });
 }

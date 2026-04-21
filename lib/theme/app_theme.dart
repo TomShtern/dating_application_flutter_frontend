@@ -6,6 +6,15 @@ class AppTheme {
   static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(28));
   static const BorderRadius panelRadius = BorderRadius.all(Radius.circular(32));
   static const BorderRadius chipRadius = BorderRadius.all(Radius.circular(999));
+  static const double navBarHeight = 64;
+  static const double pagePadding = 20;
+  static const double compactPagePadding = 16;
+  static const double sectionGap = 16;
+  static const double compactSectionGap = 12;
+  static const double cardGap = 12;
+  static const double compactCardGap = 10;
+  static const double cardPadding = 18;
+  static const double compactCardPadding = 16;
 
   static ThemeData light() {
     return _theme(Brightness.light);
@@ -69,7 +78,7 @@ class AppTheme {
         shape: const RoundedRectangleBorder(borderRadius: chipRadius),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        height: 76,
+        height: navBarHeight,
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         indicatorColor: colorScheme.primaryContainer.withValues(alpha: 0.92),
@@ -99,8 +108,22 @@ class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: ButtonStyle(
           elevation: const WidgetStatePropertyAll(0),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colorScheme.surfaceContainerHighest;
+            }
+
+            return null;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colorScheme.onSurface.withValues(alpha: 0.42);
+            }
+
+            return null;
+          }),
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           ),
           shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
@@ -114,17 +137,29 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: ButtonStyle(
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colorScheme.onSurface.withValues(alpha: 0.42);
+            }
+
+            return null;
+          }),
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           ),
-          side: WidgetStatePropertyAll(
-            BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.48),
-            ),
-          ),
-          backgroundColor: WidgetStatePropertyAll(
-            colorScheme.surface.withValues(alpha: isDark ? 0.9 : 0.94),
-          ),
+          side: WidgetStateProperty.resolveWith((states) {
+            final alpha = states.contains(WidgetState.disabled) ? 0.18 : 0.38;
+            return BorderSide(
+              color: colorScheme.outlineVariant.withValues(alpha: alpha),
+            );
+          }),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colorScheme.surfaceContainerLowest;
+            }
+
+            return colorScheme.surface.withValues(alpha: isDark ? 0.86 : 0.92);
+          }),
           shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(24)),
@@ -138,7 +173,7 @@ class AppTheme {
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
@@ -156,7 +191,7 @@ class AppTheme {
         ),
       ),
       listTileTheme: ListTileThemeData(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         shape: const RoundedRectangleBorder(borderRadius: cardRadius),
         iconColor: colorScheme.primary,
       ),
@@ -187,7 +222,7 @@ class AppTheme {
             : colorScheme.surface,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 18,
-          vertical: 18,
+          vertical: 16,
         ),
         labelStyle: textTheme.bodyMedium?.copyWith(
           color: colorScheme.onSurfaceVariant,
@@ -215,11 +250,15 @@ class AppTheme {
       iconButtonTheme: IconButtonThemeData(
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colorScheme.surfaceContainerLowest;
+            }
+
             if (states.contains(WidgetState.pressed)) {
               return colorScheme.primaryContainer.withValues(alpha: 0.8);
             }
 
-            return colorScheme.surface.withValues(alpha: isDark ? 0.5 : 0.82);
+            return colorScheme.surface.withValues(alpha: isDark ? 0.38 : 0.68);
           }),
           foregroundColor: WidgetStatePropertyAll(colorScheme.onSurface),
           shape: const WidgetStatePropertyAll(CircleBorder()),
@@ -385,5 +424,21 @@ class AppTheme {
         color: colorScheme.outlineVariant.withValues(alpha: 0.2),
       ),
     );
+  }
+
+  static EdgeInsets screenPadding({bool compact = false}) {
+    return EdgeInsets.all(compact ? compactPagePadding : pagePadding);
+  }
+
+  static EdgeInsets sectionPadding({bool compact = false}) {
+    return EdgeInsets.all(compact ? compactCardPadding : cardPadding);
+  }
+
+  static double sectionSpacing({bool compact = false}) {
+    return compact ? compactSectionGap : sectionGap;
+  }
+
+  static double listSpacing({bool compact = false}) {
+    return compact ? compactCardGap : cardGap;
   }
 }

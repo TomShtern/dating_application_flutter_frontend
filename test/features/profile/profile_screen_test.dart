@@ -171,8 +171,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ProfileEditScreen), findsOneWidget);
-    expect(find.widgetWithText(AppBar, 'Edit profile'), findsOneWidget);
+    expect(find.widgetWithText(AppBar, 'Edit your profile'), findsOneWidget);
   });
+
+  testWidgets(
+    'shows user-friendly labels and a success state for complete profiles',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [profileProvider.overrideWith((ref) async => detail)],
+          child: const MaterialApp(home: ProfileScreen.currentUser()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Female'), findsOneWidget);
+      expect(find.text('Male'), findsOneWidget);
+      expect(find.text('Active'), findsAtLeastNWidgets(1));
+      expect(find.text('Profile ready'), findsOneWidget);
+      expect(find.text('4 of 4 essentials are filled in.'), findsNothing);
+    },
+  );
 
   testWidgets('keeps other user profiles read-only', (
     WidgetTester tester,

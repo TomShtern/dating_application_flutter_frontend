@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/app_preferences.dart';
 import '../../models/user_summary.dart';
+import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import '../auth/selected_user_provider.dart';
 import '../notifications/notifications_screen.dart';
@@ -25,7 +27,12 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          padding: EdgeInsets.fromLTRB(
+            AppTheme.pagePadding,
+            AppTheme.pagePadding,
+            AppTheme.pagePadding,
+            32,
+          ),
           children: [
             _SettingsHeroCard(
               currentUser: currentUser,
@@ -34,18 +41,18 @@ class SettingsScreen extends ConsumerWidget {
                 await ref.read(selectUserControllerProvider).clearSelection();
               },
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: AppTheme.sectionSpacing()),
             _SettingsSectionCard(
               icon: Icons.query_stats_rounded,
               title: 'Insights',
               subtitle:
-                  'Check stats and achievements that the backend already tracks for this user.',
+                  'See how this profile is doing across matches and milestones.',
               child: Column(
                 children: [
                   _SettingsLinkTile(
                     icon: Icons.query_stats_rounded,
                     title: 'View stats',
-                    subtitle: 'Read-only progress and engagement metrics',
+                    subtitle: 'See matches, chats, and activity at a glance',
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -59,7 +66,8 @@ class SettingsScreen extends ConsumerWidget {
                   _SettingsLinkTile(
                     icon: Icons.workspace_premium_outlined,
                     title: 'View achievements',
-                    subtitle: 'Read-only milestone progress',
+                    subtitle:
+                        'Celebrate the milestones you have already unlocked',
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -72,7 +80,7 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: AppTheme.sectionSpacing()),
             _SettingsSectionCard(
               icon: Icons.palette_outlined,
               title: 'Appearance',
@@ -115,18 +123,19 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: AppTheme.sectionSpacing()),
             _SettingsSectionCard(
               icon: Icons.shield_outlined,
               title: 'Safety and activity',
               subtitle:
-                  'Manage the extra backend-backed surfaces that are useful during development and QA.',
+                  'Stay on top of alerts, verification, and the people you do not want to hear from.',
               child: Column(
                 children: [
                   _SettingsLinkTile(
                     icon: Icons.notifications_none_rounded,
                     title: 'Notifications',
-                    subtitle: 'Review unread activity and mark items as read',
+                    subtitle:
+                        'Review recent activity and catch anything unread',
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -139,7 +148,7 @@ class SettingsScreen extends ConsumerWidget {
                   _SettingsLinkTile(
                     icon: Icons.verified_user_outlined,
                     title: 'Verification',
-                    subtitle: 'Start and confirm email or phone verification',
+                    subtitle: 'Confirm your email or phone number',
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -152,7 +161,8 @@ class SettingsScreen extends ConsumerWidget {
                   _SettingsLinkTile(
                     icon: Icons.block_outlined,
                     title: 'Blocked users',
-                    subtitle: 'Review blocked profiles and unblock if needed',
+                    subtitle:
+                        'Review blocked profiles and make changes anytime',
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -184,100 +194,31 @@ class _SettingsHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        gradient: AppTheme.heroGradient(context),
-        prominent: true,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _SettingsHeroPill(
-              icon: Icons.tune_rounded,
-              label: 'Current dev session',
-            ),
-            const SizedBox(height: 18),
-            Text(
-              currentUser.name,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Signed in as ${currentUser.name}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tune the app for this device, keep QA workflows tidy, and keep the important controls close at hand.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _SettingsHeroPill(
-                  icon: Icons.verified_user_outlined,
-                  label: currentUser.state,
-                ),
-                _SettingsHeroPill(
-                  icon: Icons.cake_outlined,
-                  label: 'Age ${currentUser.age}',
-                ),
-                _SettingsHeroPill(
-                  icon: Icons.palette_outlined,
-                  label: _shortLabel(selectedThemeMode),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: onSwitchUser,
-              icon: const Icon(Icons.switch_account_outlined),
-              label: const Text('Switch user'),
-            ),
-          ],
+    return ShellHero(
+      compact: true,
+      eyebrowLabel: 'Current session',
+      eyebrowIcon: Icons.tune_rounded,
+      title: currentUser.name,
+      description:
+          'Adjust how the app looks on this device, review your progress, and switch to another saved profile whenever you need to.',
+      badges: [
+        ShellHeroPill(
+          icon: Icons.verified_user_outlined,
+          label: '${formatDisplayLabel(currentUser.state)} profile',
         ),
-      ),
-    );
-  }
-}
-
-class _SettingsHeroPill extends StatelessWidget {
-  const _SettingsHeroPill({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.glassDecoration(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        ShellHeroPill(
+          icon: Icons.cake_outlined,
+          label: 'Age ${currentUser.age}',
         ),
+        ShellHeroPill(
+          icon: Icons.palette_outlined,
+          label: _shortLabel(selectedThemeMode),
+        ),
+      ],
+      footer: OutlinedButton.icon(
+        onPressed: onSwitchUser,
+        icon: const Icon(Icons.switch_account_outlined),
+        label: const Text('Switch profile'),
       ),
     );
   }

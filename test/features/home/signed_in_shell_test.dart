@@ -93,7 +93,14 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Signed in as Dana'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('shell-active-user-summary')),
+        matching: find.text('Dana · Active profile'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Signed in as Dana'), findsNothing);
 
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
@@ -161,7 +168,10 @@ void main() {
     );
 
     expect(find.widgetWithText(AppBar, 'Settings'), findsOneWidget);
-    expect(find.text('Switch user'), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Switch profile'),
+      findsOneWidget,
+    );
     await tester.scrollUntilVisible(
       find.text('View stats'),
       200,

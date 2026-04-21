@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/location_metadata.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/shell_hero.dart';
 import 'location_provider.dart';
 
 class LocationCompletionScreen extends ConsumerStatefulWidget {
@@ -78,7 +79,7 @@ class _LocationCompletionScreenState
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Complete your location')),
+      appBar: AppBar(title: const Text('Choose your location')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -90,6 +91,15 @@ class _LocationCompletionScreenState
 
               return ListView(
                 children: [
+                  const ShellHero(
+                    eyebrowLabel: 'Location',
+                    eyebrowIcon: Icons.location_on_outlined,
+                    title: 'Help people nearby feel nearby',
+                    description:
+                        'Pick your country and city so we can recommend people in the right area without sharing an exact address.',
+                    compact: true,
+                  ),
+                  const SizedBox(height: 16),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -97,12 +107,12 @@ class _LocationCompletionScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Improve discovery with a real location',
+                            'Where should we look?',
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            'Pick a country, search for your city, and let the backend resolve the best available location for recommendations.',
+                            'Choose the city you want us to use for nearby matches. You can update it anytime.',
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
@@ -152,9 +162,11 @@ class _LocationCompletionScreenState
                           SwitchListTile.adaptive(
                             contentPadding: EdgeInsets.zero,
                             value: _allowApproximate,
-                            title: const Text('Allow approximate resolution'),
+                            title: const Text(
+                              'Use the closest match if needed',
+                            ),
                             subtitle: const Text(
-                              'Use a nearby match if the exact city/ZIP combo cannot be resolved.',
+                              "If we can't resolve the exact city or ZIP, we'll use the nearest available area instead.",
                             ),
                             onChanged: (value) {
                               setState(() {
@@ -168,12 +180,14 @@ class _LocationCompletionScreenState
                                 ? null
                                 : () => _handleSave(context),
                             icon: const Icon(Icons.location_on_outlined),
-                            label: Text(_saving ? 'Saving…' : 'Save location'),
+                            label: Text(
+                              _saving ? 'Saving…' : 'Save my location',
+                            ),
                           ),
                           if (_selectedCityLabel != null) ...[
                             const SizedBox(height: 12),
                             Chip(
-                              label: Text('Selected city: $_selectedCityLabel'),
+                              label: Text('Using city: $_selectedCityLabel'),
                             ),
                           ],
                         ],
@@ -188,7 +202,7 @@ class _LocationCompletionScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'City suggestions',
+                            'Suggested cities',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: 12),
@@ -196,7 +210,7 @@ class _LocationCompletionScreenState
                             data: (cities) {
                               if (cities.isEmpty) {
                                 return const Text(
-                                  'Type at least two characters to get suggestions.',
+                                  "Start typing at least two letters and we'll suggest cities.",
                                 );
                               }
                               return Column(
@@ -227,7 +241,7 @@ class _LocationCompletionScreenState
                               child: Center(child: CircularProgressIndicator()),
                             ),
                             error: (_, _) => const Text(
-                              'City suggestions are unavailable right now.',
+                              "We can't load city suggestions right now.",
                             ),
                           ),
                         ],
@@ -297,7 +311,7 @@ class _LocationCompletionScreenState
         return;
       }
       messenger.showSnackBar(
-        SnackBar(content: Text('Location saved as ${resolved.label}.')),
+        SnackBar(content: Text('Location updated to ${resolved.label}.')),
       );
       navigator.pop();
     } on ApiError catch (error) {

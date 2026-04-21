@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/user_summary.dart';
+import '../../shared/formatting/display_text.dart';
 import '../../theme/app_theme.dart';
 import '../browse/browse_screen.dart';
 import '../chat/conversations_screen.dart';
@@ -64,6 +65,8 @@ class _SignedInShellState extends State<SignedInShell> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final activeDestination = _destinations[_selectedIndex];
+    final userSummary =
+        '${widget.currentUser.name} · ${formatDisplayLabel(widget.currentUser.state)} profile';
     final pages = [
       BrowseScreen(currentUser: widget.currentUser),
       MatchesScreen(currentUser: widget.currentUser),
@@ -87,7 +90,7 @@ class _SignedInShellState extends State<SignedInShell> {
         child: IndexedStack(index: _selectedIndex, children: pages),
       ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         child: DecoratedBox(
           decoration: AppTheme.surfaceDecoration(
             context,
@@ -102,12 +105,12 @@ class _SignedInShellState extends State<SignedInShell> {
             borderRadius: AppTheme.panelRadius,
             prominent: true,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-                child: AnimatedSwitcher(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeInCubic,
@@ -118,18 +121,19 @@ class _SignedInShellState extends State<SignedInShell> {
                         decoration: BoxDecoration(
                           gradient: AppTheme.accentGradient(context),
                           borderRadius: const BorderRadius.all(
-                            Radius.circular(18),
+                            Radius.circular(16),
                           ),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(8),
                           child: Icon(
                             activeDestination.selectedIcon,
+                            size: 18,
                             color: colorScheme.onPrimary,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,52 +146,42 @@ class _SignedInShellState extends State<SignedInShell> {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              'Signed in as ${widget.currentUser.name}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                            KeyedSubtree(
+                              key: const Key('shell-active-user-summary'),
+                              child: Text(
+                                userSummary,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
                             ),
                           ],
-                        ),
-                      ),
-                      DecoratedBox(
-                        decoration: AppTheme.glassDecoration(context),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 9,
-                          ),
-                          child: Text(
-                            widget.currentUser.state,
-                            style: Theme.of(context).textTheme.labelLarge,
-                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const Divider(height: 1),
-              ClipRRect(
-                borderRadius: AppTheme.panelRadius,
-                child: NavigationBar(
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: (index) {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                  },
-                  destinations: _destinations
-                      .map(
-                        (destination) => NavigationDestination(
-                          icon: Icon(destination.icon),
-                          selectedIcon: Icon(destination.selectedIcon),
-                          label: destination.label,
-                        ),
-                      )
-                      .toList(growable: false),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: AppTheme.panelRadius,
+                  child: NavigationBar(
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: (index) {
+                      setState(() {
+                        _selectedIndex = index;
+                      });
+                    },
+                    destinations: _destinations
+                        .map(
+                          (destination) => NavigationDestination(
+                            icon: Icon(destination.icon),
+                            selectedIcon: Icon(destination.selectedIcon),
+                            label: destination.label,
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

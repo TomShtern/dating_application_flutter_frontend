@@ -12,6 +12,7 @@ import 'package:flutter_dating_application_1/models/matches_response.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
+import 'package:flutter_dating_application_1/shared/widgets/shell_hero.dart';
 
 void main() {
   const currentUser = UserSummary(
@@ -56,7 +57,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Your matches'), findsOneWidget);
+    expect(find.byType(ShellHero), findsOneWidget);
+    expect(find.text('Matches ready for a first hello'), findsOneWidget);
     expect(find.text('Noa'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+    expect(find.text('ACTIVE'), findsNothing);
     expect(find.text('Message now'), findsOneWidget);
 
     final messageNowButton = find.widgetWithText(FilledButton, 'Message now');

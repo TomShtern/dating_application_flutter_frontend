@@ -135,11 +135,6 @@ class _ConversationThreadScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Conversation with ${widget.conversation.otherUserName}',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
               Expanded(
                 child: threadState.when(
                   data: (messages) {
@@ -163,7 +158,6 @@ class _ConversationThreadScreenState
                       scrollController: _messagesScrollController,
                       messages: messages,
                       currentUserId: widget.currentUser.id,
-                      otherUserName: widget.conversation.otherUserName,
                       onRefresh: () => ref
                           .read(
                             conversationThreadControllerProvider(
@@ -188,30 +182,49 @@ class _ConversationThreadScreenState
               const SizedBox(height: 16),
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _messageController,
-                          minLines: 1,
-                          maxLines: 4,
-                          textInputAction: TextInputAction.send,
-                          onChanged: (_) => setState(() {}),
-                          onSubmitted: (_) => _handleSend(),
-                          decoration: const InputDecoration(
-                            labelText: 'Message',
-                            hintText: 'Send a message',
-                          ),
+                      Text(
+                        'Write a message',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Keep it easy to answer with a detail, a question, or a simple plan.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      FilledButton(
-                        onPressed: trimmedMessage.isEmpty || _isSending
-                            ? null
-                            : _handleSend,
-                        child: Text(_isSending ? 'Sending…' : 'Send'),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              minLines: 1,
+                              maxLines: 4,
+                              textInputAction: TextInputAction.send,
+                              onChanged: (_) => setState(() {}),
+                              onSubmitted: (_) => _handleSend(),
+                              decoration: const InputDecoration(
+                                labelText: 'Message',
+                                hintText:
+                                    'Share a detail, ask a question, or make a plan',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          FilledButton.icon(
+                            onPressed: trimmedMessage.isEmpty || _isSending
+                                ? null
+                                : _handleSend,
+                            icon: const Icon(Icons.send_rounded),
+                            label: Text(_isSending ? 'Sending…' : 'Send'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -334,14 +347,12 @@ class _MessageList extends StatelessWidget {
     required this.scrollController,
     required this.messages,
     required this.currentUserId,
-    required this.otherUserName,
     required this.onRefresh,
   });
 
   final ScrollController scrollController;
   final List<MessageDto> messages;
   final String currentUserId;
-  final String otherUserName;
   final Future<void> Function() onRefresh;
 
   @override
@@ -371,16 +382,16 @@ class _MessageList extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        isOutgoing ? 'You' : otherUserName,
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      const SizedBox(height: 8),
                       Text(message.content),
-                      const SizedBox(height: 8),
-                      Text(
-                        formatDateTimeStamp(message.sentAt),
-                        style: Theme.of(context).textTheme.bodySmall,
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: isOutgoing
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Text(
+                          formatDateTimeStamp(message.sentAt),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ),
                     ],
                   ),
