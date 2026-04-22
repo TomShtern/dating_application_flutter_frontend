@@ -6,8 +6,6 @@ import '../../api/api_error.dart';
 import '../../models/verification_result.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/formatting/date_formatting.dart';
-import '../../shared/widgets/section_intro_card.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import 'verification_provider.dart';
 
@@ -46,56 +44,11 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: AppTheme.screenPadding(),
           children: [
-            ShellHero(
-              eyebrowLabel: 'Contact check',
-              eyebrowIcon: Icons.verified_user_outlined,
-              title: 'Verify your contact details',
-              description:
-                  'We\'ll send a one-time code so you can confirm this email address or phone number belongs to you.',
-              badges: [
-                ShellHeroPill(
-                  icon: _method == 'EMAIL'
-                      ? Icons.email_outlined
-                      : Icons.sms_outlined,
-                  label: formatDisplayLabel(_method),
-                ),
-                const ShellHeroPill(
-                  icon: Icons.lock_outline_rounded,
-                  label: 'One-time code flow',
-                ),
-                if (kDebugMode)
-                  const ShellHeroPill(
-                    icon: Icons.science_outlined,
-                    label: 'Debug helpers stay separate',
-                  ),
-              ],
-            ),
-            SizedBox(height: AppTheme.sectionSpacing()),
-            const SectionIntroCard(
-              icon: Icons.route_outlined,
-              title: 'How it works',
-              description:
-                  'Choose a contact method, send the code, and confirm it here to finish the verification step.',
-              badges: [
-                ShellHeroPill(
-                  icon: Icons.looks_one_rounded,
-                  label: 'Pick email or phone',
-                ),
-                ShellHeroPill(
-                  icon: Icons.looks_two_rounded,
-                  label: 'Send one-time code',
-                ),
-                ShellHeroPill(
-                  icon: Icons.looks_3_rounded,
-                  label: 'Confirm to finish',
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.sectionSpacing()),
             _VerificationStepCard(
+              stepLabel: 'Step 1',
               title: 'Start verification',
               description:
-                  'Pick where we should send the code. You can change methods any time before you send it.',
+                  'Choose email or phone, then we\'ll send a code there.',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -141,9 +94,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             if (startResult != null) ...[
               SizedBox(height: AppTheme.sectionSpacing()),
               _VerificationStepCard(
+                stepLabel: 'Step 2',
                 title: 'Enter the code',
                 description:
-                    'We have a code ready for ${formatDisplayLabel(startResult.method)} at ${startResult.contact}. Enter it below to finish verification.',
+                    'Enter the code sent to ${startResult.contact} to finish verifying your ${formatDisplayLabel(startResult.method).toLowerCase()}.',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -151,11 +105,11 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        ShellHeroPill(
+                        _VerificationInfoChip(
                           icon: Icons.mark_email_read_outlined,
                           label: formatDisplayLabel(startResult.method),
                         ),
-                        ShellHeroPill(
+                        _VerificationInfoChip(
                           icon: Icons.alternate_email_outlined,
                           label: startResult.contact,
                         ),
@@ -281,11 +235,13 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
 class _VerificationStepCard extends StatelessWidget {
   const _VerificationStepCard({
+    required this.stepLabel,
     required this.title,
     required this.description,
     required this.child,
   });
 
+  final String stepLabel;
   final String title;
   final String description;
   final Widget child;
@@ -305,11 +261,50 @@ class _VerificationStepCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              stepLabel,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(title, style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(description, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VerificationInfoChip extends StatelessWidget {
+  const _VerificationInfoChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: AppTheme.chipRadius,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(label, style: theme.textTheme.labelLarge),
           ],
         ),
       ),
@@ -340,14 +335,14 @@ class _DevelopmentOnlyCodeCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.science_outlined, color: colorScheme.primary),
+                Icon(Icons.key_outlined, color: colorScheme.primary),
                 const SizedBox(width: 10),
-                Text('Development only', style: theme.textTheme.titleMedium),
+                Text('Test code', style: theme.textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              'This preview code is only visible in debug builds to unblock local testing.',
+              'Shown only in debug builds for local testing.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 14),

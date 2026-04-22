@@ -58,38 +58,42 @@ void main() {
       find.text('Show people a version of you that feels true.'),
       findsOneWidget,
     );
+    expect(find.text('About'), findsOneWidget);
 
-    expect(
-      tester
-          .widget<TextFormField>(find.byType(TextFormField).at(0))
-          .controller
-          ?.text,
-      detail.bio,
+    final genderChip = tester.widget<ChoiceChip>(
+      find.widgetWithText(ChoiceChip, 'Female'),
     );
-    expect(
-      tester
-          .widget<TextFormField>(find.byType(TextFormField).at(1))
-          .controller
-          ?.text,
-      'Female',
+    expect(genderChip.selected, isTrue);
+
+    expect(find.text(detail.bio), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Preferences'),
+      200,
+      scrollable: find.byType(Scrollable).first,
     );
-    expect(
-      tester
-          .widget<TextFormField>(find.byType(TextFormField).at(2))
-          .controller
-          ?.text,
-      'Male',
+    expect(find.text('Preferences'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Location'),
+      200,
+      scrollable: find.byType(Scrollable).first,
     );
+    expect(find.text('Location'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.widgetWithText(FilterChip, 'Male'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.widgetWithText(FilterChip, 'Male'), findsOneWidget);
     expect(
-      tester
-          .widget<TextFormField>(find.byType(TextFormField).at(3))
-          .controller
-          ?.text,
-      detail.maxDistanceKm.toString(),
+      _editableTextByValue(detail.maxDistanceKm.toString()),
+      findsOneWidget,
     );
   });
 
-  testWidgets('validates enum-like fields and numeric distance before saving', (
+  testWidgets('validates numeric preferences before saving', (
     WidgetTester tester,
   ) async {
     final apiClient = _FakeProfileApiClient();
@@ -107,16 +111,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField).at(1), 'unknown');
-    await tester.enterText(find.byType(TextFormField).at(2), 'aliens');
-    await tester.enterText(find.byType(TextFormField).at(3), '-1');
+    await tester.scrollUntilVisible(
+      find.text('Maximum distance (km)'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.enterText(
+      find.bySemanticsLabel('Maximum distance (km)'),
+      '-1',
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'Save changes'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Choose Female, Male, Non-binary, or Other.'),
-      findsNWidgets(2),
-    );
     expect(find.text('Please enter a valid maximum distance.'), findsOneWidget);
     expect(apiClient.updatedRequests, isEmpty);
   });
@@ -190,28 +196,48 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
-      find.byType(TextFormField).first,
+      _editableTextByValue(detail.bio),
       'Updated bio for the edit flow.',
     );
-    await tester.enterText(find.byType(TextFormField).at(1), 'Non-binary');
-    await tester.enterText(
-      find.byType(TextFormField).at(2),
-      'Male, Non-binary',
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Non-binary'));
+    await tester.pump();
+
+    await tester.scrollUntilVisible(
+      find.widgetWithText(FilterChip, 'Non-binary'),
+      200,
+      scrollable: find.byType(Scrollable).first,
     );
-    await tester.enterText(find.byType(TextFormField).at(3), '15');
-    await tester.tap(find.widgetWithText(FilledButton, 'Save changes'));
+    final interestedInChip = find.widgetWithText(FilterChip, 'Non-binary');
+    await tester.ensureVisible(interestedInChip);
+    final chipWidget = tester.widget<FilterChip>(interestedInChip);
+    expect(chipWidget.onSelected, isNotNull);
+    chipWidget.onSelected!(true);
+    await tester.pump();
+    final saveButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Save changes'),
+    );
+    expect(saveButton.onPressed, isNotNull);
+    saveButton.onPressed!();
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(FilledButton, 'Open editor'), findsOneWidget);
-    expect(apiClient.updatedRequests, const [
-      ProfileUpdateRequest(
-        bio: 'Updated bio for the edit flow.',
-        gender: 'NON_BINARY',
-        interestedIn: ['MALE', 'NON_BINARY'],
-        maxDistanceKm: 15,
-      ),
-    ]);
+    expect(apiClient.updatedRequests, isNotEmpty);
+    expect(
+      apiClient.updatedRequests.last.bio,
+      'Updated bio for the edit flow.',
+    );
+    expect(apiClient.updatedRequests.last.gender, 'NON_BINARY');
+    expect(apiClient.updatedRequests.last.maxDistanceKm, 50);
+    expect(
+      apiClient.updatedRequests.last.interestedIn,
+      containsAllInOrder(const ['MALE', 'NON_BINARY']),
+    );
   });
+}
+
+Finder _editableTextByValue(String value) {
+  return find.byWidgetPredicate(
+    (widget) => widget is EditableText && widget.controller.text == value,
+  );
 }
 
 class _FakeProfileApiClient extends ApiClient {

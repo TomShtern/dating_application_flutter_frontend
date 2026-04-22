@@ -86,6 +86,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Noa, 29'), findsOneWidget);
+    expect(find.text('About Noa'), findsOneWidget);
+    expect(find.text('Shared details'), findsOneWidget);
     expect(find.text('No bio added yet.'), findsOneWidget);
     expect(find.text('Not specified'), findsNWidgets(2));
     expect(find.text('Location not shared'), findsAtLeastNWidgets(1));
@@ -188,7 +190,11 @@ void main() {
       expect(find.text('Female'), findsOneWidget);
       expect(find.text('Male'), findsOneWidget);
       expect(find.text('Active'), findsAtLeastNWidgets(1));
+      expect(find.text('About Dana'), findsOneWidget);
+      expect(find.text('Profile details'), findsOneWidget);
       expect(find.text('Profile ready'), findsOneWidget);
+      expect(find.text('Review details'), findsOneWidget);
+      expect(find.text('Edit profile'), findsNothing);
       expect(find.text('4 of 4 essentials are filled in.'), findsNothing);
     },
   );
@@ -215,6 +221,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('Edit profile'), findsNothing);
+    expect(find.text('Shared details'), findsOneWidget);
   });
 
   testWidgets('shows safety actions for another user profile', (

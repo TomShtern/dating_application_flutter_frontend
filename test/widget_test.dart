@@ -74,8 +74,9 @@ void main() {
 
     expect(find.text('Choose a dev user'), findsOneWidget);
     expect(find.textContaining('Current user: none selected'), findsOneWidget);
-    expect(find.text('Continue as Dana'), findsOneWidget);
-    expect(find.text('Continue as Noa'), findsOneWidget);
+    expect(find.text('Tap to switch to this profile.'), findsNWidgets(2));
+    expect(find.text('Continue as Dana'), findsNothing);
+    expect(find.text('Continue as Noa'), findsNothing);
   });
 
   testWidgets('routes to browse when a persisted acting user exists', (

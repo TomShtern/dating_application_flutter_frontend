@@ -28,7 +28,7 @@ void main() {
         .first;
   }
 
-  testWidgets('uses user-facing copy and quarantines the debug code', (
+  testWidgets('keeps the main chrome user-facing and quarantines test code', (
     WidgetTester tester,
   ) async {
     final apiClient = _FakeVerificationApiClient(
@@ -56,6 +56,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Verification'), findsOneWidget);
+    expect(find.text('Verify your email or phone'), findsNothing);
+    expect(find.text('Start verification'), findsOneWidget);
     expect(
       find.text(
         'Use the backend-supported email or phone flow. In development, the generated code is surfaced so you can finish the flow without leaving the app.',
@@ -64,10 +66,12 @@ void main() {
     );
     expect(
       find.text(
-        'We\'ll send a one-time code so you can confirm this email address or phone number belongs to you.',
+        'Send a code to your email or phone, then enter it here to confirm it\'s yours.',
       ),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.text('Debug helpers stay separate'), findsNothing);
+    expect(find.text('How it works'), findsNothing);
 
     await tester.scrollUntilVisible(
       find.widgetWithText(FilledButton, 'Send verification code'),
@@ -83,7 +87,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Development only'),
+      find.text('Test code'),
       250,
       scrollable: verificationScrollable(),
     );
@@ -91,7 +95,7 @@ void main() {
 
     expect(apiClient.startedMethod, 'EMAIL');
     expect(apiClient.startedContact, 'dana@example.com');
-    expect(find.text('Development only'), findsOneWidget);
+    expect(find.text('Test code'), findsOneWidget);
     expect(find.widgetWithText(SelectableText, '246810'), findsOneWidget);
   });
 }

@@ -61,9 +61,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Stats'), findsOneWidget);
-    expect(find.text("Dana's progress at a glance"), findsOneWidget);
-    expect(find.text('2 tracked stats'), findsOneWidget);
-    expect(find.text('What these stats show'), findsOneWidget);
+    expect(find.text('Momentum for Dana'), findsOneWidget);
+    expect(find.text('2 highlights'), findsOneWidget);
+    expect(find.text('Active profile'), findsOneWidget);
+    expect(find.text('Why this snapshot matters'), findsNothing);
+    expect(find.text("Dana's momentum at a glance"), findsNothing);
+
+    expect(find.text('2 tracked stats'), findsNothing);
+    expect(find.text('What these stats show'), findsNothing);
 
     await tester.scrollUntilVisible(
       find.text('Likes Sent'),
@@ -74,12 +79,14 @@ void main() {
 
     expect(find.text('Likes Sent'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
+    expect(find.text('Momentum right now'), findsNothing);
+    expect(find.text('Latest backend snapshot'), findsNothing);
 
     await tester.tap(find.byTooltip('View achievements'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AchievementsScreen), findsOneWidget);
-    expect(find.text('Achievement progress for Dana'), findsOneWidget);
+    expect(find.text("Dana's achievement progress"), findsOneWidget);
     expect(find.text('1 unlocked'), findsOneWidget);
 
     await tester.scrollUntilVisible(

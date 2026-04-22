@@ -5,8 +5,8 @@ import '../../api/api_error.dart';
 import '../../models/pending_liker.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/section_intro_card.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import 'pending_likers_provider.dart';
 
@@ -31,28 +31,14 @@ class PendingLikersScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppTheme.screenPadding(),
           child: likersState.when(
             data: (likers) => RefreshIndicator(
               onRefresh: controller.refresh,
               child: ListView(
                 children: [
-                  SectionIntroCard(
-                    icon: Icons.favorite_rounded,
-                    title: "People who've already liked you",
-                    description:
-                        'Open a profile when you want a closer look before deciding what to do next.',
-                    badges: [
-                      Chip(
-                        label: Text(
-                          likers.length == 1
-                              ? '1 person waiting'
-                              : '${likers.length} people waiting',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                  _PendingLikersSummaryCard(waitingCount: likers.length),
+                  SizedBox(height: AppTheme.sectionSpacing(compact: true)),
                   if (likers.isEmpty)
                     AppAsyncState.empty(
                       message:
@@ -62,7 +48,9 @@ class PendingLikersScreen extends ConsumerWidget {
                   else
                     ...likers.map(
                       (liker) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: EdgeInsets.only(
+                          bottom: AppTheme.listSpacing(compact: true),
+                        ),
                         child: _PendingLikerCard(liker: liker),
                       ),
                     ),
@@ -85,6 +73,74 @@ class PendingLikersScreen extends ConsumerWidget {
   }
 }
 
+class _PendingLikersSummaryCard extends StatelessWidget {
+  const _PendingLikersSummaryCard({required this.waitingCount});
+
+  final int waitingCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final countLabel = waitingCount == 1
+        ? '1 person waiting'
+        : '$waitingCount people waiting';
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surface.withValues(alpha: 0.92),
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: const BorderRadius.all(Radius.circular(16)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Icon(Icons.favorite_rounded, color: colorScheme.primary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Already interested',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Open a profile when you want a closer read on the people who already liked you.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            DecoratedBox(
+              decoration: AppTheme.glassDecoration(context),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                child: Text(countLabel, style: theme.textTheme.labelLarge),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PendingLikerCard extends StatelessWidget {
   const _PendingLikerCard({required this.liker});
 
@@ -101,63 +157,84 @@ class _PendingLikerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusLabel = liker.likedAt == null
-        ? 'Liked you recently'
-        : 'Liked you on ${formatShortDate(liker.likedAt!)}';
+    final statusLabel = _pendingLikerStatusLabel(liker);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _openProfile(context),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  UserAvatar(name: liker.name, radius: 22),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          liker.age > 0
-                              ? '${liker.name}, ${liker.age}'
-                              : liker.name,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Open their profile to learn more.',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surface.withValues(alpha: 0.94),
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                UserAvatar(name: liker.name, radius: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        liker.age > 0
+                            ? '${liker.name}, ${liker.age}'
+                            : liker.name,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _pendingLikerContextLine(liker),
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right_rounded),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [Chip(label: Text(statusLabel))],
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.tonalIcon(
-                  onPressed: () => _openProfile(context),
-                  icon: const Icon(Icons.person_outline_rounded),
-                  label: const Text('View profile'),
                 ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(
+                  avatar: const Icon(Icons.schedule_rounded, size: 18),
+                  label: Text(statusLabel),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonalIcon(
+                onPressed: () => _openProfile(context),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: const Text('Open profile'),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+String _pendingLikerStatusLabel(PendingLiker liker) {
+  if (liker.likedAt == null) {
+    return 'Recent like';
+  }
+
+  return 'Liked ${formatShortDate(liker.likedAt!)}';
+}
+
+String _pendingLikerContextLine(PendingLiker liker) {
+  if (liker.likedAt case final likedAt?) {
+    return '${liker.name} made the first move on ${formatShortDate(likedAt)}.';
+  }
+
+  return '${liker.name} is one of your newest likes.';
 }

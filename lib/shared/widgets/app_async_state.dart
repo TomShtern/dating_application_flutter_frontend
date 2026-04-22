@@ -63,78 +63,84 @@ class AppAsyncState extends StatelessWidget {
       builder: (context, constraints) {
         final compact = constraints.maxHeight < 220;
 
-        return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 360),
-            child: SingleChildScrollView(
-              child: Card(
-                color: colorScheme.surface,
-                child: Padding(
-                  padding: EdgeInsets.all(compact ? 16 : 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: compact ? 48 : 64,
-                        height: compact ? 48 : 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: highlightColors,
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+        return Padding(
+          padding: EdgeInsets.only(
+            top: compact ? 0 : AppTheme.sectionSpacing(),
+          ),
+          child: Align(
+            alignment: compact ? Alignment.center : Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: SingleChildScrollView(
+                child: Card(
+                  color: colorScheme.surface,
+                  child: Padding(
+                    padding: EdgeInsets.all(compact ? 16 : 22),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: compact ? 48 : 60,
+                          height: compact ? 48 : 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: highlightColors,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: AppTheme.softShadow(context),
                           ),
-                          boxShadow: AppTheme.softShadow(context),
+                          child: Icon(
+                            icon,
+                            size: compact ? 24 : 30,
+                            color: iconColor,
+                          ),
                         ),
-                        child: Icon(
-                          icon,
-                          size: compact ? 24 : 32,
-                          color: iconColor,
+                        SizedBox(height: compact ? 12 : 14),
+                        Text(
+                          title,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
-                      ),
-                      SizedBox(height: compact ? 12 : 16),
-                      Text(
-                        title,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      SizedBox(height: compact ? 8 : 10),
-                      Text(
-                        message,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      if (_variant == _AppAsyncStateVariant.loading) ...[
-                        const SizedBox(height: 16),
-                        const CircularProgressIndicator(),
-                      ],
-                      if (_variant == _AppAsyncStateVariant.empty) ...[
-                        if (onRefresh != null) ...[
+                        SizedBox(height: compact ? 8 : 10),
+                        Text(
+                          message,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        if (_variant == _AppAsyncStateVariant.loading) ...[
                           const SizedBox(height: 16),
-                          TextButton.icon(
-                            onPressed: onRefresh,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Refresh'),
-                          ),
-                        ] else if (!compact) ...[
+                          const CircularProgressIndicator(),
+                        ],
+                        if (_variant == _AppAsyncStateVariant.empty) ...[
+                          if (onRefresh != null) ...[
+                            const SizedBox(height: 16),
+                            TextButton.icon(
+                              onPressed: onRefresh,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Refresh'),
+                            ),
+                          ] else if (!compact) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              'Check back later for updates.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ],
+                        if (_variant == _AppAsyncStateVariant.error &&
+                            onRetry != null) ...[
                           const SizedBox(height: 12),
-                          Text(
-                            'Check back later for updates.',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium,
+                          FilledButton.icon(
+                            onPressed: onRetry,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
                           ),
                         ],
                       ],
-                      if (_variant == _AppAsyncStateVariant.error &&
-                          onRetry != null) ...[
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          onPressed: onRetry,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Retry'),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
               ),

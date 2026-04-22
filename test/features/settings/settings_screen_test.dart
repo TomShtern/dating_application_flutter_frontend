@@ -60,11 +60,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(AppBar, 'Settings'), findsOneWidget);
-      expect(find.byType(ShellHero), findsOneWidget);
-      expect(find.text('Current session'), findsOneWidget);
+      expect(find.byType(ShellHero), findsNothing);
+      expect(find.text('Current session'), findsNothing);
+      expect(find.text('Current profile'), findsOneWidget);
       expect(find.text('Current dev session'), findsNothing);
       expect(find.text('Dana'), findsOneWidget);
-      expect(find.text('Active profile'), findsOneWidget);
+      expect(find.textContaining('Active profile'), findsOneWidget);
+      expect(find.text('System sync'), findsNothing);
+      expect(find.text('Quick access'), findsOneWidget);
+      expect(
+        find.text('Jump to the places you are most likely to revisit.'),
+        findsNothing,
+      );
       expect(
         find.widgetWithText(OutlinedButton, 'Switch profile'),
         findsOneWidget,
@@ -226,6 +233,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Achievements'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Conversation Starter'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Conversation Starter'), findsOneWidget);
   });
 }

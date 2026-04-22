@@ -96,7 +96,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('shell-active-user-summary')),
-        matching: find.text('Dana · Active profile'),
+        matching: find.text('Dana'),
       ),
       findsOneWidget,
     );

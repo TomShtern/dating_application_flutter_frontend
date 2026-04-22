@@ -16,7 +16,7 @@ void main() {
     );
   }
 
-  testWidgets('renders friendly timestamps and clear read states', (
+  testWidgets('renders a compact filter bar with consistent read states', (
     WidgetTester tester,
   ) async {
     final now = DateTime.now();
@@ -52,8 +52,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Notifications'), findsOneWidget);
-    expect(find.text('Notification center'), findsOneWidget);
+    expect(
+      find.text('Catch up on matches, messages, and other updates.'),
+      findsNothing,
+    );
+    expect(find.text('2 notifications'), findsOneWidget);
     expect(find.text('1 unread'), findsOneWidget);
+    expect(find.text('Read state and timing'), findsNothing);
+    expect(find.text('Showing all activity'), findsNothing);
+    expect(find.byType(FilterChip), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Unread'),
@@ -65,6 +72,7 @@ void main() {
     expect(find.text('Unread'), findsOneWidget);
     expect(find.text('Mark read'), findsOneWidget);
     expect(find.textContaining('2h ago'), findsOneWidget);
+    expect(find.textContaining('Apr '), findsNothing);
 
     await tester.scrollUntilVisible(
       find.text('Read'),

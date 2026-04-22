@@ -233,7 +233,7 @@ void main() {
     expect(find.text('Last swipe undone'), findsOneWidget);
   });
 
-  testWidgets('removes developer-facing copy from the candidate card', (
+  testWidgets('keeps discover chrome concise around the candidate card', (
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -262,13 +262,31 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ShellHero), findsOneWidget);
-    expect(find.text('Meet people worth your next hello'), findsOneWidget);
+    expect(find.text('Meet people worth your next hello'), findsNothing);
+    expect(
+      find.text(
+        'Fresh picks, standout profiles, and a quicker path to like or pass.',
+      ),
+      findsNothing,
+    );
+    expect(
+      find.text('Swipe on a profile or open it for more detail.'),
+      findsOneWidget,
+    );
+    expect(find.text('Session details'), findsNothing);
     expect(find.text('Active profile'), findsWidgets);
     expect(find.textContaining('backend-driven'), findsNothing);
     expect(
       find.textContaining('browse payload is intentionally lean'),
       findsNothing,
     );
+    expect(
+      find.textContaining(
+        'Take a quick look, then like, pass, or open the full profile before you decide.',
+      ),
+      findsNothing,
+    );
+    expect(find.textContaining('Browsing as Dana'), findsOneWidget);
     expect(find.text('See full profile'), findsOneWidget);
   });
 

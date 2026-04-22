@@ -161,6 +161,12 @@ class _ProfileContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
+          SizedBox(height: AppTheme.sectionSpacing()),
+          _ProfileSection(
+            icon: Icons.notes_rounded,
+            title: _aboutTitle(detail),
+            value: _bio(detail),
+          ),
           if (isCurrentUser) ...[
             SizedBox(height: AppTheme.sectionSpacing()),
             _ProfileCompletenessCard(
@@ -172,19 +178,12 @@ class _ProfileContent extends StatelessWidget {
           SizedBox(height: AppTheme.sectionSpacing()),
           SectionIntroCard(
             icon: Icons.person_search_outlined,
-            title: isCurrentUser
-                ? 'What people can see'
-                : 'Shared profile details',
+            title: isCurrentUser ? 'Profile details' : 'Shared details',
             description: isCurrentUser
-                ? 'These details shape how discovery and profile previews feel to other people.'
+                ? 'Bio, preferences, location, and photos shape how your profile shows up across discovery.'
                 : 'A quick read on the basics, preferences, and photos shared on this profile.',
           ),
           SizedBox(height: AppTheme.sectionSpacing()),
-          _ProfileSection(
-            icon: Icons.notes_rounded,
-            title: 'Bio',
-            value: _bio(detail),
-          ),
           _ProfileSection(
             icon: Icons.person_outline_rounded,
             title: 'Gender',
@@ -227,9 +226,7 @@ class _ProfileHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShellHero(
       title: _headline(detail),
-      description: isCurrentUser
-          ? 'A quick view of the details other people can currently discover about you.'
-          : 'Bio, preferences, and photos shared on this profile.',
+      description: _heroSummary(detail, isCurrentUser: isCurrentUser),
       eyebrowLabel: isCurrentUser ? 'Your profile' : 'Profile snapshot',
       eyebrowIcon: isCurrentUser
           ? Icons.person_rounded
@@ -334,9 +331,9 @@ class _ProfileCompletenessCard extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  const ShellHeroPill(
+                  ShellHeroPill(
                     icon: Icons.check_circle_rounded,
-                    label: '4 essentials complete',
+                    label: '$completedCount essentials complete',
                   ),
                   const ShellHeroPill(
                     icon: Icons.explore_rounded,
@@ -392,7 +389,7 @@ class _ProfileCompletenessCard extends StatelessWidget {
                 FilledButton.tonalIcon(
                   onPressed: onEditProfile,
                   icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Edit profile'),
+                  label: const Text('Review details'),
                 ),
                 if (missingLocation)
                   FilledButton.tonalIcon(
@@ -608,6 +605,16 @@ String _bio(UserDetail detail) {
   }
 
   return bio;
+}
+
+String _aboutTitle(UserDetail detail) {
+  return 'About ${_displayName(detail)}';
+}
+
+String _heroSummary(UserDetail detail, {required bool isCurrentUser}) {
+  return isCurrentUser
+      ? 'A quick view of the details other people can currently discover about you.'
+      : 'A snapshot of the profile details this person has chosen to share.';
 }
 
 String _gender(UserDetail detail) {

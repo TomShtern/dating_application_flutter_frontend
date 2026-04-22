@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../models/user_summary.dart';
-import '../../shared/formatting/display_text.dart';
 import '../../theme/app_theme.dart';
 import '../browse/browse_screen.dart';
 import '../chat/conversations_screen.dart';
@@ -65,8 +64,6 @@ class _SignedInShellState extends State<SignedInShell> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final activeDestination = _destinations[_selectedIndex];
-    final userSummary =
-        '${widget.currentUser.name} · ${formatDisplayLabel(widget.currentUser.state)} profile';
     final pages = [
       BrowseScreen(currentUser: widget.currentUser),
       MatchesScreen(currentUser: widget.currentUser),
@@ -90,7 +87,7 @@ class _SignedInShellState extends State<SignedInShell> {
         child: IndexedStack(index: _selectedIndex, children: pages),
       ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        minimum: const EdgeInsets.fromLTRB(10, 0, 10, 8),
         child: DecoratedBox(
           decoration: AppTheme.surfaceDecoration(
             context,
@@ -106,7 +103,7 @@ class _SignedInShellState extends State<SignedInShell> {
             prominent: true,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -125,41 +122,52 @@ class _SignedInShellState extends State<SignedInShell> {
                           ),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(7),
                           child: Icon(
                             activeDestination.selectedIcon,
-                            size: 18,
+                            size: 17,
                             color: colorScheme.onPrimary,
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            KeyedSubtree(
-                              key: const Key('shell-active-destination-label'),
-                              child: Text(
-                                activeDestination.label,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
+                        child: KeyedSubtree(
+                          key: const Key('shell-active-destination-label'),
+                          child: Text(
+                            activeDestination.label,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.9,
+                          ),
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(999),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          child: KeyedSubtree(
+                            key: const Key('shell-active-user-summary'),
+                            child: Text(
+                              widget.currentUser.name,
+                              style: Theme.of(context).textTheme.labelLarge,
                             ),
-                            const SizedBox(height: 2),
-                            KeyedSubtree(
-                              key: const Key('shell-active-user-summary'),
-                              child: Text(
-                                userSummary,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: AppTheme.panelRadius,
                   child: NavigationBar(

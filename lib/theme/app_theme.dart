@@ -7,14 +7,14 @@ class AppTheme {
   static const BorderRadius panelRadius = BorderRadius.all(Radius.circular(32));
   static const BorderRadius chipRadius = BorderRadius.all(Radius.circular(999));
   static const double navBarHeight = 64;
-  static const double pagePadding = 20;
-  static const double compactPagePadding = 16;
-  static const double sectionGap = 16;
-  static const double compactSectionGap = 12;
-  static const double cardGap = 12;
-  static const double compactCardGap = 10;
-  static const double cardPadding = 18;
-  static const double compactCardPadding = 16;
+  static const double pagePadding = 18;
+  static const double compactPagePadding = 14;
+  static const double sectionGap = 14;
+  static const double compactSectionGap = 10;
+  static const double cardGap = 10;
+  static const double compactCardGap = 8;
+  static const double cardPadding = 16;
+  static const double compactCardPadding = 14;
 
   static ThemeData light() {
     return _theme(Brightness.light);
@@ -108,6 +108,7 @@ class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: ButtonStyle(
           elevation: const WidgetStatePropertyAll(0),
+          minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
           backgroundColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.disabled)) {
               return colorScheme.surfaceContainerHighest;
@@ -123,7 +124,7 @@ class AppTheme {
             return null;
           }),
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
           shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
@@ -137,6 +138,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
           foregroundColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.disabled)) {
               return colorScheme.onSurface.withValues(alpha: 0.42);
@@ -145,7 +147,7 @@ class AppTheme {
             return null;
           }),
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
           side: WidgetStateProperty.resolveWith((states) {
             final alpha = states.contains(WidgetState.disabled) ? 0.18 : 0.38;
@@ -172,8 +174,9 @@ class AppTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           ),
           shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
@@ -191,7 +194,7 @@ class AppTheme {
         ),
       ),
       listTileTheme: ListTileThemeData(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         shape: const RoundedRectangleBorder(borderRadius: cardRadius),
         iconColor: colorScheme.primary,
       ),

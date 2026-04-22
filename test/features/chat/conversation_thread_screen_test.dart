@@ -85,27 +85,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Conversation with Noa'), findsNothing);
-    expect(find.text('Write a message'), findsOneWidget);
+    expect(find.text('Keep it easy to answer.'), findsNothing);
     expect(
-      find.text('Share a detail, ask a question, or make a plan'),
-      findsOneWidget,
+      find.text('A detail, a question, or a simple plan works well.'),
+      findsNothing,
     );
     expect(find.text('Hey Dana'), findsOneWidget);
 
-    final initialSendButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Send'),
+    final initialSendButton = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.send_rounded),
     );
     expect(initialSendButton.onPressed, isNull);
 
     await tester.enterText(find.byType(TextField), 'Hey there');
     await tester.pump();
 
-    final enabledSendButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Send'),
+    final enabledSendButton = tester.widget<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.send_rounded),
     );
     expect(enabledSendButton.onPressed, isNotNull);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.send_rounded));
     await tester.pumpAndSettle();
 
     expect(apiClient.lastSentContent, 'Hey there');
@@ -115,6 +115,75 @@ void main() {
     final messageField = tester.widget<TextField>(find.byType(TextField));
     expect(messageField.controller?.text, isEmpty);
   });
+
+  testWidgets(
+    'groups messages by day and anchors short threads to the latest messages',
+    (WidgetTester tester) async {
+      final apiClient = _FakeConversationThreadApiClient(
+        messageResponses: [
+          [
+            MessageDto(
+              id: 'message-1',
+              conversationId: conversation.id,
+              senderId: conversation.otherUserId,
+              content: 'Coffee tomorrow?',
+              sentAt: DateTime(2026, 4, 18, 14, 20),
+            ),
+            MessageDto(
+              id: 'message-2',
+              conversationId: conversation.id,
+              senderId: conversation.otherUserId,
+              content: 'I found a place by the water.',
+              sentAt: DateTime(2026, 4, 18, 14, 22),
+            ),
+            MessageDto(
+              id: 'message-3',
+              conversationId: conversation.id,
+              senderId: currentUser.id,
+              content: 'That sounds perfect.',
+              sentAt: DateTime(2026, 4, 19, 9, 15),
+            ),
+          ],
+        ],
+        sentMessage: MessageDto(
+          id: 'message-4',
+          conversationId: conversation.id,
+          senderId: currentUser.id,
+          content: 'See you there!',
+          sentAt: DateTime(2026, 4, 19, 9, 20),
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            apiClientProvider.overrideWithValue(apiClient),
+            selectedUserProvider.overrideWith((ref) async => currentUser),
+          ],
+          child: MaterialApp(
+            home: ConversationThreadScreen(
+              currentUser: currentUser,
+              conversation: conversation,
+              refreshInterval: Duration.zero,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 messages so far'), findsOneWidget);
+      expect(find.text('Started Apr 18, 2026'), findsOneWidget);
+      expect(find.text('Apr 18, 2026'), findsOneWidget);
+      expect(find.text('Apr 19, 2026'), findsOneWidget);
+
+      final summaryTop = tester.getTopLeft(find.text('3 messages so far')).dy;
+      final screenHeight = tester.getSize(find.byType(Scaffold)).height;
+      expect(summaryTop, lessThan(screenHeight * 0.55));
+
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
+      expect(find.byType(ListView), findsNothing);
+    },
+  );
 
   testWidgets('shows an empty state when the conversation has no messages', (
     WidgetTester tester,

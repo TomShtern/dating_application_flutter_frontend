@@ -24,10 +24,6 @@ class MatchesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final matchesState = ref.watch(matchesProvider);
-    final matchCount = matchesState.maybeWhen(
-      data: (response) => response.matches.length,
-      orElse: () => null,
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -46,29 +42,6 @@ class MatchesScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ShellHero(
-                compact: true,
-                eyebrowLabel: 'Matches',
-                eyebrowIcon: Icons.favorite_rounded,
-                title: 'Matches ready for a first hello',
-                description:
-                    'When the interest goes both ways, your next message should feel easy to start.',
-                badges: [
-                  ShellHeroPill(
-                    icon: Icons.bolt_rounded,
-                    label: switch (matchCount) {
-                      null => 'Syncing matches',
-                      1 => '1 mutual connection',
-                      final count => '$count mutual connections',
-                    },
-                  ),
-                  ShellHeroPill(
-                    icon: Icons.person_outline_rounded,
-                    label: 'For ${currentUser.name}',
-                  ),
-                ],
-              ),
-              SizedBox(height: AppTheme.sectionSpacing()),
               Expanded(
                 child: matchesState.when(
                   data: (response) {
@@ -87,7 +60,7 @@ class MatchesScreen extends ConsumerWidget {
                       child: ListView.separated(
                         itemCount: response.matches.length,
                         separatorBuilder: (context, index) =>
-                            const SizedBox(height: 12),
+                            SizedBox(height: AppTheme.listSpacing()),
                         itemBuilder: (context, index) {
                           return _MatchCard(
                             currentUser: currentUser,
@@ -168,15 +141,15 @@ class _MatchCard extends StatelessWidget {
           borderRadius: AppTheme.cardRadius,
           onTap: () => _openConversation(context),
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    UserAvatar(name: match.otherUserName, radius: 30),
-                    const SizedBox(width: 14),
+                    UserAvatar(name: match.otherUserName, radius: 28),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,12 +166,6 @@ class _MatchCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: 'View profile',
-                      onPressed: () => _openProfile(context),
-                      icon: const Icon(Icons.person_outline_rounded),
-                    ),
                     SafetyActionsButton(
                       targetUserId: match.otherUserId,
                       targetUserName: match.otherUserName,
@@ -206,7 +173,7 @@ class _MatchCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -219,17 +186,24 @@ class _MatchCard extends StatelessWidget {
                       icon: Icons.verified_user_outlined,
                       label: formatDisplayLabel(match.state),
                     ),
-                    const ShellHeroPill(
-                      icon: Icons.chat_bubble_outline_rounded,
-                      label: 'Ready to message',
-                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () => _openConversation(context),
-                  icon: const Icon(Icons.forum_rounded),
-                  label: const Text('Message now'),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () => _openConversation(context),
+                      icon: const Icon(Icons.forum_rounded),
+                      label: const Text('Message now'),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => _openProfile(context),
+                      icon: const Icon(Icons.person_outline_rounded),
+                      label: const Text('View profile'),
+                    ),
+                  ],
                 ),
               ],
             ),

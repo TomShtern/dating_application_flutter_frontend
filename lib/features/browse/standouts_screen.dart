@@ -40,9 +40,7 @@ class StandoutsScreen extends ConsumerWidget {
                   SectionIntroCard(
                     icon: Icons.auto_awesome_rounded,
                     title: 'Profiles worth a closer look',
-                    description: snapshot.message.isEmpty
-                        ? 'These picks stood out in your recommendations, so you can start with the strongest signals first.'
-                        : snapshot.message,
+                    description: _humanizeStandoutsIntro(snapshot.message),
                     badges: [
                       Chip(
                         label: Text(
@@ -105,81 +103,133 @@ class _StandoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final metadata = _standoutMetadata(standout);
+    final theme = Theme.of(context);
+
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _openProfile(context),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  UserAvatar(name: standout.standoutUserName, radius: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          standout.standoutUserAge > 0
-                              ? '${standout.standoutUserName}, ${standout.standoutUserAge}'
-                              : standout.standoutUserName,
-                          style: Theme.of(context).textTheme.titleLarge,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                UserAvatar(name: standout.standoutUserName, radius: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        standout.standoutUserAge > 0
+                            ? '${standout.standoutUserName}, ${standout.standoutUserAge}'
+                            : standout.standoutUserName,
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Worth a closer look',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Strong match signal',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right_rounded),
-                ],
-              ),
-              const SizedBox(height: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _humanizeStandoutReason(standout),
+              style: theme.textTheme.bodyLarge,
+            ),
+            if (metadata != null) ...[
+              const SizedBox(height: 10),
               Text(
-                standout.reason.isEmpty
-                    ? 'We picked this profile because it stood out in your recommendations.'
-                    : standout.reason,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Chip(label: Text('Rank #${standout.rank}')),
-                  Chip(label: Text('Score ${standout.score}')),
-                  if (standout.createdAt != null)
-                    Chip(
-                      label: Text(
-                        'Suggested ${formatShortDate(standout.createdAt!)}',
-                      ),
-                    ),
-                  if (standout.interactedAt != null)
-                    Chip(
-                      label: Text(
-                        'Opened ${formatShortDate(standout.interactedAt!)}',
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.tonalIcon(
-                  onPressed: () => _openProfile(context),
-                  icon: const Icon(Icons.person_outline_rounded),
-                  label: const Text('Open profile'),
+                metadata,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
-          ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => _openProfile(context),
+                child: const Text('Open profile'),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+String? _standoutMetadata(Standout standout) {
+  final parts = <String>[];
+
+  if (standout.rank > 0 && standout.score > 0) {
+    parts.add('#${standout.rank} · ${standout.score} points');
+  } else if (standout.rank > 0) {
+    parts.add('#${standout.rank}');
+  } else if (standout.score > 0) {
+    parts.add('${standout.score} points');
+  }
+
+  if (standout.createdAt != null) {
+    parts.add('Suggested ${formatShortDate(standout.createdAt!)}');
+  }
+
+  if (standout.interactedAt != null) {
+    parts.add('Opened ${formatShortDate(standout.interactedAt!)}');
+  }
+
+  if (parts.isEmpty) {
+    return null;
+  }
+
+  return parts.join(' · ');
+}
+
+String _humanizeStandoutsIntro(String message) {
+  final trimmed = message.trim();
+  if (trimmed.isEmpty || _looksBackendAuthored(trimmed)) {
+    return 'These picks feel especially promising right now, so you can start with the profiles most worth a closer look.';
+  }
+
+  return trimmed;
+}
+
+String _humanizeStandoutReason(Standout standout) {
+  final reason = standout.reason.trim();
+  if (reason.isEmpty) {
+    return standout.rank > 0 && standout.rank <= 3
+        ? 'One of the most promising profiles in your current picks.'
+        : 'This profile stood out as a strong place to start a conversation.';
+  }
+
+  if (_looksBackendAuthored(reason)) {
+    if (reason.toLowerCase().contains('reply odds')) {
+      return 'This profile looks especially promising for an easy back-and-forth right now.';
+    }
+
+    return standout.interactedAt != null
+        ? 'Worth another look if you want to pick the conversation back up.'
+        : 'This profile looks like a strong fit for a good conversation.';
+  }
+
+  return reason;
+}
+
+bool _looksBackendAuthored(String value) {
+  final lower = value.toLowerCase();
+
+  return lower.contains('backend') ||
+      lower.contains('reply odds') ||
+      lower.contains('rank suggests') ||
+      lower.contains('scoring model') ||
+      lower.contains('candidate');
 }

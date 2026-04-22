@@ -6,8 +6,6 @@ import '../../shared/formatting/display_text.dart';
 import '../../models/notification_item.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/section_intro_card.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import 'notifications_provider.dart';
 
@@ -53,47 +51,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: AppTheme.screenPadding(),
                 children: [
-                  ShellHero(
-                    eyebrowLabel: 'Activity',
-                    eyebrowIcon: Icons.notifications_active_outlined,
-                    title: 'Notification center',
-                    description:
-                        'Unread items stay highlighted so it is obvious what still needs attention, and friendly timestamps help you triage quickly.',
-                    badges: [
-                      ShellHeroPill(
-                        icon: Icons.notifications_none_rounded,
-                        label: '${notifications.length} total',
-                      ),
-                      ShellHeroPill(
-                        icon: Icons.mark_email_unread_outlined,
-                        label: '$unreadCount unread',
-                      ),
-                      ShellHeroPill(
-                        icon: unreadOnly
-                            ? Icons.filter_alt_rounded
-                            : Icons.inbox_outlined,
-                        label: unreadOnly
-                            ? 'Showing unread only'
-                            : 'Showing all activity',
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: AppTheme.sectionSpacing()),
-                  const SectionIntroCard(
-                    icon: Icons.schedule_rounded,
-                    title: 'Read state and timing',
-                    description:
-                        'Unread notifications stay visually elevated, while each item shows a friendlier relative timestamp alongside its exact date.',
-                  ),
-                  SizedBox(height: AppTheme.sectionSpacing()),
                   _NotificationsControlsCard(
+                    totalCount: notifications.length,
+                    unreadCount: unreadCount,
                     unreadOnly: unreadOnly,
                     markingAllRead: _markingAllRead,
                     canMarkAllRead: unreadCount > 0,
                     onUnreadOnlyChanged: controller.setUnreadOnly,
                     onMarkAllRead: _handleMarkAllRead,
                   ),
-                  SizedBox(height: AppTheme.sectionSpacing()),
+                  SizedBox(height: AppTheme.sectionSpacing(compact: true)),
                   if (notifications.isEmpty)
                     AppAsyncState.empty(
                       message: unreadOnly
@@ -224,8 +191,12 @@ class _NotificationTile extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: (unread ? colorScheme.primaryContainer : colorScheme.surface)
-            .withValues(alpha: unread ? 0.36 : 0.9),
+        color:
+            (unread
+                    ? colorScheme.primaryContainer
+                    : colorScheme.surfaceContainerLow)
+                .withValues(alpha: unread ? 0.32 : 0.92),
+        prominent: unread,
       ),
       child: Padding(
         padding: AppTheme.sectionPadding(),
@@ -259,7 +230,9 @@ class _NotificationTile extends StatelessWidget {
                         child: Text(
                           item.title,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: unread ? FontWeight.w800 : null,
+                            fontWeight: unread
+                                ? FontWeight.w800
+                                : FontWeight.w700,
                           ),
                         ),
                       ),
@@ -269,28 +242,15 @@ class _NotificationTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(message, style: theme.textTheme.bodyMedium),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _NotificationMetaChip(
-                        icon: Icons.sell_outlined,
-                        label: formatDisplayLabel(item.type),
-                      ),
-                      if (createdAt != null)
-                        _NotificationMetaChip(
-                          icon: Icons.schedule_rounded,
-                          label: _formatFriendlyNotificationTimestamp(
-                            createdAt,
-                          ),
-                        ),
-                      if (createdAt != null)
-                        _NotificationMetaChip(
-                          icon: Icons.event_outlined,
-                          label: formatDateTimeStamp(createdAt),
-                        ),
-                    ],
+                  const SizedBox(height: 12),
+                  Text(
+                    createdAt == null
+                        ? formatDisplayLabel(item.type)
+                        : '${formatDisplayLabel(item.type)} • ${_formatFriendlyNotificationTimestamp(createdAt)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   if (unread) ...[
                     const SizedBox(height: 14),
@@ -315,6 +275,8 @@ class _NotificationTile extends StatelessWidget {
 
 class _NotificationsControlsCard extends StatelessWidget {
   const _NotificationsControlsCard({
+    required this.totalCount,
+    required this.unreadCount,
     required this.unreadOnly,
     required this.markingAllRead,
     required this.canMarkAllRead,
@@ -322,6 +284,8 @@ class _NotificationsControlsCard extends StatelessWidget {
     required this.onMarkAllRead,
   });
 
+  final int totalCount;
+  final int unreadCount;
   final bool unreadOnly;
   final bool markingAllRead;
   final bool canMarkAllRead;
@@ -330,7 +294,12 @@ class _NotificationsControlsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final colorScheme = Theme.of(context).colorScheme;
+    final totalLabel = totalCount == 1
+        ? '1 notification'
+        : '$totalCount notifications';
+    final unreadLabel = unreadCount == 1 ? '1 unread' : '$unreadCount unread';
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
@@ -338,60 +307,44 @@ class _NotificationsControlsCard extends StatelessWidget {
         color: colorScheme.surface.withValues(alpha: 0.9),
       ),
       child: Padding(
-        padding: AppTheme.sectionPadding(),
+        padding: AppTheme.sectionPadding(compact: true),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SwitchListTile.adaptive(
-              value: unreadOnly,
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Unread only'),
-              subtitle: const Text(
-                'Focus on activity you have not cleared yet.',
+            Text(totalLabel, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              unreadLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
-              onChanged: onUnreadOnlyChanged,
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.tonalIcon(
-                onPressed: !canMarkAllRead || markingAllRead
-                    ? null
-                    : onMarkAllRead,
-                icon: const Icon(Icons.done_all_rounded),
-                label: Text(markingAllRead ? 'Working…' : 'Mark all read'),
-              ),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                FilterChip(
+                  selected: unreadOnly,
+                  onSelected: onUnreadOnlyChanged,
+                  label: const Text('Unread only'),
+                  avatar: Icon(
+                    unreadOnly
+                        ? Icons.mark_email_unread_outlined
+                        : Icons.inbox_outlined,
+                    size: 18,
+                  ),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: !canMarkAllRead || markingAllRead
+                      ? null
+                      : onMarkAllRead,
+                  icon: const Icon(Icons.done_all_rounded),
+                  label: Text(markingAllRead ? 'Working…' : 'Mark all read'),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NotificationMetaChip extends StatelessWidget {
-  const _NotificationMetaChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.75),
-        borderRadius: AppTheme.chipRadius,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(label, style: theme.textTheme.labelMedium),
           ],
         ),
       ),
@@ -408,6 +361,7 @@ class _NotificationStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final icon = unread ? Icons.mark_email_unread_outlined : Icons.done_rounded;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -418,11 +372,22 @@ class _NotificationStatusBadge extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Text(
-          unread ? 'Unread' : 'Read',
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: unread ? colorScheme.onPrimary : colorScheme.onSurface,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: unread ? colorScheme.onPrimary : colorScheme.onSurface,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              unread ? 'Unread' : 'Read',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: unread ? colorScheme.onPrimary : colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -457,14 +422,19 @@ String _formatFriendlyNotificationTimestamp(DateTime value, {DateTime? now}) {
   if (difference.inHours < 1) {
     return '${difference.inMinutes}m ago';
   }
-  if (difference.inDays < 1) {
+  // Calendar-based comparison to avoid cross-boundary mislabelling.
+  final today = DateTime(current.year, current.month, current.day);
+  final eventDate = DateTime(local.year, local.month, local.day);
+  final calendarDays = today.difference(eventDate).inDays;
+
+  if (calendarDays < 1) {
     return '${difference.inHours}h ago';
   }
-  if (difference.inDays == 1) {
+  if (calendarDays == 1) {
     return 'Yesterday';
   }
-  if (difference.inDays < 7) {
-    return '${difference.inDays}d ago';
+  if (calendarDays < 7) {
+    return '$calendarDays day${calendarDays == 1 ? '' : 's'} ago';
   }
 
   return formatShortDate(local);

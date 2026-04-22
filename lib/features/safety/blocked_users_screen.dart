@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/blocked_user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/section_intro_card.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import 'blocked_users_provider.dart';
@@ -44,33 +42,8 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: AppTheme.screenPadding(),
               children: [
-                ShellHero(
-                  eyebrowLabel: 'Safety controls',
-                  eyebrowIcon: Icons.block_outlined,
-                  title: 'Blocked users',
-                  description:
-                      'Review the profiles you have removed from discovery, matches, and chat. Unblock anyone here when you are ready to reopen that door.',
-                  badges: [
-                    ShellHeroPill(
-                      icon: Icons.block_rounded,
-                      label: users.isEmpty
-                          ? 'No blocked profiles'
-                          : '${users.length} blocked',
-                    ),
-                    const ShellHeroPill(
-                      icon: Icons.refresh_rounded,
-                      label: 'Pull to refresh',
-                    ),
-                  ],
-                ),
-                SizedBox(height: AppTheme.sectionSpacing()),
-                const SectionIntroCard(
-                  icon: Icons.shield_outlined,
-                  title: 'What happens here',
-                  description:
-                      'Blocked profiles stay out of your activity surfaces until you unblock them. This list is the quickest place to reverse that choice.',
-                ),
-                SizedBox(height: AppTheme.sectionSpacing()),
+                _BlockedUsersSummaryCard(blockedCount: users.length),
+                SizedBox(height: AppTheme.sectionSpacing(compact: true)),
                 if (users.isEmpty)
                   const AppAsyncState.empty(
                     message: 'You have not blocked anyone right now.',
@@ -83,7 +56,7 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                       onUnblock: () => _handleUnblock(users[index]),
                     ),
                     if (index != users.length - 1)
-                      SizedBox(height: AppTheme.listSpacing()),
+                      SizedBox(height: AppTheme.listSpacing(compact: true)),
                   ],
                 ],
               ],
@@ -148,6 +121,71 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
   }
 }
 
+class _BlockedUsersSummaryCard extends StatelessWidget {
+  const _BlockedUsersSummaryCard({required this.blockedCount});
+
+  final int blockedCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final countLabel = blockedCount == 1
+        ? '1 blocked profile'
+        : '$blockedCount blocked profiles';
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surface.withValues(alpha: 0.92),
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: const BorderRadius.all(Radius.circular(16)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Icon(Icons.block_outlined, color: colorScheme.primary),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Safety stays on', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Hidden from discovery, matches, and chat until you unblock them.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            DecoratedBox(
+              decoration: AppTheme.glassDecoration(context),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                child: Text(countLabel, style: theme.textTheme.labelLarge),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _BlockedUserTile extends StatelessWidget {
   const _BlockedUserTile({
     required this.user,
@@ -170,29 +208,28 @@ class _BlockedUserTile extends StatelessWidget {
         color: colorScheme.surface.withValues(alpha: 0.9),
       ),
       child: Padding(
-        padding: AppTheme.sectionPadding(),
+        padding: AppTheme.sectionPadding(compact: true),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            UserAvatar(name: user.name, radius: 24),
-            const SizedBox(width: 16),
+            UserAvatar(name: user.name, radius: 22),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(user.name, style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 6),
-                  Text(user.statusLabel, style: theme.textTheme.bodyMedium),
-                  const SizedBox(height: 8),
                   Text(
-                    'You will stop seeing each other in browse, matches, and chat until this block is removed.',
-                    style: theme.textTheme.bodySmall,
+                    user.statusLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 12),
-            FilledButton.tonal(
+            TextButton(
               onPressed: isBusy ? null : onUnblock,
               child: Text(isBusy ? 'Working…' : 'Unblock'),
             ),

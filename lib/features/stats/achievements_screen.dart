@@ -5,8 +5,6 @@ import '../../api/api_error.dart';
 import '../../models/achievement_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/section_intro_card.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import 'stats_provider.dart';
 
@@ -44,35 +42,15 @@ class AchievementsScreen extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: AppTheme.screenPadding(),
               children: [
-                ShellHero(
-                  eyebrowLabel: 'Milestone tracker',
-                  eyebrowIcon: Icons.workspace_premium_outlined,
-                  title: 'Achievement progress for ${currentUser.name}',
-                  description:
-                      'A compact readout of unlocked wins and the milestones that are still building momentum.',
-                  badges: [
-                    ShellHeroPill(
-                      icon: Icons.emoji_events_rounded,
-                      label: '$unlockedCount unlocked',
-                    ),
-                    ShellHeroPill(
-                      icon: Icons.flag_outlined,
-                      label: '$inProgressCount in progress',
-                    ),
-                    ShellHeroPill(
-                      icon: Icons.checklist_rounded,
-                      label: '${achievements.length} total',
-                    ),
-                  ],
-                ),
-                SizedBox(height: AppTheme.sectionSpacing()),
-                const SectionIntroCard(
-                  icon: Icons.celebration_outlined,
-                  title: 'Milestones worth checking',
-                  description:
-                      'Unlocked achievements are ready to celebrate, while in-progress items show where the next bit of momentum is coming from.',
-                ),
-                SizedBox(height: AppTheme.sectionSpacing()),
+                if (achievements.isNotEmpty) ...[
+                  _AchievementsOverviewCard(
+                    currentUserName: currentUser.name,
+                    unlockedCount: unlockedCount,
+                    totalCount: achievements.length,
+                    inProgressCount: inProgressCount,
+                  ),
+                  SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+                ],
                 if (achievements.isEmpty)
                   const AppAsyncState.empty(
                     message: 'No achievements are available for this user yet.',
@@ -108,6 +86,131 @@ class AchievementsScreen extends ConsumerWidget {
   }
 }
 
+class _AchievementsOverviewCard extends StatelessWidget {
+  const _AchievementsOverviewCard({
+    required this.currentUserName,
+    required this.unlockedCount,
+    required this.totalCount,
+    required this.inProgressCount,
+  });
+
+  final String currentUserName;
+  final int unlockedCount;
+  final int totalCount;
+  final int inProgressCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final progress = totalCount == 0 ? 0.0 : unlockedCount / totalCount;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        gradient: AppTheme.heroGradient(context),
+        prominent: true,
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "$currentUserName's achievement progress",
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Overall progress',
+                        style: theme.textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '$unlockedCount of $totalCount unlocked',
+                        style: theme.textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        inProgressCount == 0
+                            ? 'Everything here is unlocked.'
+                            : '$inProgressCount still building',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.accentGradient(context),
+                    borderRadius: const BorderRadius.all(Radius.circular(18)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(
+                      Icons.workspace_premium_rounded,
+                      color: colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _AchievementSummaryPill(
+                  icon: Icons.emoji_events_rounded,
+                  label: '$unlockedCount unlocked',
+                ),
+                _AchievementSummaryPill(
+                  icon: Icons.flag_outlined,
+                  label: inProgressCount == 1
+                      ? '1 in progress'
+                      : '$inProgressCount in progress',
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Text('Progress', style: theme.textTheme.labelLarge),
+                const Spacer(),
+                Text(
+                  '${(progress * 100).round()}% complete',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(999)),
+              child: LinearProgressIndicator(
+                key: const ValueKey('achievements-overview-progress'),
+                value: progress,
+                minHeight: 10,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AchievementCard extends StatelessWidget {
   const _AchievementCard({required this.achievement});
 
@@ -118,12 +221,29 @@ class _AchievementCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final unlocked = achievement.isUnlocked == true;
+    final progressValue = _progressValue(
+      achievement.progress,
+      unlocked: unlocked,
+    );
+    final progressLabel = unlocked
+        ? 'Complete'
+        : achievement.progress ?? 'Still building';
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: (unlocked ? colorScheme.primaryContainer : colorScheme.surface)
-            .withValues(alpha: unlocked ? 0.48 : 0.9),
+        gradient: unlocked
+            ? LinearGradient(
+                colors: [
+                  colorScheme.primaryContainer.withValues(alpha: 0.96),
+                  colorScheme.tertiaryContainer.withValues(alpha: 0.92),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: unlocked ? null : colorScheme.surface.withValues(alpha: 0.9),
+        prominent: unlocked,
       ),
       child: Padding(
         padding: AppTheme.sectionPadding(),
@@ -135,8 +255,11 @@ class _AchievementCard extends StatelessWidget {
               children: [
                 DecoratedBox(
                   decoration: BoxDecoration(
+                    gradient: unlocked
+                        ? AppTheme.accentGradient(context)
+                        : null,
                     color: unlocked
-                        ? colorScheme.primary
+                        ? null
                         : colorScheme.surfaceContainerHighest,
                     borderRadius: const BorderRadius.all(Radius.circular(20)),
                   ),
@@ -144,7 +267,7 @@ class _AchievementCard extends StatelessWidget {
                     padding: const EdgeInsets.all(12),
                     child: Icon(
                       unlocked
-                          ? Icons.emoji_events_rounded
+                          ? Icons.auto_awesome_rounded
                           : Icons.flag_outlined,
                       color: unlocked
                           ? colorScheme.onPrimary
@@ -175,27 +298,90 @@ class _AchievementCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (achievement.progress case final progress?) ...[
+            if (achievement.progress != null || unlocked) ...[
               const SizedBox(height: 16),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.surface.withValues(alpha: 0.7),
-                  borderRadius: const BorderRadius.all(Radius.circular(18)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
+              Row(
+                children: [
+                  Text('Progress', style: theme.textTheme.labelLarge),
+                  const Spacer(),
+                  Text(
+                    progressLabel,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: unlocked
+                          ? colorScheme.primary
+                          : colorScheme.secondary,
+                    ),
                   ),
-                  child: Text(progress, style: theme.textTheme.bodyMedium),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(999)),
+                child: LinearProgressIndicator(
+                  key: ValueKey('achievement-progress-${achievement.title}'),
+                  value: progressValue,
+                  minHeight: 8,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    unlocked ? colorScheme.primary : colorScheme.secondary,
+                  ),
                 ),
               ),
+              if (achievement.progress case final progress?) ...[
+                const SizedBox(height: 8),
+                Text(progress, style: theme.textTheme.bodySmall),
+              ],
             ],
           ],
         ),
       ),
     );
   }
+}
+
+double? _progressValue(String? progress, {required bool unlocked}) {
+  if (unlocked) {
+    return 1;
+  }
+  if (progress == null) {
+    return null;
+  }
+
+  final fractionMatch = RegExp(
+    r'(\d+(?:\.\d+)?)\s*(?:/|of)\s*(\d+(?:\.\d+)?)',
+    caseSensitive: false,
+  ).firstMatch(progress);
+  if (fractionMatch != null) {
+    final current = double.tryParse(fractionMatch.group(1)!);
+    final total = double.tryParse(fractionMatch.group(2)!);
+    if (current != null && total != null && total > 0) {
+      final ratio = current / total;
+      if (ratio <= 0) {
+        return 0;
+      }
+      if (ratio >= 1) {
+        return 1;
+      }
+      return ratio;
+    }
+  }
+
+  final percentageMatch = RegExp(r'(\d+(?:\.\d+)?)\s*%').firstMatch(progress);
+  if (percentageMatch != null) {
+    final percent = double.tryParse(percentageMatch.group(1)!);
+    if (percent != null) {
+      final ratio = percent / 100;
+      if (ratio <= 0) {
+        return 0;
+      }
+      if (ratio >= 1) {
+        return 1;
+      }
+      return ratio;
+    }
+  }
+
+  return null;
 }
 
 class _AchievementStatusBadge extends StatelessWidget {
@@ -211,9 +397,8 @@ class _AchievementStatusBadge extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: unlocked
-            ? colorScheme.primary
-            : colorScheme.surfaceContainerHighest,
+        gradient: unlocked ? AppTheme.accentGradient(context) : null,
+        color: unlocked ? null : colorScheme.surfaceContainerHighest,
         borderRadius: AppTheme.chipRadius,
       ),
       child: Padding(
@@ -223,6 +408,31 @@ class _AchievementStatusBadge extends StatelessWidget {
           style: theme.textTheme.labelLarge?.copyWith(
             color: unlocked ? colorScheme.onPrimary : colorScheme.onSurface,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AchievementSummaryPill extends StatelessWidget {
+  const _AchievementSummaryPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: AppTheme.glassDecoration(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 8),
+            Text(label, style: Theme.of(context).textTheme.labelLarge),
+          ],
         ),
       ),
     );

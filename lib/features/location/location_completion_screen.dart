@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/location_metadata.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/shell_hero.dart';
 import 'location_provider.dart';
 
 class LocationCompletionScreen extends ConsumerStatefulWidget {
@@ -91,15 +90,6 @@ class _LocationCompletionScreenState
 
               return ListView(
                 children: [
-                  const ShellHero(
-                    eyebrowLabel: 'Location',
-                    eyebrowIcon: Icons.location_on_outlined,
-                    title: 'Help people nearby feel nearby',
-                    description:
-                        'Pick your country and city so we can recommend people in the right area without sharing an exact address.',
-                    compact: true,
-                  ),
-                  const SizedBox(height: 16),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -107,17 +97,18 @@ class _LocationCompletionScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Where should we look?',
+                            'Your area',
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           const Text(
-                            'Choose the city you want us to use for nearby matches. You can update it anytime.',
+                            'Choose the country and city you want us to use for nearby matches.',
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           DropdownButtonFormField<String>(
                             key: ValueKey<String?>(_countryCode),
                             initialValue: _countryCode,
+                            isExpanded: true,
                             decoration: const InputDecoration(
                               labelText: 'Country',
                             ),
@@ -125,8 +116,16 @@ class _LocationCompletionScreenState
                                 .map(
                                   (country) => DropdownMenuItem<String>(
                                     value: country.code,
-                                    child: Text(
-                                      '${country.flagEmoji} ${country.name}',
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        _CountryCodeBadge(code: country.code),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          country.name,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 )
@@ -138,7 +137,7 @@ class _LocationCompletionScreenState
                               });
                             },
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           TextField(
                             controller: _cityController,
                             decoration: const InputDecoration(
@@ -151,14 +150,14 @@ class _LocationCompletionScreenState
                               });
                             },
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           TextField(
                             controller: _zipController,
                             decoration: const InputDecoration(
                               labelText: 'ZIP code (optional)',
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
                           SwitchListTile.adaptive(
                             contentPadding: EdgeInsets.zero,
                             value: _allowApproximate,
@@ -166,7 +165,7 @@ class _LocationCompletionScreenState
                               'Use the closest match if needed',
                             ),
                             subtitle: const Text(
-                              "If we can't resolve the exact city or ZIP, we'll use the nearest available area instead.",
+                              "If we can't resolve the exact city or ZIP, we'll use the nearest available area.",
                             ),
                             onChanged: (value) {
                               setState(() {
@@ -174,18 +173,31 @@ class _LocationCompletionScreenState
                               });
                             },
                           ),
-                          const SizedBox(height: 16),
-                          FilledButton.icon(
-                            onPressed: _saving
-                                ? null
-                                : () => _handleSave(context),
-                            icon: const Icon(Icons.location_on_outlined),
-                            label: Text(
-                              _saving ? 'Saving…' : 'Save my location',
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: _saving
+                                  ? null
+                                  : () => _handleSave(context),
+                              icon: const Icon(Icons.location_on_outlined),
+                              label: Text(
+                                _saving ? 'Saving…' : 'Use this location',
+                              ),
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'You can change this anytime.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
                           if (_selectedCityLabel != null) ...[
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 10),
                             Chip(
                               label: Text('Using city: $_selectedCityLabel'),
                             ),
@@ -210,7 +222,7 @@ class _LocationCompletionScreenState
                             data: (cities) {
                               if (cities.isEmpty) {
                                 return const Text(
-                                  "Start typing at least two letters and we'll suggest cities.",
+                                  'Type at least two letters for city suggestions.',
                                 );
                               }
                               return Column(
@@ -326,5 +338,33 @@ class _LocationCompletionScreenState
         });
       }
     }
+  }
+}
+
+class _CountryCodeBadge extends StatelessWidget {
+  const _CountryCodeBadge({required this.code});
+
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Text(
+          code,
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -8,7 +8,6 @@ import 'package:flutter_dating_application_1/features/chat/conversations_screen.
 import 'package:flutter_dating_application_1/models/conversation_summary.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
-import 'package:flutter_dating_application_1/shared/widgets/shell_hero.dart';
 
 void main() {
   const currentUser = UserSummary(
@@ -51,10 +50,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Conversations'), findsOneWidget);
-    expect(find.byType(ShellHero), findsOneWidget);
-    expect(find.text('Pick up where you left off'), findsOneWidget);
+    expect(find.text('Pick up where you left off'), findsNothing);
     expect(find.text('Noa'), findsOneWidget);
-    expect(find.text('5 messages so far'), findsWidgets);
+    expect(
+      find.text('An active conversation is waiting for your next reply.'),
+      findsOneWidget,
+    );
+    expect(find.text('5 messages so far'), findsOneWidget);
+    expect(find.text('Updated Apr 18, 2026'), findsNothing);
     expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
     expect(find.text('Open chat'), findsOneWidget);
 

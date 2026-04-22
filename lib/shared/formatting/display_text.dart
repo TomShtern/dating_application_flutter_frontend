@@ -21,11 +21,12 @@ String formatDisplayLabelList(
   List<String> values, {
   String fallback = 'Not specified',
 }) {
-  if (values.isEmpty) {
+  final nonEmpty = values.where((v) => v.trim().isNotEmpty).toList();
+  if (nonEmpty.isEmpty) {
     return fallback;
   }
 
-  return values.map(formatDisplayLabel).join(', ');
+  return nonEmpty.map(formatDisplayLabel).join(', ');
 }
 
 String _capitalize(String value) {

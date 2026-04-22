@@ -57,7 +57,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxHeight < 520;
-            final sectionSpacing = AppTheme.sectionSpacing(compact: compact);
+            final sectionSpacing = compact ? 10.0 : 12.0;
 
             return Padding(
               padding: AppTheme.screenPadding(compact: compact),
@@ -66,20 +66,13 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                 children: [
                   ShellHero(
                     compact: true,
-                    eyebrowLabel: 'Discover',
-                    eyebrowIcon: Icons.auto_awesome_rounded,
-                    title: 'Meet people worth your next hello',
+                    title: '',
                     description:
-                        'Fresh picks, standout profiles, and a quicker path to like or pass.',
+                        'Swipe on a profile or open it for more detail.',
                     badges: [
                       ShellHeroPill(
                         icon: Icons.favorite_outline_rounded,
                         label: 'Browsing as ${widget.currentUser.name}',
-                      ),
-                      ShellHeroPill(
-                        icon: Icons.verified_user_outlined,
-                        label:
-                            '${formatDisplayLabel(widget.currentUser.state)} profile',
                       ),
                     ],
                   ),
@@ -341,19 +334,19 @@ class _DeveloperSessionPanel extends StatelessWidget {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-          childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           leading: Icon(
             Icons.monitor_heart_outlined,
             color: colorScheme.primary,
           ),
-          title: const Text('Session details'),
+          title: const Text('Connection status'),
           subtitle: Text('${user.name} is active on this device'),
           children: [
             const BackendHealthBanner(),
             const SizedBox(height: 12),
             Text(
-              'Check connection status and confirm the profile currently in use without taking focus away from discovery.',
+              'Check connection health without pulling attention away from the next profile.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
@@ -397,19 +390,19 @@ class _BrowseContent extends StatelessWidget {
           children: [
             if (browse.dailyPick case final dailyPick?) ...[
               _DailyPickCard(dailyPick: dailyPick),
-              const SizedBox(height: 16),
+              SizedBox(height: AppTheme.listSpacing()),
             ],
             const _BrowseEmptyCard(),
-            const SizedBox(height: 16),
+            SizedBox(height: AppTheme.listSpacing()),
             if (browse.locationMissing) ...[
               _LocationWarningCard(onPressed: onFixLocation),
-              const SizedBox(height: 16),
+              SizedBox(height: AppTheme.listSpacing()),
             ],
             _DiscoveryShortcutRow(
               onOpenPendingLikers: onOpenPendingLikers,
               onOpenStandouts: onOpenStandouts,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppTheme.listSpacing()),
             developerPanel,
           ],
         ),
@@ -427,7 +420,7 @@ class _BrowseContent extends StatelessWidget {
               children: [
                 if (browse.dailyPick case final dailyPick?) ...[
                   _DailyPickCard(dailyPick: dailyPick),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppTheme.listSpacing()),
                 ],
                 Dismissible(
                   key: ValueKey(currentCandidate.id),
@@ -458,28 +451,28 @@ class _BrowseContent extends StatelessWidget {
                     onViewProfile: () => onViewProfile(currentCandidate),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: AppTheme.listSpacing()),
                 _DiscoveryShortcutRow(
                   onOpenPendingLikers: onOpenPendingLikers,
                   onOpenStandouts: onOpenStandouts,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
                 Text(
                   '${browse.candidates.length} candidate(s) ready',
                   style: Theme.of(context).textTheme.bodySmall,
                   textAlign: TextAlign.center,
                 ),
                 if (browse.locationMissing) ...[
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppTheme.listSpacing()),
                   _LocationWarningCard(onPressed: onFixLocation),
                 ],
-                const SizedBox(height: 16),
+                SizedBox(height: AppTheme.listSpacing()),
                 developerPanel,
               ],
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: AppTheme.listSpacing()),
         _BrowseActionBar(
           candidate: currentCandidate,
           isSubmitting: isSubmitting,
@@ -512,7 +505,7 @@ class _DiscoveryShortcutRow extends StatelessWidget {
             onTap: onOpenPendingLikers,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: AppTheme.listSpacing()),
         Expanded(
           child: _DiscoveryShortcutCard(
             icon: Icons.auto_awesome_rounded,
@@ -551,7 +544,7 @@ class _DiscoveryShortcutCard extends StatelessWidget {
           borderRadius: AppTheme.cardRadius,
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -561,13 +554,13 @@ class _DiscoveryShortcutCard extends StatelessWidget {
                     borderRadius: const BorderRadius.all(Radius.circular(16)),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(8),
                     child: Icon(icon, color: colorScheme.primary),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 Text(title, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
@@ -595,21 +588,21 @@ class _BrowseEmptyCard extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const ShellHeroPill(
               icon: Icons.coffee_rounded,
               label: 'Quiet moment',
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
             Text(
               'Nothing new is ready just yet',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               'No candidates are available right now. Try refreshing in a bit.',
               textAlign: TextAlign.center,
@@ -647,7 +640,7 @@ class _BrowseActionBar extends StatelessWidget {
           prominent: true,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(10),
           child: Row(
             children: [
               Expanded(
@@ -657,7 +650,7 @@ class _BrowseActionBar extends StatelessWidget {
                   label: const Text('Pass'),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: isSubmitting ? null : () => onLike(candidate),
@@ -689,7 +682,7 @@ class _DailyPickCard extends StatelessWidget {
         prominent: true,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -697,12 +690,12 @@ class _DailyPickCard extends StatelessWidget {
               icon: Icons.auto_awesome_rounded,
               label: 'Today\'s daily pick',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(name: dailyPick.userName, radius: 26),
-                const SizedBox(width: 14),
+                UserAvatar(name: dailyPick.userName, radius: 22),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -738,18 +731,16 @@ class _CandidateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: double.infinity,
-              constraints: const BoxConstraints(minHeight: 250),
-              padding: const EdgeInsets.all(24),
+              constraints: const BoxConstraints(minHeight: 208),
+              padding: const EdgeInsets.all(18),
               decoration: AppTheme.surfaceDecoration(
                 context,
                 gradient: AppTheme.accentGradient(context),
@@ -760,19 +751,19 @@ class _CandidateCard extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Positioned(
-                    top: -36,
+                    top: -20,
                     right: -8,
                     child: _AmbientGlow(
-                      size: 110,
-                      color: Colors.white.withValues(alpha: 0.12),
+                      size: 74,
+                      color: Colors.white.withValues(alpha: 0.08),
                     ),
                   ),
                   Positioned(
-                    bottom: -28,
+                    bottom: -18,
                     left: -12,
                     child: _AmbientGlow(
-                      size: 84,
-                      color: Colors.white.withValues(alpha: 0.1),
+                      size: 56,
+                      color: Colors.white.withValues(alpha: 0.06),
                     ),
                   ),
                   Column(
@@ -788,8 +779,8 @@ class _CandidateCard extends StatelessWidget {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
+                                horizontal: 12,
+                                vertical: 8,
                               ),
                               child: Text(
                                 'New for you',
@@ -805,30 +796,32 @@ class _CandidateCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 32),
-                      UserAvatar(name: candidate.name, radius: 34),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 20),
+                      UserAvatar(name: candidate.name, radius: 30),
+                      const SizedBox(height: 12),
                       Text(
                         candidate.name,
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(color: Colors.white),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${candidate.age} • ${formatDisplayLabel(candidate.state)} profile',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 6),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: 10,
+                        runSpacing: 4,
                         children: [
-                          _HeroTag(label: 'Age ${candidate.age}'),
-                          _HeroTag(
-                            label:
-                                '${formatDisplayLabel(candidate.state)} profile',
+                          Text(
+                            'Age ${candidate.age}',
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
+                          ),
+                          Text(
+                            '${formatDisplayLabel(candidate.state)} profile',
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
                           ),
                         ],
                       ),
@@ -837,14 +830,7 @@ class _CandidateCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Take a quick look, then like, pass, or open the full profile before you decide.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppTheme.listSpacing()),
             Row(
               children: [
                 Expanded(
@@ -857,32 +843,6 @@ class _CandidateCard extends StatelessWidget {
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroTag extends StatelessWidget {
-  const _HeroTag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: AppTheme.chipRadius,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        child: Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelLarge?.copyWith(color: Colors.white),
         ),
       ),
     );

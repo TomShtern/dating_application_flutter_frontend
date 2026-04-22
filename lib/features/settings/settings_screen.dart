@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/app_preferences.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
+import '../../shared/widgets/user_avatar.dart';
 import '../auth/selected_user_provider.dart';
 import '../notifications/notifications_screen.dart';
 import '../safety/blocked_users_screen.dart';
@@ -31,12 +31,11 @@ class SettingsScreen extends ConsumerWidget {
             AppTheme.pagePadding,
             AppTheme.pagePadding,
             AppTheme.pagePadding,
-            32,
+            28,
           ),
           children: [
-            _SettingsHeroCard(
+            _SettingsSessionCard(
               currentUser: currentUser,
-              selectedThemeMode: selectedThemeMode,
               onSwitchUser: () async {
                 await ref.read(selectUserControllerProvider).clearSelection();
               },
@@ -44,9 +43,8 @@ class SettingsScreen extends ConsumerWidget {
             SizedBox(height: AppTheme.sectionSpacing()),
             _SettingsSectionCard(
               icon: Icons.query_stats_rounded,
-              title: 'Insights',
-              subtitle:
-                  'See how this profile is doing across matches and milestones.',
+              title: 'Quick access',
+              subtitle: 'Open the essentials faster.',
               child: Column(
                 children: [
                   _SettingsLinkTile(
@@ -62,7 +60,48 @@ class SettingsScreen extends ConsumerWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const Divider(height: 1),
+                  _SettingsLinkTile(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'Notifications',
+                    subtitle:
+                        'Review recent activity and catch anything unread',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  _SettingsLinkTile(
+                    icon: Icons.verified_user_outlined,
+                    title: 'Verification',
+                    subtitle: 'Confirm your email or phone number',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const VerificationScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  _SettingsLinkTile(
+                    icon: Icons.block_outlined,
+                    title: 'Blocked users',
+                    subtitle:
+                        'Review blocked profiles and make changes anytime',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const BlockedUsersScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
                   _SettingsLinkTile(
                     icon: Icons.workspace_premium_outlined,
                     title: 'View achievements',
@@ -123,57 +162,6 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            SizedBox(height: AppTheme.sectionSpacing()),
-            _SettingsSectionCard(
-              icon: Icons.shield_outlined,
-              title: 'Safety and activity',
-              subtitle:
-                  'Stay on top of alerts, verification, and the people you do not want to hear from.',
-              child: Column(
-                children: [
-                  _SettingsLinkTile(
-                    icon: Icons.notifications_none_rounded,
-                    title: 'Notifications',
-                    subtitle:
-                        'Review recent activity and catch anything unread',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const NotificationsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _SettingsLinkTile(
-                    icon: Icons.verified_user_outlined,
-                    title: 'Verification',
-                    subtitle: 'Confirm your email or phone number',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const VerificationScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _SettingsLinkTile(
-                    icon: Icons.block_outlined,
-                    title: 'Blocked users',
-                    subtitle:
-                        'Review blocked profiles and make changes anytime',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const BlockedUsersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -181,44 +169,74 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class _SettingsHeroCard extends StatelessWidget {
-  const _SettingsHeroCard({
+class _SettingsSessionCard extends StatelessWidget {
+  const _SettingsSessionCard({
     required this.currentUser,
-    required this.selectedThemeMode,
     required this.onSwitchUser,
   });
 
   final UserSummary currentUser;
-  final AppThemeModePreference selectedThemeMode;
   final VoidCallback onSwitchUser;
 
   @override
   Widget build(BuildContext context) {
-    return ShellHero(
-      compact: true,
-      eyebrowLabel: 'Current session',
-      eyebrowIcon: Icons.tune_rounded,
-      title: currentUser.name,
-      description:
-          'Adjust how the app looks on this device, review your progress, and switch to another saved profile whenever you need to.',
-      badges: [
-        ShellHeroPill(
-          icon: Icons.verified_user_outlined,
-          label: '${formatDisplayLabel(currentUser.state)} profile',
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        gradient: LinearGradient(
+          colors: [colorScheme.surface, colorScheme.surfaceContainerLow],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        ShellHeroPill(
-          icon: Icons.cake_outlined,
-          label: 'Age ${currentUser.age}',
+        prominent: true,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                UserAvatar(name: currentUser.name, radius: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Current profile',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        currentUser.name,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${formatDisplayLabel(currentUser.state)} profile · Age ${currentUser.age}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: onSwitchUser,
+                  icon: const Icon(Icons.switch_account_outlined),
+                  label: const Text('Switch profile'),
+                ),
+              ],
+            ),
+          ],
         ),
-        ShellHeroPill(
-          icon: Icons.palette_outlined,
-          label: _shortLabel(selectedThemeMode),
-        ),
-      ],
-      footer: OutlinedButton.icon(
-        onPressed: onSwitchUser,
-        icon: const Icon(Icons.switch_account_outlined),
-        label: const Text('Switch profile'),
       ),
     );
   }
@@ -247,7 +265,7 @@ class _SettingsSectionCard extends StatelessWidget {
         color: colorScheme.surface.withValues(alpha: 0.9),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -283,7 +301,7 @@ class _SettingsSectionCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             child,
           ],
         ),
@@ -309,41 +327,38 @@ class _SettingsLinkTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        color: colorScheme.surface.withValues(alpha: 0.84),
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: const BorderRadius.all(Radius.circular(24)),
-          onTap: onTap,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppTheme.cardRadius,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
             child: Row(
               children: [
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest,
-                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                    borderRadius: const BorderRadius.all(Radius.circular(14)),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(9),
                     child: Icon(icon, color: colorScheme.primary),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         title,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         subtitle,
                         style: Theme.of(context).textTheme.bodyMedium,
@@ -351,16 +366,10 @@ class _SettingsLinkTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Icon(Icons.chevron_right_rounded),
-                  ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
@@ -385,13 +394,5 @@ String _description(AppThemeModePreference themeMode) {
       'Follow your device setting automatically.',
     AppThemeModePreference.light => 'Always use the light appearance.',
     AppThemeModePreference.dark => 'Always use the dark appearance.',
-  };
-}
-
-String _shortLabel(AppThemeModePreference themeMode) {
-  return switch (themeMode) {
-    AppThemeModePreference.system => 'System sync',
-    AppThemeModePreference.light => 'Light mode',
-    AppThemeModePreference.dark => 'Dark mode',
   };
 }

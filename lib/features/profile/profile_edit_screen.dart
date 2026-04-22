@@ -20,27 +20,22 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _bioController;
-  late final TextEditingController _genderController;
-  late final TextEditingController _interestedInController;
   late final TextEditingController _maxDistanceController;
   late final TextEditingController _minAgeController;
   late final TextEditingController _maxAgeController;
   late final TextEditingController _heightController;
+  String? _selectedGender;
+  late final Set<String> _selectedInterestedIn;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _bioController = TextEditingController(text: widget.initialDetail.bio);
-    _genderController = TextEditingController(
-      text: formatDisplayLabel(widget.initialDetail.gender, fallback: ''),
-    );
-    _interestedInController = TextEditingController(
-      text: formatDisplayLabelList(
-        widget.initialDetail.interestedIn,
-        fallback: '',
-      ),
-    );
+    _selectedGender = _normalizedOrNull(widget.initialDetail.gender);
+    _selectedInterestedIn = _orderedInterestedInValues(
+      widget.initialDetail.interestedIn,
+    ).toSet();
     _maxDistanceController = TextEditingController(
       text: widget.initialDetail.maxDistanceKm > 0
           ? widget.initialDetail.maxDistanceKm.toString()
@@ -54,8 +49,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   @override
   void dispose() {
     _bioController.dispose();
-    _genderController.dispose();
-    _interestedInController.dispose();
     _maxDistanceController.dispose();
     _minAgeController.dispose();
     _maxAgeController.dispose();
@@ -89,137 +82,190 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 "Update the details you want to share, and leave anything blank if you'd rather skip it for now.",
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _bioController,
-                minLines: 3,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Bio',
-                  hintText:
-                      'Share a little about your vibe, interests, or ideal first date',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _genderController,
-                decoration: const InputDecoration(
-                  labelText: 'Gender',
-                  hintText: 'Female, Male, Non-binary, Other',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return null;
-                  }
-
-                  if (!_allowedGenderValues.contains(_normalizeGender(value))) {
-                    return 'Choose Female, Male, Non-binary, or Other.';
-                  }
-
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _interestedInController,
-                decoration: const InputDecoration(
-                  labelText: 'Interested in',
-                  hintText: 'Female, Male, Non-binary, Other',
-                ),
-                validator: (value) {
-                  if ((value ?? '').trim().isEmpty) {
-                    return null;
-                  }
-
-                  final interests = _parseInterestedIn(value)
-                      .where((entry) => entry.trim().isNotEmpty)
-                      .toList(growable: false);
-                  if (interests.isEmpty) {
-                    return null;
-                  }
-
-                  if (interests.any(
-                    (entry) => !_allowedGenderValues.contains(entry),
-                  )) {
-                    return 'Choose Female, Male, Non-binary, or Other.';
-                  }
-
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _maxDistanceController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Maximum distance (km)',
-                  hintText: '50',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return null;
-                  }
-
-                  final distance = int.tryParse(value.trim());
-                  if (distance == null || distance <= 0) {
-                    return 'Please enter a valid maximum distance.';
-                  }
-
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _minAgeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Minimum preferred age',
-                  hintText: '25',
-                ),
-                validator: _validatePositiveInteger,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _maxAgeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Maximum preferred age',
-                  hintText: '35',
-                ),
-                validator: _validatePositiveInteger,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _heightController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Height (cm)',
-                  hintText: '172',
-                ),
-                validator: _validatePositiveInteger,
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  leading: const Icon(Icons.location_on_outlined),
-                  title: const Text('Choose location'),
-                  subtitle: Text(
-                    widget.initialDetail.approximateLocation.trim().isEmpty
-                        ? 'Add the area where you want to meet people.'
-                        : 'Currently showing people near ${widget.initialDetail.approximateLocation}.',
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => const LocationCompletionScreen(),
+              const SizedBox(height: 20),
+              _ProfileEditSection(
+                title: 'About',
+                description: 'Share the details people connect with first.',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _bioController,
+                      minLines: 3,
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        labelText: 'Bio',
+                        hintText:
+                            'Share a little about your vibe, interests, or ideal first date',
                       ),
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Gender',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _genderOptions
+                          .map(
+                            (option) => ChoiceChip(
+                              label: Text(formatDisplayLabel(option)),
+                              selected: _selectedGender == option,
+                              onSelected: (selected) {
+                                setState(() {
+                                  _selectedGender = selected ? option : null;
+                                });
+                              },
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _ProfileEditSection(
+                title: 'Preferences',
+                description: 'Set the basics that shape your recommendations.',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Interested in',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _genderOptions
+                          .map(
+                            (option) => FilterChip(
+                              label: Text(formatDisplayLabel(option)),
+                              selected: _selectedInterestedIn.contains(option),
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    _selectedInterestedIn.add(option);
+                                  } else {
+                                    _selectedInterestedIn.remove(option);
+                                  }
+                                });
+                              },
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _maxDistanceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Maximum distance (km)',
+                        hintText: '50',
+                        helperText: 'Leave blank if you want to decide later.',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return null;
+                        }
+
+                        final distance = int.tryParse(value.trim());
+                        if (distance == null || distance <= 0) {
+                          return 'Please enter a valid maximum distance.';
+                        }
+
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _minAgeController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Minimum preferred age',
+                        hintText: '25',
+                      ),
+                      validator: _validatePositiveInteger,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _maxAgeController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Maximum preferred age',
+                        hintText: '35',
+                      ),
+                      validator: _validatePositiveInteger,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _heightController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Height (cm)',
+                        hintText: '172',
+                      ),
+                      validator: _validatePositiveInteger,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _ProfileEditSection(
+                title: 'Location',
+                description:
+                    'Keep your area current so nearby matches stay relevant.',
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                    borderRadius: const BorderRadius.all(Radius.circular(20)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.location_on_outlined),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                widget.initialDetail.approximateLocation
+                                        .trim()
+                                        .isEmpty
+                                    ? 'Add the area where you want to meet people.'
+                                    : 'Showing people near ${widget.initialDetail.approximateLocation}.',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) =>
+                                    const LocationCompletionScreen(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.travel_explore_outlined),
+                          label: Text(
+                            widget.initialDetail.approximateLocation
+                                    .trim()
+                                    .isEmpty
+                                ? 'Choose location'
+                                : 'Update location',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -242,8 +288,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     final request = ProfileUpdateRequest(
       bio: _trimmedOrNull(_bioController.text),
-      gender: _normalizedOrNull(_genderController.text),
-      interestedIn: _interestedInOrNull(_interestedInController.text),
+      gender: _selectedGender,
+      interestedIn: _selectedInterestedIn.isEmpty
+          ? null
+          : _genderOptions
+                .where(_selectedInterestedIn.contains)
+                .toList(growable: false),
       maxDistanceKm: _parseOptionalInt(_maxDistanceController.text),
       minAge: _parseOptionalInt(_minAgeController.text),
       maxAge: _parseOptionalInt(_maxAgeController.text),
@@ -307,11 +357,6 @@ String? _normalizedOrNull(String value) {
   return normalized.isEmpty ? null : normalized;
 }
 
-List<String>? _interestedInOrNull(String value) {
-  final interestedIn = _parseInterestedIn(value);
-  return interestedIn.isEmpty ? null : interestedIn;
-}
-
 int? _parseOptionalInt(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) {
@@ -321,11 +366,14 @@ int? _parseOptionalInt(String value) {
   return int.tryParse(trimmed);
 }
 
-List<String> _parseInterestedIn(String? value) {
-  return (value ?? '')
-      .split(',')
+List<String> _orderedInterestedInValues(List<String> values) {
+  final normalizedValues = values
       .map(_normalizeGender)
       .where((entry) => entry.isNotEmpty)
+      .toSet();
+
+  return _genderOptions
+      .where(normalizedValues.contains)
       .toList(growable: false);
 }
 
@@ -343,9 +391,46 @@ String _normalizeGender(String value) {
   return normalized;
 }
 
-const Set<String> _allowedGenderValues = <String>{
+const List<String> _genderOptions = <String>[
   'FEMALE',
   'MALE',
   'NON_BINARY',
   'OTHER',
-};
+];
+
+class _ProfileEditSection extends StatelessWidget {
+  const _ProfileEditSection({
+    required this.title,
+    required this.description,
+    required this.child,
+  });
+
+  final String title;
+  final String description;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}

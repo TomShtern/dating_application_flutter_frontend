@@ -22,56 +22,61 @@ class DevUserPickerScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Choose a dev user')),
-      body: Padding(
-        padding: AppTheme.screenPadding(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Pick a profile to preview the app with. Your choice stays saved on this device between launches.',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 16),
-            const BackendHealthBanner(),
-            const SizedBox(height: 16),
-            selectedUser.when(
-              data: (user) => _CurrentUserCard(user: user),
-              loading: () => const LinearProgressIndicator(minHeight: 2),
-              error: (error, stackTrace) => const _CurrentUserCard(user: null),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: availableUsers.when(
-                data: (users) {
-                  if (users.isEmpty) {
-                    return const AppAsyncState.empty(
-                      message: 'No dev users are available yet.',
-                    );
-                  }
-
-                  return ListView.separated(
-                    itemCount: users.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final user = users[index];
-                      return _UserCard(
-                        user: user,
-                        isSelected: selectedUserId == user.id,
-                        onSelect: () => _handleUserSelected(context, ref, user),
+      body: SafeArea(
+        child: Padding(
+          padding: AppTheme.screenPadding(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pick a profile to preview the app with. Your choice stays saved on this device between launches.',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 14),
+              const BackendHealthBanner(),
+              const SizedBox(height: 14),
+              selectedUser.when(
+                data: (user) => _CurrentUserCard(user: user),
+                loading: () => const LinearProgressIndicator(minHeight: 2),
+                error: (error, stackTrace) =>
+                    const _CurrentUserCard(user: null),
+              ),
+              const SizedBox(height: 18),
+              Expanded(
+                child: availableUsers.when(
+                  data: (users) {
+                    if (users.isEmpty) {
+                      return const AppAsyncState.empty(
+                        message: 'No dev users are available yet.',
                       );
-                    },
-                  );
-                },
-                loading: () =>
-                    const AppAsyncState.loading(message: 'Loading dev users…'),
-                error: (error, _) => AppAsyncState.error(
-                  message: _errorMessage(error),
-                  onRetry: () => ref.invalidate(availableUsersProvider),
+                    }
+
+                    return ListView.separated(
+                      itemCount: users.length,
+                      separatorBuilder: (context, index) =>
+                          SizedBox(height: AppTheme.listSpacing()),
+                      itemBuilder: (context, index) {
+                        final user = users[index];
+                        return _UserCard(
+                          user: user,
+                          isSelected: selectedUserId == user.id,
+                          onSelect: () =>
+                              _handleUserSelected(context, ref, user),
+                        );
+                      },
+                    );
+                  },
+                  loading: () => const AppAsyncState.loading(
+                    message: 'Loading dev users…',
+                  ),
+                  error: (error, _) => AppAsyncState.error(
+                    message: _errorMessage(error),
+                    onRetry: () => ref.invalidate(availableUsersProvider),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -121,7 +126,7 @@ class _CurrentUserCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -134,9 +139,9 @@ class _CurrentUserCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(summary),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     supportingCopy,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -164,73 +169,70 @@ class _UserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Card(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onSelect,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                UserAvatar(name: user.name, radius: 24),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              user.name,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
+      color: isSelected
+          ? colorScheme.primaryContainer.withValues(alpha: 0.28)
+          : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppTheme.cardRadius,
+        side: BorderSide(
+          color: isSelected
+              ? colorScheme.primary.withValues(alpha: 0.34)
+              : colorScheme.outlineVariant.withValues(alpha: 0.55),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onSelect,
+        borderRadius: AppTheme.cardRadius,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              UserAvatar(name: user.name, radius: 24),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            user.name,
+                            style: theme.textTheme.titleMedium,
                           ),
-                          if (isSelected)
-                            const ShellHeroPill(
-                              icon: Icons.check_circle_rounded,
-                              label: 'Current',
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Age ${user.age} • ${formatDisplayLabel(user.state)} profile',
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        isSelected
-                            ? 'Saved on this device right now.'
-                            : 'Tap anywhere to continue as ${user.name}.',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Continue as ${user.name}',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: colorScheme.primary,
                         ),
-                      ),
-                    ],
-                  ),
+                        if (isSelected)
+                          const ShellHeroPill(
+                            icon: Icons.check_circle_rounded,
+                            label: 'Current',
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Age ${user.age} • ${formatDisplayLabel(user.state)} profile',
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isSelected
+                          ? 'Saved on this device right now.'
+                          : 'Tap to switch to this profile.',
+                      style: isSelected
+                          ? theme.textTheme.bodySmall
+                          : theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.all(10),
-                    child: Icon(Icons.chevron_right_rounded),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

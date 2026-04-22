@@ -5,7 +5,6 @@ import '../../api/api_error.dart';
 import '../../models/conversation_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/user_avatar.dart';
@@ -20,10 +19,6 @@ class ConversationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final conversationsState = ref.watch(conversationsProvider);
-    final conversationCount = conversationsState.maybeWhen(
-      data: (conversations) => conversations.length,
-      orElse: () => null,
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -43,29 +38,6 @@ class ConversationsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ShellHero(
-                compact: true,
-                eyebrowLabel: 'Chats',
-                eyebrowIcon: Icons.chat_bubble_outline_rounded,
-                title: 'Pick up where you left off',
-                description:
-                    'Your active conversations stay easy to scan, so the next reply is only a tap away.',
-                badges: [
-                  ShellHeroPill(
-                    icon: Icons.mark_chat_unread_outlined,
-                    label: switch (conversationCount) {
-                      null => 'Updating your inbox',
-                      1 => '1 conversation ready',
-                      final count => '$count conversations ready',
-                    },
-                  ),
-                  const ShellHeroPill(
-                    icon: Icons.schedule_rounded,
-                    label: 'Latest activity first',
-                  ),
-                ],
-              ),
-              SizedBox(height: AppTheme.sectionSpacing()),
               Expanded(
                 child: conversationsState.when(
                   data: (conversations) {
@@ -84,7 +56,7 @@ class ConversationsScreen extends ConsumerWidget {
                       child: ListView.separated(
                         itemCount: conversations.length,
                         separatorBuilder: (context, index) =>
-                            const SizedBox(height: 12),
+                            SizedBox(height: AppTheme.listSpacing()),
                         itemBuilder: (context, index) {
                           return _ConversationCard(
                             currentUser: currentUser,
@@ -133,7 +105,8 @@ class _ConversationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final messagePreview = switch (summary.messageCount) {
+    final preview = _conversationPreview(summary);
+    final messageSummary = switch (summary.messageCount) {
       0 => 'New match, ready for the first message',
       1 => '1 message so far',
       final count => '$count messages so far',
@@ -149,15 +122,15 @@ class _ConversationCard extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(name: summary.otherUserName, radius: 30),
-                const SizedBox(width: 14),
+                UserAvatar(name: summary.otherUserName, radius: 28),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,32 +152,39 @@ class _ConversationCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 10),
                       Text(
-                        messagePreview,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        preview,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.mail_outline_rounded,
+                            size: 18,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              messageSummary,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ShellHeroPill(
-                  icon: Icons.mail_outline_rounded,
-                  label: messagePreview,
-                ),
-                ShellHeroPill(
-                  icon: Icons.schedule_rounded,
-                  label: 'Updated ${formatShortDate(summary.lastMessageAt)}',
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             FilledButton.icon(
               onPressed: () => _openConversation(context),
               icon: const Icon(Icons.chat_bubble_rounded),
@@ -215,4 +195,13 @@ class _ConversationCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _conversationPreview(ConversationSummary summary) {
+  return switch (summary.messageCount) {
+    0 => 'New match — send the first message when you are ready.',
+    1 => 'The chat has started and is easy to pick back up.',
+    2 || 3 || 4 => 'A short back-and-forth is already underway.',
+    _ => 'An active conversation is waiting for your next reply.',
+  };
 }

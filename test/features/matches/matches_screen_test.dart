@@ -12,7 +12,6 @@ import 'package:flutter_dating_application_1/models/matches_response.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
-import 'package:flutter_dating_application_1/shared/widgets/shell_hero.dart';
 
 void main() {
   const currentUser = UserSummary(
@@ -57,12 +56,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Your matches'), findsOneWidget);
-    expect(find.byType(ShellHero), findsOneWidget);
-    expect(find.text('Matches ready for a first hello'), findsOneWidget);
+    expect(find.text('Matches ready for a first hello'), findsNothing);
     expect(find.text('Noa'), findsOneWidget);
     expect(find.text('Active'), findsOneWidget);
     expect(find.text('ACTIVE'), findsNothing);
+    expect(find.text('For Dana'), findsNothing);
+    expect(find.text('Ready to message'), findsNothing);
     expect(find.text('Message now'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'View profile'), findsOneWidget);
 
     final messageNowButton = find.widgetWithText(FilledButton, 'Message now');
     await tester.scrollUntilVisible(messageNowButton, 200);
@@ -113,7 +114,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('View profile'));
+    await tester.tap(find.widgetWithText(TextButton, 'View profile'));
     await tester.pumpAndSettle();
 
     expect(find.text('Always up for a museum date.'), findsOneWidget);

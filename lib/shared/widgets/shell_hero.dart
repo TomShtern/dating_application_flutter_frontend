@@ -30,9 +30,17 @@ class ShellHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final hasTitle = title.trim().isNotEmpty;
     final titleStyle = compact
         ? theme.textTheme.titleLarge
         : theme.textTheme.headlineSmall;
+    final descriptionStyle = compact
+        ? theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          )
+        : theme.textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          );
     final crossAxisAlignment = centerContent
         ? CrossAxisAlignment.center
         : CrossAxisAlignment.start;
@@ -47,22 +55,24 @@ class ShellHero extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned(
-            top: compact ? -18 : -24,
-            right: compact ? -6 : -10,
-            child: _AmbientGlow(
-              size: compact ? 78 : 104,
-              color: colorScheme.tertiary.withValues(alpha: 0.12),
+          if (!compact)
+            Positioned(
+              top: -24,
+              right: -10,
+              child: _AmbientGlow(
+                size: 104,
+                color: colorScheme.tertiary.withValues(alpha: 0.12),
+              ),
             ),
-          ),
-          Positioned(
-            bottom: compact ? -18 : -22,
-            left: compact ? -6 : -10,
-            child: _AmbientGlow(
-              size: compact ? 58 : 82,
-              color: colorScheme.primary.withValues(alpha: 0.1),
+          if (!compact)
+            Positioned(
+              bottom: -22,
+              left: -10,
+              child: _AmbientGlow(
+                size: 82,
+                color: colorScheme.primary.withValues(alpha: 0.1),
+              ),
             ),
-          ),
           Padding(
             padding: AppTheme.sectionPadding(compact: compact),
             child: Column(
@@ -79,30 +89,30 @@ class ShellHero extends StatelessWidget {
                         : Alignment.centerLeft,
                     child: heading,
                   ),
-                  SizedBox(height: compact ? 14 : 18),
+                  SizedBox(height: compact ? 10 : 18),
                 ],
-                Text(title, style: titleStyle, textAlign: textAlign),
-                SizedBox(height: compact ? 8 : 10),
+                if (hasTitle) ...[
+                  Text(title, style: titleStyle, textAlign: textAlign),
+                  SizedBox(height: compact ? 6 : 10),
+                ],
                 Text(
                   description,
                   textAlign: textAlign,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  style: descriptionStyle,
                 ),
                 if (badges.isNotEmpty) ...[
-                  SizedBox(height: compact ? 14 : 16),
+                  SizedBox(height: compact ? 10 : 16),
                   Wrap(
                     alignment: centerContent
                         ? WrapAlignment.center
                         : WrapAlignment.start,
-                    spacing: 10,
-                    runSpacing: 10,
+                    spacing: compact ? 8 : 10,
+                    runSpacing: compact ? 8 : 10,
                     children: badges,
                   ),
                 ],
                 if (footer case final trailing?) ...[
-                  SizedBox(height: compact ? 14 : 18),
+                  SizedBox(height: compact ? 10 : 18),
                   Align(
                     alignment: centerContent
                         ? Alignment.center
@@ -132,11 +142,11 @@ class ShellHeroPill extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.glassDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon case final heroIcon) ...[
+            if (icon case final heroIcon?) ...[
               Icon(heroIcon, size: 18, color: colorScheme.primary),
               const SizedBox(width: 8),
             ],
