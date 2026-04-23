@@ -4,7 +4,7 @@
 
 **Goal:** Upgrade the visual review workflow so each successful run produces sorted, self-identifying screenshots inside the workspace, preserves the latest run separately from archived runs, and applies the custom oldest/middle/latest retention policy before run 51 or when the archive bank exceeds 500 MB.
 
-**Architecture:** Keep `test/visual/support/screenshot_capture.dart` as the orchestration layer, move run numbering/naming/retention logic into a focused archive helper, and isolate PNG metadata writing into a dedicated helper so the comparator remains understandable. Verify behavior with focused unit tests first, then run the real visual suite with a timeout and inspect generated artifacts in `build/visual_review/`.
+**Architecture:** Keep `test/visual/support/screenshot_capture.dart` as the orchestration layer, move run numbering/naming/retention logic into a focused archive helper, and isolate PNG metadata writing into a dedicated helper so the comparator remains understandable. Verify behavior with focused unit tests first, then run the real visual suite with a timeout and inspect generated artifacts in `visual_review/`.
 
 **Tech Stack:** Flutter test, Dart I/O, JSON manifests, PNG binary chunk handling, PowerShell/Flutter CLI verification.
 
@@ -372,10 +372,10 @@ The doc is incomplete until it explains:
 ```md
 ## Output layout
 
-- `build/visual_review/latest/` — newest screenshots only, named like `shell_matches__run-0007.png`
-- `build/visual_review/runs/run-0007__2026-04-20__16-12-05/` — archived run folder
+- `visual_review/latest/` — newest screenshots only, named like `shell_matches__run-0007.png`
+- `visual_review/runs/run-0007__2026-04-20__16-12-05/` — archived run folder
 - archived screenshots are named like `shell_matches__run-0007__2026-04-20__16-12-05.png`
-- `build/visual_review/archive_state.json` — monotonic run counter state
+- `visual_review/archive_state.json` — monotonic run counter state
 
 ## Archive cleanup
 
@@ -392,10 +392,10 @@ Expected: PASS
 Run: `flutter test test/visual/screenshot_test.dart`
 Expected: PASS and fresh files under:
 
-- `build/visual_review/latest/`
-- `build/visual_review/runs/<new-run-folder>/`
-- `build/visual_review/latest/manifest.json`
-- `build/visual_review/latest/index.html`
+- `visual_review/latest/`
+- `visual_review/runs/<new-run-folder>/`
+- `visual_review/latest/manifest.json`
+- `visual_review/latest/index.html`
 
 Then verify:
 
@@ -407,6 +407,6 @@ Then verify:
 - [ ] **Step 5: Commit docs and verified workflow output changes if intended for version control**
 
 ```bash
-git add docs/visual-review-workflow.md test/visual/support/*.dart build/visual_review/latest/manifest.json
+git add docs/visual-review-workflow.md test/visual/support/*.dart visual_review/latest/manifest.json
 git commit -m "docs: document organized visual review archive workflow"
 ```

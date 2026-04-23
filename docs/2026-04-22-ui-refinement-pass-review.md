@@ -3,7 +3,7 @@
 Date: 2026-04-22
 
 Reviewed artifacts:
-- `build/visual_review/latest/*__run-0020.png`
+- `visual_review/latest/*__run-0020.png`
 - follow-up review notes in `docs/2026-04-21-ui-post-implementation-review.md`
 - completed implementation plan in `docs/superpowers/plans/2026-04-22-ui-refinement-pass-implementation.md`
 

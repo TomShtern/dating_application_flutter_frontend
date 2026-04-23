@@ -9,8 +9,8 @@ Extend the existing Flutter visual review workflow so every successful run produ
 The repository already has an observability-first screenshot workflow with these properties:
 
 - the canonical entrypoint is `flutter test test/visual_inspection/screenshot_test.dart`
-- the latest run is written to `build/visual_review/latest/`
-- an archived copy is written to `build/visual_review/runs/<runId>/`
+- the latest run is written to `visual_review/latest/`
+- an archived copy is written to `visual_review/runs/<runId>/`
 - `manifest.json` and `index.html` are generated for review
 - the current screenshot suite covers 17 screens
 
@@ -20,13 +20,13 @@ This design keeps that overall model and upgrades naming, archive identity, and 
 
 ### 1. Output structure
 
-Keep `build/visual_review/` as the root.
+Keep `visual_review/` as the root.
 
 Use these subpaths:
 
-- `build/visual_review/latest/` — newest run only, rebuilt every successful run
-- `build/visual_review/runs/` — archived historical runs
-- `build/visual_review/archive_state.json` — persistent metadata for run numbering and archive bookkeeping
+- `visual_review/latest/` — newest run only, rebuilt every successful run
+- `visual_review/runs/` — archived historical runs
+- `visual_review/archive_state.json` — persistent metadata for run numbering and archive bookkeeping
 
 `latest/` is the primary inspection target. `runs/` is the historical bank.
 
@@ -36,7 +36,7 @@ Use these subpaths:
 
 Each run gets a monotonic run number that never decreases even if old archive runs are deleted.
 
-Run numbers are persisted in `build/visual_review/archive_state.json`.
+Run numbers are persisted in `visual_review/archive_state.json`.
 
 Run number formatting uses at least four digits with zero padding, for example `run-0001` and `run-0050`.
 
@@ -92,7 +92,7 @@ The metadata must let an automation agent identify what a single archived file i
 
 ### 5. Review ergonomics
 
-Reviewers should inspect `build/visual_review/latest/` first.
+Reviewers should inspect `visual_review/latest/` first.
 
 The gallery and documentation should make it clear that:
 
@@ -100,7 +100,7 @@ The gallery and documentation should make it clear that:
 - archived runs are for historical reference only
 - this workflow is for observability and inspection, not screenshot comparison
 
-Automation and AI review flows must default to `build/visual_review/latest/manifest.json` and `build/visual_review/latest/index.html` first.
+Automation and AI review flows must default to `visual_review/latest/manifest.json` and `visual_review/latest/index.html` first.
 
 Archived runs should be ignored unless one of these is true:
 
@@ -121,7 +121,7 @@ This preserves run integrity, manifest accuracy, and gallery usefulness.
 Automatic cleanup runs before creating a new archived run when either condition is true:
 
 - the archived run bank already contains 50 runs, or
-- the `build/visual_review/runs/` archive bank is over 500 MB
+- the `visual_review/runs/` archive bank is over 500 MB
 
 Operationally, this means cleanup must happen before run 51 is created.
 

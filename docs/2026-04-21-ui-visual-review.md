@@ -3,7 +3,7 @@
 Date: 2026-04-21
 
 Reviewed artifacts:
-- `build/visual_review/latest/*__run-0007.png`
+- `visual_review/latest/*__run-0007.png`
 - visual review workflow in `docs/visual-review-workflow.md`
 - related screen/theme files mapped from `lib/features/**` and `lib/theme/app_theme.dart`
 

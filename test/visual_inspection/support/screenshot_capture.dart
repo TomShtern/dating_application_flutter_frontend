@@ -346,11 +346,7 @@ class ScreenshotWriter extends LocalFileComparator {
 
   static Directory _defaultOutputRootDirectory() {
     return Directory(
-      [
-        Directory.current.path,
-        'build',
-        'visual_review',
-      ].join(Platform.pathSeparator),
+      [Directory.current.path, 'visual_review'].join(Platform.pathSeparator),
     );
   }
 }
