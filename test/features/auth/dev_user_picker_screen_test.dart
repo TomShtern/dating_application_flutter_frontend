@@ -47,6 +47,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Developer only'), findsOneWidget);
     expect(find.text('Current'), findsOneWidget);
     expect(find.text('Continue as Noa'), findsNothing);
     expect(find.text('Saved on this device right now.'), findsOneWidget);
@@ -84,6 +85,7 @@ void main() {
     await tester.tap(noaRow, warnIfMissed: false);
     await tester.pumpAndSettle();
 
+    expect(find.text('Developer only'), findsOneWidget);
     expect(find.text('Current user updated to Noa.'), findsOneWidget);
     expect(find.text('Current profile'), findsOneWidget);
     expect(find.text('Noa • Age 29 • Active profile'), findsOneWidget);

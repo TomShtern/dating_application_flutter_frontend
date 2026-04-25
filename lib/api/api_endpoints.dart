@@ -35,6 +35,9 @@ class ApiEndpoints {
 
   static String matches(String userId) => '/api/users/$userId/matches';
 
+  static String matchQuality(String userId, String matchId) =>
+      '/api/users/$userId/match-quality/$matchId';
+
   static String conversations(String userId) =>
       '/api/users/$userId/conversations';
 

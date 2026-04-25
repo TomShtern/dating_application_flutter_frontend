@@ -60,10 +60,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(AppBar, 'Settings'), findsOneWidget);
+      expect(find.text('Developer only'), findsOneWidget);
       expect(find.byType(ShellHero), findsNothing);
       expect(find.text('Current session'), findsNothing);
-      expect(find.text('Current profile'), findsOneWidget);
-      expect(find.text('Current dev session'), findsNothing);
+      expect(find.text('Current profile'), findsNothing);
+      expect(find.text('Current dev session'), findsOneWidget);
       expect(find.text('Dana'), findsOneWidget);
       expect(find.textContaining('Active profile'), findsOneWidget);
       expect(find.text('System sync'), findsNothing);

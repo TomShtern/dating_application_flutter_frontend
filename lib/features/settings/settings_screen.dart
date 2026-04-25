@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/app_preferences.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../auth/selected_user_provider.dart';
@@ -180,63 +181,39 @@ class _SettingsSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        gradient: LinearGradient(
-          colors: [colorScheme.surface, colorScheme.surfaceContainerLow],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return DeveloperOnlyCalloutCard(
+      title: 'Current dev session',
+      description:
+          'This quick switcher is temporary internal tooling for previewing the app with seeded profiles on this device.',
+      actions: [
+        OutlinedButton.icon(
+          onPressed: onSwitchUser,
+          icon: const Icon(Icons.switch_account_outlined),
+          label: const Text('Switch profile'),
         ),
-        prominent: true,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      ],
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          UserAvatar(name: currentUser.name, radius: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(name: currentUser.name, radius: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Current profile',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        currentUser.name,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${formatDisplayLabel(currentUser.state)} profile · Age ${currentUser.age}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                Text(
+                  currentUser.name,
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  onPressed: onSwitchUser,
-                  icon: const Icon(Icons.switch_account_outlined),
-                  label: const Text('Switch profile'),
+                const SizedBox(height: 4),
+                Text(
+                  '${formatDisplayLabel(currentUser.state)} profile · Age ${currentUser.age}',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../models/verification_result.dart';
+import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../theme/app_theme.dart';
@@ -322,36 +323,10 @@ class _DevelopmentOnlyCodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        color: colorScheme.tertiaryContainer.withValues(alpha: 0.45),
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.key_outlined, color: colorScheme.primary),
-                const SizedBox(width: 10),
-                Text('Test code', style: theme.textTheme.titleMedium),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Shown only in debug builds for local testing.',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 14),
-            SelectableText(code, style: theme.textTheme.headlineSmall),
-          ],
-        ),
-      ),
+    return DeveloperOnlyCalloutCard(
+      title: 'Test code',
+      description: 'Shown only in debug builds for local testing.',
+      child: SelectableText(code, style: theme.textTheme.headlineSmall),
     );
   }
 }

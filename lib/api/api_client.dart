@@ -8,6 +8,7 @@ import '../models/conversation_summary.dart';
 import '../models/health_status.dart';
 import '../models/like_result.dart';
 import '../models/location_metadata.dart';
+import '../models/match_quality.dart';
 import '../models/message_dto.dart';
 import '../models/matches_response.dart';
 import '../models/achievement_summary.dart';
@@ -352,6 +353,24 @@ class ApiClient {
 
       return MatchesResponse.fromJson(
         _expectMap(response.data, context: 'loading matches'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<MatchQuality> getMatchQuality({
+    required String userId,
+    required String matchId,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.matchQuality(userId, matchId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return MatchQuality.fromJson(
+        _expectMap(response.data, context: 'loading match quality'),
       );
     } on DioException catch (error) {
       throw _toApiError(error);

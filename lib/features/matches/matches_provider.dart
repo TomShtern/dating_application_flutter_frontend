@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_client.dart';
+import '../../models/match_quality.dart';
 import '../../models/matches_response.dart';
 import '../../models/user_summary.dart';
 import '../../shared/providers/selected_user_guard.dart' as user_guard;
@@ -14,6 +15,16 @@ final matchesProvider = FutureProvider<MatchesResponse>((ref) async {
 final matchesControllerProvider = Provider<MatchesController>((ref) {
   return MatchesController(ref);
 });
+
+final matchQualityProvider = FutureProvider.family
+    .autoDispose<MatchQuality, String>((ref, matchId) async {
+      final apiClient = ref.watch(apiClientProvider);
+      final currentUser = await user_guard.watchSelectedUser(ref);
+      return apiClient.getMatchQuality(
+        userId: currentUser.id,
+        matchId: matchId,
+      );
+    });
 
 class MatchesController {
   MatchesController(this._ref);

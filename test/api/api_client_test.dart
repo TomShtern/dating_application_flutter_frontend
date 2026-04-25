@@ -3,9 +3,56 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/api/api_endpoints.dart';
+import 'package:flutter_dating_application_1/models/match_quality.dart';
 import 'package:flutter_dating_application_1/models/profile_update_request.dart';
 
 void main() {
+  test(
+    'getMatchQuality uses the live Stage A route and parses the response',
+    () async {
+      final recorder = _RequestRecorder();
+      const userId = '11111111-1111-1111-1111-111111111111';
+      const matchId =
+          '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222';
+      final client = ApiClient(
+        dio: _buildTestDio(
+          recorder: recorder,
+          responder: (options) => {
+            'matchId': matchId,
+            'perspectiveUserId': userId,
+            'otherUserId': '22222222-2222-2222-2222-222222222222',
+            'compatibilityScore': 85,
+            'compatibilityLabel': 'Great Match',
+            'starDisplay': '⭐⭐⭐⭐',
+            'paceSyncLevel': 'Good Sync',
+            'distanceKm': 12.4,
+            'ageDifference': 2,
+            'highlights': [
+              'Lives nearby (12.4 km away)',
+              'You both enjoy Hiking',
+              'Great communication sync',
+            ],
+          },
+        ),
+      );
+
+      final matchQuality = await client.getMatchQuality(
+        userId: userId,
+        matchId: matchId,
+      );
+
+      expect(matchQuality, isA<MatchQuality>());
+      expect(matchQuality.compatibilityScore, 85);
+      expect(matchQuality.highlights, hasLength(3));
+      expect(recorder.requests.single.method, 'GET');
+      expect(
+        recorder.requests.single.path,
+        ApiEndpoints.matchQuality(userId, matchId),
+      );
+      expect(recorder.requests.single.extra['userId'], userId);
+    },
+  );
+
   test(
     'getHealth requests the health endpoint and parses the payload',
     () async {

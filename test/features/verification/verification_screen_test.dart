@@ -95,6 +95,7 @@ void main() {
 
     expect(apiClient.startedMethod, 'EMAIL');
     expect(apiClient.startedContact, 'dana@example.com');
+    expect(find.text('Developer only'), findsOneWidget);
     expect(find.text('Test code'), findsOneWidget);
     expect(find.widgetWithText(SelectableText, '246810'), findsOneWidget);
   });

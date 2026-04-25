@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** Revised after accepted Stage A backend contract response on 2026-04-25. Ready for frontend foundation execution; Stage B backend-dependent integrations remain gated.
+**Status:** Revised after frontend foundation completion and backend Stage B implementation report on 2026-04-26. Ready for Stage B frontend integration plus the remaining layout-shell tasks.
 
 **Design input:** `docs/superpowers/specs/2026-04-23-dating-app-ui-overhaul-design.md`
 
@@ -18,36 +18,36 @@
 
 - The design brief was re-read and validated against the live codebase on 2026-04-24.
 - The backend Stage A contract response was received in `docs/frontend-ui-overhaul-contract-response-2026-04-25.md` on 2026-04-25 and is now the contract checkpoint for execution.
+- Backend Stage B was reported implemented on 2026-04-26, with the response document updated to say the Stage B additions landed additively against the same JSON shapes.
+- Frontend reports Task 2, Task 3, and the Task 1 live-contract subset are implemented and verified in the current branch/worktree.
 - `matchId == conversationId` is confirmed by backend as live; the frontend may use `matchId` anywhere a conversation id is required.
 - `GET /api/users/{id}/match-quality/{matchId}` is confirmed live by backend, but is **not currently wired through the live frontend API layer**.
 - `LocationCountry.flagEmoji` already exists in the current models and should be used in the UI.
 - `BrowseCandidate`, `MatchSummary`, `PendingLiker`, `DailyPick`, and the current stats payload are all thinner than the desired UI.
 - Missing endpoint or DTO support is **not** a reason to weaken the redesign. When the current contract is insufficient, this plan calls it out explicitly as backend work.
 
-## Stage A contract checkpoint
+## Contract checkpoint
 
-Backend Stage A is accepted. Use these gates during frontend execution:
+Backend Stage B is reported implemented. Use these gates during frontend execution:
 
 | Area | Backend status | Frontend action now |
 |------|----------------|---------------------|
-| Match-to-conversation identity | Exists now | Treat `matchId` as the conversation id and verify chat-opening paths. |
-| Match quality | Exists now | Wire `GET /api/users/{id}/match-quality/{matchId}` and build `Why we match` against the real response shape. |
-| Person summary media/context | Will add, target 2026-05-01 | Build layout/fallbacks now; do not depend on `primaryPhotoUrl`, `photoUrls`, `approximateLocation`, or `summaryLine` until Stage B lands. |
-| Profile edit snapshot | Will add, target 2026-05-01 | Rework form layout now; do not wire full edit-prefill to `GET /profile-edit-snapshot` until Stage B lands. |
-| Notification schema stabilization | Will add, target 2026-05-01 | Rebuild notification row shell now; do not add deep links or quick actions until the stabilized data keys land. |
-| Presentation context | Will add, target 2026-05-08 | Prepare bottom-sheet UI boundaries now; do not show `Why this profile is shown` content until Stage B lands. |
+| Match-to-conversation identity | Exists now; frontend reports implemented | Keep using `matchId` as the conversation id and keep chat-opening tests green. |
+| Match quality | Exists now; frontend reports implemented in Matches | Continue building `Why we match` against the real response shape. |
+| Person summary media/context | Stage B reported implemented | Wire `primaryPhotoUrl`, `photoUrls`, `approximateLocation`, and `summaryLine` in DTOs and people surfaces. |
+| Profile edit snapshot | Stage B reported implemented | Wire full edit-prefill to `GET /api/users/{id}/profile-edit-snapshot`. |
+| Notification schema stabilization | Stage B reported implemented | Wire type-aware notification routing/actions only for the stabilized registry; unknown future types remain display-only. |
+| Presentation context | Stage B reported implemented | Wire `GET /api/users/{viewerId}/presentation-context/{targetId}` and show server-driven `Why this profile is shown`. |
 | Stats and achievements richer semantics | P1 follow-up | Improve current layouts conservatively; do not invent grouped stat meaning or achievement detail semantics. |
 
 ### Current execution order
 
-Start with backend-independent foundation work:
+Foundation work is reported complete. Continue in this order:
 
-1. Task 2 — visual foundation and shared UI kit
-2. Task 3 — shell cleanup, overflow menus, and developer-only framing
-3. Task 1 subset — wire only the live backend contracts: match-quality and match/conversation identity tests
-4. Tasks 4 through 9 — land layout shells and current-contract polish, leaving Stage B-dependent portions explicitly blocked
-5. Stage B integration pass — after backend confirms the 2026-05-01 and 2026-05-08 contracts, wire enriched DTOs/screens
-6. Task 10 — full visual/test verification and review report
+1. Review the current frontend worktree and keep Task 2, Task 3, and Task 1 live-contract changes intact.
+2. Task 1B — Stage B frontend contract integration pass.
+3. Tasks 4 through 9 — continue layout/surface work with the Stage B DTOs available.
+4. Task 10 — full visual/test verification and review report.
 
 ## Scope matrix
 
@@ -55,16 +55,16 @@ Start with backend-independent foundation work:
 |---------------------|---------------------------------|---------------------------------------------------------|------------------------------------------------------------------------------|
 | Dev-user picker     | polish + developer-only framing | none                                                    | `test/features/auth/dev_user_picker_screen_test.dart`, visual review         |
 | Signed-in shell     | shell cleanup                   | none                                                    | create `test/features/home/signed_in_shell_test.dart`, visual review         |
-| Discover            | major redesign                  | layout can start now; richer browse/daily-pick summaries target 2026-05-01, presentation context targets 2026-05-08 | `test/features/browse/browse_screen_test.dart`, visual review                |
-| Matches             | major redesign                  | match-quality exists now; richer match preview data targets 2026-05-01 | `test/features/matches/matches_screen_test.dart`, visual review              |
+| Discover            | major redesign                  | Stage B person summaries and presentation context are reported implemented | `test/features/browse/browse_screen_test.dart`, visual review                |
+| Matches             | major redesign                  | match-quality is implemented in frontend; Stage B richer match preview fields are reported implemented | `test/features/matches/matches_screen_test.dart`, visual review              |
 | Chats               | medium redesign                 | none                                                    | `test/features/chat/conversations_screen_test.dart`, visual review           |
 | Self profile        | medium redesign                 | none                                                    | `test/features/profile/profile_screen_test.dart`, visual review              |
-| Other-user profile  | medium redesign                 | presentation-context targets 2026-05-08; hide is deferred | `test/features/profile/profile_screen_test.dart`, visual review              |
-| Profile edit        | medium redesign                 | layout can start now; full edit snapshot targets 2026-05-01 | `test/features/profile/profile_edit_screen_test.dart`, visual review         |
+| Other-user profile  | medium redesign                 | presentation-context is reported implemented; hide is deferred | `test/features/profile/profile_screen_test.dart`, visual review              |
+| Profile edit        | medium redesign                 | full edit snapshot is reported implemented | `test/features/profile/profile_edit_screen_test.dart`, visual review         |
 | Settings            | medium cleanup                  | none                                                    | `test/features/settings/settings_screen_test.dart`, visual review            |
 | Standouts           | medium redesign                 | richer standout preview data                            | `test/features/browse/standouts_screen_test.dart`, visual review             |
 | Pending likers      | medium redesign                 | richer liker preview data                               | `test/features/browse/pending_likers_screen_test.dart`, visual review        |
-| Notifications       | rebuild                         | row shell can start now; stabilized routing keys target 2026-05-01 | `test/features/notifications/notifications_screen_test.dart`, visual review  |
+| Notifications       | rebuild                         | stabilized routing keys are reported implemented | `test/features/notifications/notifications_screen_test.dart`, visual review  |
 | Stats               | medium redesign                 | current endpoint usable; grouped/typed semantics are P1 follow-up | `test/features/stats/stats_screen_test.dart`, visual review                  |
 | Achievements        | medium redesign                 | current endpoint usable; richer canonical semantics are P1 follow-up | `test/features/stats/achievements_screen_test.dart`, visual review           |
 | Verification        | medium redesign                 | current start/confirm contract only; resend/cooldown is deferred | `test/features/verification/verification_screen_test.dart`, visual review    |
@@ -74,28 +74,26 @@ Start with backend-independent foundation work:
 
 ## Backend/API contract work required to preserve quality
 
-These items should be treated as **quality-preserving backend work**, not optional nice-to-haves. The Stage A response has clarified what is live and what must wait for backend Stage B.
+These items should be treated as **quality-preserving backend work**, not optional nice-to-haves. Backend Stage B is reported implemented for the P0 contract items; frontend now needs to wire and verify them.
 
-| Priority | Needed for | Stage A status | Frontend execution rule |
+| Priority | Needed for | Current status | Frontend execution rule |
 |----------|------------|----------------|-------------------------|
 | P0 | Correct `Message now` and chat-thread routing | Exists now: `matchId == conversationId` | Verify current flows and do not wait for a new conversation id field. |
 | P0 | `Why we match` bottom sheet on `Matches` | Exists now: `GET /api/users/{id}/match-quality/{matchId}` | Wire API/model/tests now against the Stage A response shape. |
-| P0 | Photo-backed person cards in `Discover`, `Matches`, `Pending likers`, `Standouts`, and compact `Daily pick` | Will add by 2026-05-01 | Build card layout and no-photo fallbacks now; wire additive fields only after Stage B confirmation. |
-| P0 | `Why this profile is shown` on `Discover` and other-user profile | Will add by 2026-05-08 | Build the sheet boundary now; keep content blocked until endpoint lands. |
-| P0 | Complete profile-edit prefilling | Will add by 2026-05-01 | Redesign form layout now; wire snapshot endpoint only after Stage B confirmation. |
-| P0 | Notification deep links and quick actions | Will add by 2026-05-01 | Rebuild inbox shell now; keep routing/quick actions blocked until stabilized keys land. |
+| P0 | Photo-backed person cards in `Discover`, `Matches`, `Pending likers`, `Standouts`, and compact `Daily pick` | Stage B reported implemented | Wire additive fields and verify graceful null/no-photo behavior. |
+| P0 | `Why this profile is shown` on `Discover` and other-user profile | Stage B reported implemented | Wire endpoint/model and show only server-driven reasons. |
+| P0 | Complete profile-edit prefilling | Stage B reported implemented | Wire snapshot endpoint/model and update edit-prefill tests. |
+| P0 | Notification deep links and quick actions | Stage B reported implemented | Wire only stabilized known types; unknown types remain display-only. |
 | P1 | Stats grouping + stat detail sheets | Follow-up contract needed | Improve current presentation conservatively; do not infer stat meaning. |
 | P1 | Achievement drill-downs that feel meaningful | Follow-up contract needed | Improve current presentation conservatively; do not infer achievement semantics. |
 | P1 | Persistent `Hide` action on other-user profiles | Deferred | Do not ship persistent hide. If UI includes `Hide`, label it as deferred or omit it. |
 | P2 | Verification resend/cooldown UX | Deferred | Do not add resend/cooldown UX yet. |
 
-### Backend Stage B order
+### Backend Stage B status
 
-1. By 2026-05-01: richer person-summary/photo payloads for browse, matches, pending likers, standouts, and daily pick.
-2. By 2026-05-01: `GET /api/users/{id}/profile-edit-snapshot`.
-3. By 2026-05-01: stabilized notification type/data schema.
-4. By 2026-05-08: `GET /api/users/{viewerId}/presentation-context/{targetId}`.
-5. Later P1/P2: grouped/typed stats, richer achievements, conversation enrichment, persistent hide, verification resend/cooldown, dev-only cleanup.
+Backend reports the P0 Stage B work is implemented in an uncommitted backend working tree at `main` / `HEAD 129273a`, with backend tests passing except for unrelated existing/environment failures. Frontend should proceed with integration against the documented Stage B contract, while the manager keeps backend commit/review hygiene separate.
+
+Still later P1/P2: grouped/typed stats, richer achievements, conversation enrichment, persistent hide, verification resend/cooldown, dev-only cleanup.
 
 ## Files expected to change
 
@@ -218,7 +216,7 @@ These items should be treated as **quality-preserving backend work**, not option
 - [ ] Do **not** wire `presentation-context`, `profile-edit-snapshot`, person-summary enrichment, or notification deep links in this task. Those wait for backend Stage B confirmation.
 - [ ] Run: `flutter test test/api/api_client_test.dart test/models/match_quality_test.dart`
 
-### Task 1B: Stage B contract integration pass, only after backend confirms implementation
+### Task 1B: Stage B contract integration pass
 
 **Files:**
 - Modify: `lib/api/api_endpoints.dart`
@@ -238,10 +236,10 @@ These items should be treated as **quality-preserving backend work**, not option
 - Modify: `test/models/standout_test.dart`
 - Modify: `test/models/notification_item_test.dart`
 
-- [ ] After backend confirms the 2026-05-01 contracts, extend summary DTOs with `primaryPhotoUrl`, `photoUrls`, `approximateLocation`, and `summaryLine`.
-- [ ] After backend confirms the 2026-05-01 contract, add `profile-edit-snapshot` endpoint/model wiring.
-- [ ] After backend confirms the 2026-05-01 contract, update `NotificationItem` tests for the stabilized type/data registry; do not deep-link unknown types.
-- [ ] After backend confirms the 2026-05-08 contract, add `presentation-context` endpoint/model wiring.
+- [ ] Extend summary DTOs with `primaryPhotoUrl`, `photoUrls`, `approximateLocation`, and `summaryLine`.
+- [ ] Add `profile-edit-snapshot` endpoint/model wiring.
+- [ ] Update `NotificationItem` tests for the stabilized type/data registry; do not deep-link unknown types.
+- [ ] Add `presentation-context` endpoint/model wiring.
 - [ ] Keep any P1 stats/achievements/conversation/hide/verification additions out of this pass unless the manager explicitly promotes them.
 - [ ] Run the expanded API/model tests after each confirmed backend contract is wired.
 
@@ -315,8 +313,7 @@ These items should be treated as **quality-preserving backend work**, not option
 - [ ] Use photo-backed candidate cards whenever the payload supports it, and fall back gracefully when it does not.
 - [ ] Add concise, server-driven reasons/chips plus a compact compatibility meter only when those signals are truly provided by the backend.
 - [ ] Keep swipe as a first-class interaction and demote the full-profile affordance so it no longer competes with the core decision loop.
-- [ ] Before backend Stage B, land the layout shell without fake reasons and use intentional no-photo/current-contract fallbacks.
-- [ ] After backend Stage B, wire 2026-05-01 person-summary fields and 2026-05-08 presentation-context data.
+- [ ] Wire Stage B person-summary fields and presentation-context data, while preserving intentional no-photo/current-contract fallbacks.
 - [ ] Run: `flutter test test/features/browse/browse_screen_test.dart`
 
 ### Task 5: Redesign `Matches` and `Chats` as compact, people-first lists
@@ -352,11 +349,11 @@ These items should be treated as **quality-preserving backend work**, not option
 - [ ] Tighten the self-profile hero so identity, compact state/location metadata, and a small readiness indicator are visible above the fold without explanatory clutter.
 - [ ] Remove the over-promotion of tiny facts into separate full-width cards.
 - [ ] Redesign the other-user profile hero to surface `Profile snapshot`, compact metadata, photos earlier, and a top-right overflow menu.
-- [ ] Prepare the `Why this profile is shown` sheet boundary, but only show server-driven content after the 2026-05-08 presentation-context endpoint lands.
+- [ ] Wire `Why this profile is shown` to server-driven presentation-context data.
 - [ ] Do not add persistent `Hide`; backend Stage A deferred hide/unhide support.
 - [ ] Reorder profile edit so basics, preferences, and distance come first; move `About` below those controls; replace distance text input with a slider plus live numeric value.
 - [ ] Demote advanced optional filters so the form feels intuitive instead of equally weighted from top to bottom.
-- [ ] After backend Stage B, wire full profile-edit prefilling to `GET /api/users/{id}/profile-edit-snapshot`.
+- [ ] Wire full profile-edit prefilling to `GET /api/users/{id}/profile-edit-snapshot`.
 - [ ] Run: `flutter test test/features/profile/profile_screen_test.dart test/features/profile/profile_edit_screen_test.dart test/features/location/location_completion_screen_test.dart`
 
 ### Task 7: Redesign `Standouts` and `Pending likers` with stronger prioritization and richer scanning
@@ -391,8 +388,7 @@ These items should be treated as **quality-preserving backend work**, not option
 
 - [ ] Rebuild notifications from a grouped inbox model (`Today`, `Yesterday`, `Earlier`) instead of the current stacked-card structure.
 - [ ] Use one strong unread signal per item, make row layout scale safely, and keep filters/bulk actions compact but obvious.
-- [ ] Before backend Stage B, keep notification rows display-only except for conservative existing read actions; do not add quick actions or deep links.
-- [ ] After backend Stage B, add type-aware notification routing only for the stabilized registry in `docs/frontend-ui-overhaul-contract-response-2026-04-25.md`.
+- [ ] Add type-aware notification routing only for the stabilized registry in `docs/frontend-ui-overhaul-contract-response-2026-04-25.md`.
 - [ ] Redesign stats and achievements conservatively against the current endpoints; make the UI cleaner without inventing grouped meanings or achievement semantics.
 - [ ] Keep stat detail sheets and achievement detail sheets shallow/current-data-backed until a P1 backend contract exists.
 - [ ] Run: `flutter test test/features/notifications/notifications_screen_test.dart test/features/stats/stats_screen_test.dart test/features/stats/achievements_screen_test.dart`

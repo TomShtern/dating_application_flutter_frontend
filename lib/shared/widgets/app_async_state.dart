@@ -75,25 +75,20 @@ class AppAsyncState extends StatelessWidget {
                 child: Card(
                   color: colorScheme.surface,
                   child: Padding(
-                    padding: EdgeInsets.all(compact ? 16 : 22),
+                    padding: EdgeInsets.all(compact ? 16 : 18),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: compact ? 48 : 60,
-                          height: compact ? 48 : 60,
+                          width: compact ? 40 : 48,
+                          height: compact ? 40 : 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: highlightColors,
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: AppTheme.softShadow(context),
+                            color: highlightColors.first,
                           ),
                           child: Icon(
                             icon,
-                            size: compact ? 24 : 30,
+                            size: compact ? 20 : 24,
                             color: iconColor,
                           ),
                         ),

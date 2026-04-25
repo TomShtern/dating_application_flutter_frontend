@@ -8,6 +8,7 @@ import '../../models/conversation_summary.dart';
 import '../../models/daily_pick.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/shell_hero.dart';
@@ -159,6 +160,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                         builder: (context) => ConversationThreadScreen(
                           currentUser: widget.currentUser,
                           conversation: ConversationSummary(
+                            // Stage A backend contract: matchId is the live
+                            // conversation id and can be used directly.
                             id: result.matchId!,
                             otherUserId: result.matchedUserId ?? candidate.id,
                             otherUserName:
@@ -324,24 +327,17 @@ class _DeveloperSessionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        color: colorScheme.surface.withValues(alpha: 0.8),
-      ),
+    return DeveloperOnlyCalloutCard(
+      title: 'Browse diagnostics',
+      description:
+          '${user.name} is active on this device. Expand this only when you need backend/system health while testing.',
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          leading: Icon(
-            Icons.monitor_heart_outlined,
-            color: colorScheme.primary,
-          ),
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(top: 12),
+          leading: const Icon(Icons.monitor_heart_outlined),
           title: const Text('Connection status'),
-          subtitle: Text('${user.name} is active on this device'),
           children: [
             const BackendHealthBanner(),
             const SizedBox(height: 12),

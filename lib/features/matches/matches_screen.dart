@@ -14,6 +14,7 @@ import '../../shared/widgets/user_avatar.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
+import 'match_factors_sheet.dart';
 import 'matches_provider.dart';
 
 class MatchesScreen extends ConsumerWidget {
@@ -100,6 +101,7 @@ class _MatchCard extends StatelessWidget {
         builder: (context) => ConversationThreadScreen(
           currentUser: currentUser,
           conversation: ConversationSummary(
+            // Stage A backend contract: matchId is the live conversation id.
             id: match.matchId,
             otherUserId: match.otherUserId,
             otherUserName: match.otherUserName,
@@ -119,6 +121,15 @@ class _MatchCard extends StatelessWidget {
           userName: match.otherUserName,
         ),
       ),
+    );
+  }
+
+  Future<void> _openMatchFactors(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => MatchFactorsSheet(match: match),
     );
   }
 
@@ -197,6 +208,11 @@ class _MatchCard extends StatelessWidget {
                       onPressed: () => _openConversation(context),
                       icon: const Icon(Icons.forum_rounded),
                       label: const Text('Message now'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _openMatchFactors(context),
+                      icon: const Icon(Icons.auto_awesome_outlined),
+                      label: const Text('Why we match'),
                     ),
                     TextButton.icon(
                       onPressed: () => _openProfile(context),

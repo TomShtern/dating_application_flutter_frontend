@@ -1,11 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_provider.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/matches/matches_provider.dart';
 import 'package:flutter_dating_application_1/features/matches/matches_screen.dart';
+import 'package:flutter_dating_application_1/models/match_quality.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
 import 'package:flutter_dating_application_1/models/match_summary.dart';
 import 'package:flutter_dating_application_1/models/matches_response.dart';
@@ -143,8 +146,79 @@ void main() {
     await tester.tap(find.byTooltip('Safety actions'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Safety actions').last);
+    await tester.pumpAndSettle();
+
     expect(find.text('Block user'), findsOneWidget);
     expect(find.text('Report user'), findsOneWidget);
     expect(find.text('Unmatch'), findsOneWidget);
   });
+
+  testWidgets('opens a Why we match sheet with live match-quality details', (
+    WidgetTester tester,
+  ) async {
+    final apiClient = _FakeMatchesApiClient(
+      matchQuality: MatchQuality.fromJson({
+        'matchId': match.matchId,
+        'perspectiveUserId': currentUser.id,
+        'otherUserId': match.otherUserId,
+        'compatibilityScore': 85,
+        'compatibilityLabel': 'Great Match',
+        'starDisplay': '⭐⭐⭐⭐',
+        'paceSyncLevel': 'Good Sync',
+        'distanceKm': 12.4,
+        'ageDifference': 2,
+        'highlights': [
+          'Lives nearby (12.4 km away)',
+          'You both enjoy Hiking',
+          'Great communication sync',
+        ],
+      }),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          matchesProvider.overrideWith(
+            (ref) async => MatchesResponse(
+              matches: [match],
+              totalCount: 1,
+              offset: 0,
+              limit: 20,
+              hasMore: false,
+            ),
+          ),
+        ],
+        child: MaterialApp(home: MatchesScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Why we match'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Why we match'), findsWidgets);
+    expect(find.text('Great Match'), findsOneWidget);
+    expect(find.text('Good Sync'), findsOneWidget);
+    expect(find.text('Lives nearby (12.4 km away)'), findsOneWidget);
+    expect(apiClient.getMatchQualityCalls, 1);
+  });
+}
+
+class _FakeMatchesApiClient extends ApiClient {
+  _FakeMatchesApiClient({required this.matchQuality}) : super(dio: Dio());
+
+  final MatchQuality matchQuality;
+  int getMatchQualityCalls = 0;
+
+  @override
+  Future<MatchQuality> getMatchQuality({
+    required String userId,
+    required String matchId,
+  }) async {
+    getMatchQualityCalls++;
+    return matchQuality;
+  }
 }

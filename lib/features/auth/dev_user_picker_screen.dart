@@ -6,6 +6,7 @@ import '../home/backend_health_banner.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
@@ -28,9 +29,10 @@ class DevUserPickerScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Pick a profile to preview the app with. Your choice stays saved on this device between launches.',
-                style: Theme.of(context).textTheme.titleMedium,
+              const DeveloperOnlyCalloutCard(
+                title: 'Development sign-in',
+                description:
+                    'Pick a seeded profile to preview the app with. This device remembers the active dev profile between launches until you switch it again.',
               ),
               const SizedBox(height: 14),
               const BackendHealthBanner(),

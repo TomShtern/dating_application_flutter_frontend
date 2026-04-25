@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
+import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../auth/selected_user_provider.dart';
 import 'safety_provider.dart';
 
 enum SafetyAction { block, unblock, report, unmatch }
+
+enum _SafetyMenuAction { open }
 
 class SafetyActionOutcome {
   const SafetyActionOutcome({required this.action, required this.message});
@@ -44,9 +47,19 @@ class SafetyActionsButton extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        return IconButton(
+        return AppOverflowMenuButton<_SafetyMenuAction>(
           tooltip: tooltip,
-          onPressed: () async {
+          items: const [
+            PopupMenuItem<_SafetyMenuAction>(
+              value: _SafetyMenuAction.open,
+              child: Text('Safety actions'),
+            ),
+          ],
+          onSelected: (value) async {
+            if (value != _SafetyMenuAction.open) {
+              return;
+            }
+
             final outcome = await showModalBottomSheet<SafetyActionOutcome>(
               context: context,
               showDragHandle: true,
@@ -66,7 +79,6 @@ class SafetyActionsButton extends ConsumerWidget {
             ).showSnackBar(SnackBar(content: Text(outcome.message)));
             onCompleted?.call(context, outcome);
           },
-          icon: const Icon(Icons.shield_outlined),
         );
       },
       loading: () => const SizedBox.shrink(),

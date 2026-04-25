@@ -31,16 +31,10 @@ class ShellHero extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final hasTitle = title.trim().isNotEmpty;
-    final titleStyle = compact
-        ? theme.textTheme.titleLarge
-        : theme.textTheme.headlineSmall;
-    final descriptionStyle = compact
-        ? theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          )
-        : theme.textTheme.bodyLarge?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          );
+    final titleStyle = theme.textTheme.titleLarge;
+    final descriptionStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
     final crossAxisAlignment = centerContent
         ? CrossAxisAlignment.center
         : CrossAxisAlignment.start;
@@ -57,20 +51,20 @@ class ShellHero extends StatelessWidget {
         children: [
           if (!compact)
             Positioned(
-              top: -24,
-              right: -10,
+              top: -20,
+              right: -8,
               child: _AmbientGlow(
-                size: 104,
-                color: colorScheme.tertiary.withValues(alpha: 0.12),
+                size: 60,
+                color: colorScheme.tertiary.withValues(alpha: 0.06),
               ),
             ),
           if (!compact)
             Positioned(
-              bottom: -22,
-              left: -10,
+              bottom: -18,
+              left: -8,
               child: _AmbientGlow(
-                size: 82,
-                color: colorScheme.primary.withValues(alpha: 0.1),
+                size: 48,
+                color: colorScheme.primary.withValues(alpha: 0.04),
               ),
             ),
           Padding(

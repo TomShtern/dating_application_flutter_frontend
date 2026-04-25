@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/app_config.dart';
 import '../media/media_url.dart';
-import '../../theme/app_theme.dart';
 
 class UserAvatar extends ConsumerWidget {
   const UserAvatar({
@@ -34,8 +33,7 @@ class UserAvatar extends ConsumerWidget {
       height: frameSize,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: AppTheme.avatarGradient(context),
-        boxShadow: AppTheme.softShadow(context),
+        color: colorScheme.outline.withValues(alpha: 0.18),
       ),
       padding: EdgeInsets.all(innerPadding),
       child: DecoratedBox(
@@ -79,11 +77,7 @@ class _AvatarFallback extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [colorScheme.primaryContainer, colorScheme.tertiaryContainer],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: colorScheme.surfaceContainerHighest,
       ),
       child: Center(
         child: Text(

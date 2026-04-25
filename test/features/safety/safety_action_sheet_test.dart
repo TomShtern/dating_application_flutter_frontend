@@ -49,7 +49,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+    expect(find.byIcon(Icons.shield_outlined), findsNothing);
     await tester.tap(find.byTooltip('Safety actions'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Safety actions').last);
     await tester.pumpAndSettle();
 
     expect(find.text('Block user'), findsOneWidget);
@@ -86,6 +91,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('Safety actions'), findsNothing);
+    expect(find.byIcon(Icons.more_vert), findsNothing);
   });
 
   testWidgets('direct sheet instances suppress self-directed actions', (

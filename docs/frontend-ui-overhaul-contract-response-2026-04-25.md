@@ -8,7 +8,16 @@ and person-summary enrichment, presentation-context, profile-edit snapshot, and 
 I also added a short P1/P2 status section after the six P0 items.
 I did not start backend implementation. I ran file-level validation on the new Markdown file and there are no errors reported for it."
 
-Stage A only. This response is based on the actual backend code in this repository as of 2026-04-25.
+Stage A response plus Stage B implementation status. The Stage A contract is based on the actual backend code in this repository as of 2026-04-25. Stage B landed additively against the same JSON shapes.
+
+Stage B implementation status as of 2026-04-25:
+
+- Person-summary enrichment is implemented on browse, matches, pending-likers, standouts, and daily pick.
+- `GET /api/users/{id}/profile-edit-snapshot` is implemented.
+- `GET /api/users/{viewerId}/presentation-context/{targetId}` is implemented.
+- Notification event payloads now include the stabilized data keys for match, message, friend-request, friend-request-accepted, and graceful-exit notifications. Legacy `responderId` remains present on the older friend-zone transition notification for compatibility.
+- These four items are implemented in backend code; they are not separately confirmed as deployed to a shared environment in this document: person-summary enrichment, `GET /api/users/{id}/profile-edit-snapshot`, `GET /api/users/{viewerId}/presentation-context/{targetId}`, and notification event stabilization.
+- No Stage A endpoint path, response field name, enum, or wrapper shape was intentionally changed. The profile snapshot location `precision` may be `ADDRESS`, `CITY`, or `ZIP` depending on the stored coordinates, as already allowed by the enum rules below.
 
 Reviewed sources:
 
@@ -105,7 +114,7 @@ Current conversation summary shape:
 
 ## 2. Person summary media and context
 
-1. Status: Will add
+1. Status: Implemented (backend completed)
 2. Exact endpoint path and method:
    - `GET /api/users/{id}/browse`
    - `GET /api/users/{id}/matches`
@@ -173,10 +182,13 @@ Target additive fields on `matches`, `pending-likers`, and `standouts` are the s
 6. Nullability and enum rules:
    - `photoUrls` will always be present and will always be an array.
    - `primaryPhotoUrl` will always be present and may be `null`.
+   - When `primaryPhotoUrl` is non-null, it is selected from `photoUrls` and is guaranteed to appear in that array.
+   - `primaryPhotoUrl` is the authoritative primary display image when both fields exist; do not infer the primary image from `photoUrls[0]`.
+   - `photoUrls` may be empty only when `primaryPhotoUrl` is `null`.
    - `approximateLocation` will always be present and may be `null`.
    - `summaryLine` will always be present and may be `null`.
    - `state` remains the current `User.UserState` string when that field already exists on the row.
-   - This item does not add recommendation-explanation fields; those belong to items 3 and 4 (item 3 provides `highlights`, item 4 provides `reasonTags` and `details`).
+   - This item does not add recommendation-explanation fields such as `reasonTags`; those belong to items 3 and 4.
 7. Identity notes, especially matchId, conversationId, userId, target ids:
    - Browse candidates keep `id` as the user id.
    - Daily picks keep `userId`.
@@ -240,7 +252,7 @@ Target additive fields on `matches`, `pending-likers`, and `standouts` are the s
 
 ## 4. Presentation context
 
-1. Status: Will add
+1. Status: Implemented (backend completed)
 2. Exact endpoint path and method: `GET /api/users/{viewerId}/presentation-context/{targetId}`
 3. Example request JSON, if there is a request body: No request body.
 4. Example response JSON:
@@ -295,7 +307,7 @@ Target additive fields on `matches`, `pending-likers`, and `standouts` are the s
 
 ## 5. Profile edit read model
 
-1. Status: Will add
+1. Status: Implemented (backend completed)
 2. Exact endpoint path and method: `GET /api/users/{id}/profile-edit-snapshot`
 3. Example request JSON, if there is a request body: No request body.
 4. Example response JSON:
@@ -385,7 +397,7 @@ Target additive fields on `matches`, `pending-likers`, and `standouts` are the s
 
 ## 6. Notification schema
 
-1. Status: Will add
+1. Status: Implemented (backend completed)
 2. Exact endpoint path and method: `GET /api/users/{id}/notifications`
 3. Example request JSON, if there is a request body: No request body.
 4. Example response JSON:
@@ -461,5 +473,5 @@ Notification type registry for the stabilized contract:
 ## Frontend Build Guidance Right Now
 
 - Safe to build now against current live backend: match-to-chat identity, match-quality screen wiring, current stats endpoint consumption, current achievements endpoint consumption, and current notification row shell without deep-link guarantees.
-- Safe to plan but not wire as complete/live until backend implementation: person-summary enrichment, presentation-context, profile-edit snapshot, and stabilized notification deep-link schema.
-- Explicitly blocked until backend work lands: server-owned `Why this profile is shown`, complete self-edit prefill against the full write contract, and notification quick actions that depend on guaranteed routing keys.
+- Safe to wire after frontend DTO update: person-summary enrichment, presentation-context, profile-edit snapshot, and stabilized notification deep-link schema.
+- Still blocked until follow-up backend work: richer grouped stats, canonical achievement details, hide/unhide, verification resend/cooldown, and optional conversation-summary enrichment.

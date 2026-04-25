@@ -189,6 +189,9 @@ void main() {
     await tester.tap(safetyActionsButton);
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Safety actions').last);
+    await tester.pumpAndSettle();
+
     expect(find.text('Block user'), findsOneWidget);
     expect(find.text('Report user'), findsOneWidget);
     expect(find.text('Unmatch'), findsNothing);
@@ -288,6 +291,53 @@ void main() {
     );
     expect(find.textContaining('Browsing as Dana'), findsOneWidget);
     expect(find.text('See full profile'), findsOneWidget);
+  });
+
+  testWidgets('keeps browse diagnostics inside developer-only framing', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
+    final apiClient = _FakeBrowseApiClient(
+      browseResponse: browseResponse,
+      likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
+          backendHealthProvider.overrideWith(
+            (ref) async =>
+                HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
+          ),
+        ],
+        child: const MaterialApp(home: BrowseScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final developerOnly = find.text('Developer only');
+    await tester.scrollUntilVisible(developerOnly, 200);
+    await tester.pumpAndSettle();
+
+    expect(developerOnly, findsOneWidget);
+    expect(find.text('Browse diagnostics'), findsOneWidget);
+    expect(find.text('Connection status'), findsOneWidget);
+
+    await tester.tap(find.text('Connection status'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Check connection health without pulling attention away from the next profile.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('supports swiping the candidate card to pass', (

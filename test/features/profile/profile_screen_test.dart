@@ -250,6 +250,9 @@ void main() {
     await tester.tap(find.byTooltip('Safety actions'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Safety actions').last);
+    await tester.pumpAndSettle();
+
     expect(find.text('Block user'), findsOneWidget);
     expect(find.text('Report user'), findsOneWidget);
     expect(find.text('Unmatch'), findsNothing);

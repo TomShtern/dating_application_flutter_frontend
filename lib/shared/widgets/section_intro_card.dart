@@ -41,12 +41,12 @@ class SectionIntroCard extends StatelessWidget {
               children: [
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(icon, color: colorScheme.primary),
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(icon, color: colorScheme.onSurfaceVariant),
                   ),
                 ),
                 const SizedBox(width: 12),

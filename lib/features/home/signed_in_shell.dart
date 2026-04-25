@@ -63,7 +63,6 @@ class _SignedInShellState extends State<SignedInShell> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final activeDestination = _destinations[_selectedIndex];
     final pages = [
       BrowseScreen(currentUser: widget.currentUser),
       MatchesScreen(currentUser: widget.currentUser),
@@ -103,98 +102,26 @@ class _SignedInShellState extends State<SignedInShell> {
             prominent: true,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  child: Row(
-                    key: ValueKey(activeDestination.label),
-                    children: [
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.accentGradient(context),
-                          borderRadius: const BorderRadius.all(
-                            Radius.circular(16),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(7),
-                          child: Icon(
-                            activeDestination.selectedIcon,
-                            size: 17,
-                            color: colorScheme.onPrimary,
-                          ),
-                        ),
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+            child: ClipRRect(
+              borderRadius: AppTheme.panelRadius,
+              child: NavigationBar(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (index) {
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                },
+                destinations: _destinations
+                    .map(
+                      (destination) => NavigationDestination(
+                        icon: Icon(destination.icon),
+                        selectedIcon: Icon(destination.selectedIcon),
+                        label: destination.label,
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: KeyedSubtree(
-                          key: const Key('shell-active-destination-label'),
-                          child: Text(
-                            activeDestination.label,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Flexible(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 220),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.9),
-                              borderRadius: const BorderRadius.all(
-                                Radius.circular(999),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 9,
-                                vertical: 5,
-                              ),
-                              child: KeyedSubtree(
-                                key: const Key('shell-active-user-summary'),
-                                child: Text(
-                                  widget.currentUser.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.labelLarge,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: AppTheme.panelRadius,
-                  child: NavigationBar(
-                    selectedIndex: _selectedIndex,
-                    onDestinationSelected: (index) {
-                      setState(() {
-                        _selectedIndex = index;
-                      });
-                    },
-                    destinations: _destinations
-                        .map(
-                          (destination) => NavigationDestination(
-                            icon: Icon(destination.icon),
-                            selectedIcon: Icon(destination.selectedIcon),
-                            label: destination.label,
-                          ),
-                        )
-                        .toList(growable: false),
-                  ),
-                ),
-              ],
+                    )
+                    .toList(growable: false),
+              ),
             ),
           ),
         ),

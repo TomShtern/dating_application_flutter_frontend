@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 class AppTheme {
   const AppTheme._();
 
-  static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(28));
-  static const BorderRadius panelRadius = BorderRadius.all(Radius.circular(32));
+  static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(16));
+  static const BorderRadius panelRadius = BorderRadius.all(Radius.circular(20));
   static const BorderRadius chipRadius = BorderRadius.all(Radius.circular(999));
   static const double navBarHeight = 64;
   static const double pagePadding = 18;
@@ -25,7 +25,7 @@ class AppTheme {
   }
 
   static ThemeData _theme(Brightness brightness) {
-    const seedColor = Color(0xFF6A5CFF);
+    const seedColor = Color(0xFF2D3A4F);
     final colorScheme = ColorScheme.fromSeed(
       seedColor: seedColor,
       brightness: brightness,
@@ -34,8 +34,8 @@ class AppTheme {
     final textTheme = _textTheme(baseTheme.textTheme, colorScheme);
     final isDark = brightness == Brightness.dark;
     final scaffoldColor = isDark
-        ? const Color(0xFF0D1022)
-        : const Color(0xFFF6F4FF);
+        ? const Color(0xFF12131A)
+        : const Color(0xFFF5F5F7);
     final cardColor = isDark
         ? colorScheme.surfaceContainerLow
         : colorScheme.surface;
@@ -330,16 +330,7 @@ class AppTheme {
   static LinearGradient heroGradient(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return LinearGradient(
-      colors: [
-        colorScheme.primaryContainer,
-        Color.lerp(
-              colorScheme.primaryContainer,
-              colorScheme.tertiaryContainer,
-              0.55,
-            ) ??
-            colorScheme.secondaryContainer,
-        colorScheme.secondaryContainer,
-      ],
+      colors: [colorScheme.surface, colorScheme.surfaceContainerLow],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -348,11 +339,7 @@ class AppTheme {
   static LinearGradient accentGradient(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return LinearGradient(
-      colors: [
-        colorScheme.primary,
-        Color.lerp(colorScheme.primary, colorScheme.tertiary, 0.6) ??
-            colorScheme.tertiary,
-      ],
+      colors: [colorScheme.primary, colorScheme.primaryContainer],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -361,11 +348,7 @@ class AppTheme {
   static LinearGradient avatarGradient(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return LinearGradient(
-      colors: [
-        Color.lerp(colorScheme.primary, colorScheme.tertiary, 0.2) ??
-            colorScheme.primary,
-        colorScheme.secondary,
-      ],
+      colors: [colorScheme.primaryContainer, colorScheme.secondaryContainer],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -377,8 +360,8 @@ class AppTheme {
     return [
       BoxShadow(
         color: theme.colorScheme.shadow.withValues(alpha: opacity),
-        blurRadius: 28,
-        offset: const Offset(0, 14),
+        blurRadius: 12,
+        offset: const Offset(0, 4),
       ),
     ];
   }
@@ -389,8 +372,8 @@ class AppTheme {
     return [
       BoxShadow(
         color: theme.colorScheme.shadow.withValues(alpha: opacity),
-        blurRadius: 36,
-        offset: const Offset(0, 18),
+        blurRadius: 16,
+        offset: const Offset(0, 6),
       ),
     ];
   }

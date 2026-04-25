@@ -27,13 +27,6 @@ void main() {
     state: 'ACTIVE',
   );
 
-  const longNamedUser = UserSummary(
-    id: '99999999-9999-9999-9999-999999999999',
-    name: 'Dana With A Very Long Name That Should Not Overflow The Shell',
-    age: 27,
-    state: 'ACTIVE',
-  );
-
   const currentUserDetail = UserDetail(
     id: '11111111-1111-1111-1111-111111111111',
     name: 'Dana',
@@ -94,30 +87,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.descendant(
-        of: find.byKey(const Key('shell-active-destination-label')),
-        matching: find.text('Discover'),
-      ),
-      findsOneWidget,
+      find.byKey(const Key('shell-active-destination-label')),
+      findsNothing,
     );
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('shell-active-user-summary')),
-        matching: find.text('Dana'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('shell-active-user-summary')), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Signed in as Dana'), findsNothing);
 
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
 
     expect(
-      find.descendant(
-        of: find.byKey(const Key('shell-active-destination-label')),
-        matching: find.text('Profile'),
-      ),
-      findsOneWidget,
+      find.byKey(const Key('shell-active-destination-label')),
+      findsNothing,
     );
 
     expect(find.text('Dana, 27'), findsOneWidget);
@@ -167,12 +149,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.descendant(
-        of: find.byKey(const Key('shell-active-destination-label')),
-        matching: find.text('Settings'),
-      ),
-      findsOneWidget,
+      find.byKey(const Key('shell-active-destination-label')),
+      findsNothing,
     );
+    expect(find.byType(NavigationBar), findsOneWidget);
 
     expect(find.widgetWithText(AppBar, 'Settings'), findsOneWidget);
     expect(
@@ -188,7 +168,7 @@ void main() {
     expect(find.text('View stats'), findsOneWidget);
   });
 
-  testWidgets('truncates very long current user names in the shell summary', (
+  testWidgets('keeps only the navigation bar as persistent bottom chrome', (
     WidgetTester tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -222,30 +202,16 @@ void main() {
           conversationsProvider.overrideWith((ref) async => const []),
           profileProvider.overrideWith((ref) async => currentUserDetail),
         ],
-        child: const MaterialApp(
-          home: SignedInShell(currentUser: longNamedUser),
-        ),
+        child: const MaterialApp(home: SignedInShell(currentUser: currentUser)),
       ),
     );
     await tester.pumpAndSettle();
 
-    final summaryText = tester.widget<Text>(
-      find
-          .descendant(
-            of: find.byKey(const Key('shell-active-user-summary')),
-            matching: find.byType(Text),
-          )
-          .first,
-    );
-
-    expect(summaryText.maxLines, 1);
-    expect(summaryText.overflow, TextOverflow.ellipsis);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byKey(const Key('shell-active-user-summary')), findsNothing);
     expect(
-      find.ancestor(
-        of: find.byKey(const Key('shell-active-user-summary')),
-        matching: find.byType(ConstrainedBox),
-      ),
-      findsOneWidget,
+      find.byKey(const Key('shell-active-destination-label')),
+      findsNothing,
     );
   });
 }
