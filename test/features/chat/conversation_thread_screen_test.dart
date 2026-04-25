@@ -127,21 +127,21 @@ void main() {
               conversationId: conversation.id,
               senderId: conversation.otherUserId,
               content: 'Coffee tomorrow?',
-              sentAt: DateTime(2026, 4, 18, 14, 20),
+              sentAt: DateTime.parse('2026-04-18T14:20:00Z'),
             ),
             MessageDto(
               id: 'message-2',
               conversationId: conversation.id,
               senderId: conversation.otherUserId,
               content: 'I found a place by the water.',
-              sentAt: DateTime(2026, 4, 18, 14, 22),
+              sentAt: DateTime.parse('2026-04-18T14:22:00Z'),
             ),
             MessageDto(
               id: 'message-3',
               conversationId: conversation.id,
               senderId: currentUser.id,
               content: 'That sounds perfect.',
-              sentAt: DateTime(2026, 4, 19, 9, 15),
+              sentAt: DateTime.parse('2026-04-19T09:15:00Z'),
             ),
           ],
         ],
@@ -150,7 +150,7 @@ void main() {
           conversationId: conversation.id,
           senderId: currentUser.id,
           content: 'See you there!',
-          sentAt: DateTime(2026, 4, 19, 9, 20),
+          sentAt: DateTime.parse('2026-04-19T09:20:00Z'),
         ),
       );
 

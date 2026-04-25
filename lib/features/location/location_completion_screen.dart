@@ -121,9 +121,12 @@ class _LocationCompletionScreenState
                                       children: [
                                         _CountryCodeBadge(code: country.code),
                                         const SizedBox(width: 12),
-                                        Text(
-                                          country.name,
-                                          overflow: TextOverflow.ellipsis,
+                                        Flexible(
+                                          child: Text(
+                                            country.name,
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -325,7 +328,7 @@ class _LocationCompletionScreenState
       messenger.showSnackBar(
         SnackBar(content: Text('Location updated to ${resolved.label}.')),
       );
-      navigator.pop();
+      navigator.pop(resolved);
     } on ApiError catch (error) {
       if (!mounted) {
         return;

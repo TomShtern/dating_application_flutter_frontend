@@ -27,6 +27,13 @@ void main() {
     state: 'ACTIVE',
   );
 
+  const longNamedUser = UserSummary(
+    id: '99999999-9999-9999-9999-999999999999',
+    name: 'Dana With A Very Long Name That Should Not Overflow The Shell',
+    age: 27,
+    state: 'ACTIVE',
+  );
+
   const currentUserDetail = UserDetail(
     id: '11111111-1111-1111-1111-111111111111',
     name: 'Dana',
@@ -179,5 +186,64 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('View stats'), findsOneWidget);
+  });
+
+  testWidgets('truncates very long current user names in the shell summary', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          backendHealthProvider.overrideWith(
+            (ref) async =>
+                HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
+          ),
+          browseProvider.overrideWith(
+            (ref) async => const BrowseResponse(
+              candidates: [],
+              dailyPick: null,
+              dailyPickViewed: false,
+              locationMissing: false,
+            ),
+          ),
+          matchesProvider.overrideWith(
+            (ref) async => const MatchesResponse(
+              matches: [],
+              totalCount: 0,
+              offset: 0,
+              limit: 20,
+              hasMore: false,
+            ),
+          ),
+          conversationsProvider.overrideWith((ref) async => const []),
+          profileProvider.overrideWith((ref) async => currentUserDetail),
+        ],
+        child: const MaterialApp(
+          home: SignedInShell(currentUser: longNamedUser),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final summaryText = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const Key('shell-active-user-summary')),
+        matching: find.byType(Text),
+      ),
+    );
+
+    expect(summaryText.maxLines, 1);
+    expect(summaryText.overflow, TextOverflow.ellipsis);
+    expect(
+      find.ancestor(
+        of: find.byKey(const Key('shell-active-user-summary')),
+        matching: find.byType(ConstrainedBox),
+      ),
+      findsOneWidget,
+    );
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
+import '../../models/location_metadata.dart';
 import '../../models/profile_update_request.dart';
 import '../../models/user_detail.dart';
 import '../../shared/formatting/display_text.dart';
@@ -26,6 +27,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   late final TextEditingController _heightController;
   String? _selectedGender;
   late final Set<String> _selectedInterestedIn;
+  late String _approximateLocation;
   bool _isSaving = false;
 
   @override
@@ -36,6 +38,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _selectedInterestedIn = _orderedInterestedInValues(
       widget.initialDetail.interestedIn,
     ).toSet();
+    _approximateLocation = widget.initialDetail.approximateLocation;
     _maxDistanceController = TextEditingController(
       text: widget.initialDetail.maxDistanceKm > 0
           ? widget.initialDetail.maxDistanceKm.toString()
@@ -198,7 +201,10 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         labelText: 'Maximum preferred age',
                         hintText: '35',
                       ),
-                      validator: _validatePositiveInteger,
+                      validator: (value) => _validateMaxAge(
+                        value,
+                        minAgeValue: _minAgeController.text,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -235,30 +241,34 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                widget.initialDetail.approximateLocation
-                                        .trim()
-                                        .isEmpty
+                                _approximateLocation.trim().isEmpty
                                     ? 'Add the area where you want to meet people.'
-                                    : 'Showing people near ${widget.initialDetail.approximateLocation}.',
+                                    : 'Showing people near $_approximateLocation.',
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (context) =>
-                                    const LocationCompletionScreen(),
-                              ),
-                            );
+                          onPressed: () async {
+                            final resolved = await Navigator.of(context)
+                                .push<ResolvedLocation>(
+                                  MaterialPageRoute<ResolvedLocation>(
+                                    builder: (context) =>
+                                        const LocationCompletionScreen(),
+                                  ),
+                                );
+                            if (!mounted || resolved == null) {
+                              return;
+                            }
+
+                            setState(() {
+                              _approximateLocation = resolved.label;
+                            });
                           },
                           icon: const Icon(Icons.travel_explore_outlined),
                           label: Text(
-                            widget.initialDetail.approximateLocation
-                                    .trim()
-                                    .isEmpty
+                            _approximateLocation.trim().isEmpty
                                 ? 'Choose location'
                                 : 'Update location',
                           ),
@@ -342,6 +352,30 @@ String? _validatePositiveInteger(String? value) {
   final parsed = int.tryParse(value.trim());
   if (parsed == null || parsed <= 0) {
     return 'Please enter a valid positive number.';
+  }
+
+  return null;
+}
+
+String? _validateMaxAge(String? value, {required String minAgeValue}) {
+  final integerValidation = _validatePositiveInteger(value);
+  if (integerValidation != null) {
+    return integerValidation;
+  }
+
+  final trimmedMinAge = minAgeValue.trim();
+  final trimmedMaxAge = value?.trim() ?? '';
+  if (trimmedMinAge.isEmpty || trimmedMaxAge.isEmpty) {
+    return null;
+  }
+
+  final minAge = int.tryParse(trimmedMinAge);
+  final maxAge = int.tryParse(trimmedMaxAge);
+  if (minAge == null || maxAge == null) {
+    return null;
+  }
+  if (maxAge < minAge) {
+    return 'Maximum age must be greater than or equal to minimum age.';
   }
 
   return null;

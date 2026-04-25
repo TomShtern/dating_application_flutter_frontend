@@ -132,6 +132,18 @@ To add more screenshot coverage:
 
 The helper infrastructure in `test/visual_inspection/support/` handles output directories, manifests, run archives, and the review gallery.
 
+## Visual fixture layer
+
+Screenshot data now lives under `test/visual_inspection/fixtures/`:
+
+- `visual_fixture_catalog.dart` — canonical rich test entities such as users, candidates, matches, conversations, messages, notifications, and stats
+- `visual_fixture_builders.dart` — lightweight builder helpers for creating DTO variants in tests where a local tweak is clearer than reconstructing objects manually
+- `visual_scenarios.dart` — named provider-override bundles consumed by `screenshot_test.dart`
+
+When adding or updating screenshot coverage, prefer extending the catalog and scenario layer instead of defining large raw inline data blocks inside the screenshot test file.
+
+For the design rationale and structure, see `docs/superpowers/specs/2026-04-23-visual-review-fixtures-design.md`.
+
 ## Notes
 
 - The screenshots use a fixed `412 x 915` phone-sized surface so the review stays consistent between runs.

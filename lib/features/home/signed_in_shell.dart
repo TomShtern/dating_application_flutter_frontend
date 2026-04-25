@@ -141,25 +141,31 @@ class _SignedInShellState extends State<SignedInShell> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest.withValues(
-                            alpha: 0.9,
-                          ),
-                          borderRadius: const BorderRadius.all(
-                            Radius.circular(999),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 5,
-                          ),
-                          child: KeyedSubtree(
-                            key: const Key('shell-active-user-summary'),
-                            child: Text(
-                              widget.currentUser.name,
-                              style: Theme.of(context).textTheme.labelLarge,
+                      Flexible(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 220),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.9),
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(999),
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 5,
+                              ),
+                              child: KeyedSubtree(
+                                key: const Key('shell-active-user-summary'),
+                                child: Text(
+                                  widget.currentUser.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.labelLarge,
+                                ),
+                              ),
                             ),
                           ),
                         ),

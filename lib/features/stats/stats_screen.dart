@@ -190,7 +190,9 @@ class _StatsOverviewCard extends StatelessWidget {
               children: [
                 _StatsSummaryPill(
                   icon: Icons.bar_chart_rounded,
-                  label: '${stats.items.length} highlights',
+                  label: stats.items.length == 1
+                      ? '1 highlight'
+                      : '${stats.items.length} highlights',
                 ),
                 _StatsSummaryPill(
                   icon: Icons.verified_user_outlined,

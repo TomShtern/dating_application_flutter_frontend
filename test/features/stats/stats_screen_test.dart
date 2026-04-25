@@ -98,4 +98,25 @@ void main() {
 
     expect(find.text('Early Bird'), findsOneWidget);
   });
+
+  testWidgets('uses a singular highlights label for one stat', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          statsProvider.overrideWith(
+            (ref) async => const UserStats(
+              items: [UserStatItem(label: 'Likes Sent', value: '12')],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: StatsScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 highlight'), findsOneWidget);
+    expect(find.text('1 highlights'), findsNothing);
+  });
 }

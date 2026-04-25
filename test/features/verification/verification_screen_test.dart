@@ -98,6 +98,45 @@ void main() {
     expect(find.text('Test code'), findsOneWidget);
     expect(find.widgetWithText(SelectableText, '246810'), findsOneWidget);
   });
+
+  testWidgets('shows a phone icon when the verification method is phone', (
+    WidgetTester tester,
+  ) async {
+    final apiClient = _FakeVerificationApiClient(
+      startResult: const VerificationStartResult(
+        userId: '11111111-1111-1111-1111-111111111111',
+        method: 'PHONE',
+        contact: '+1 555 555 5555',
+        devVerificationCode: '135790',
+      ),
+      confirmResult: const VerificationConfirmationResult(
+        verified: true,
+        verifiedAt: null,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+        ],
+        child: const MaterialApp(home: VerificationScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Phone'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '+1 555 555 5555');
+    await tester.tap(
+      find.widgetWithText(FilledButton, 'Send verification code'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.phone_outlined), findsOneWidget);
+    expect(find.text('Phone'), findsWidgets);
+  });
 }
 
 class _FakeVerificationApiClient extends ApiClient {

@@ -63,7 +63,7 @@
 
 ### Documentation and visual verification
 - Modify: `docs/2026-04-21-ui-post-implementation-review.md`
-- Modify: `docs\superpowers\plans\2026-04-22-ui-refinement-pass-implementation.md`
+- Modify: `docs/superpowers/plans/2026-04-22-ui-refinement-pass-implementation.md`
 - Create: `docs/2026-04-22-ui-refinement-pass-review.md`
 
 ---
@@ -147,7 +147,7 @@
 ### Task 5: Verify, visually inspect, fix any final issues, and document the result
 
 **Files:**
-- Modify: `docs\superpowers\plans\2026-04-22-ui-refinement-pass-implementation.md`
+- Modify: `docs/superpowers/plans/2026-04-22-ui-refinement-pass-implementation.md`
 - Create: `docs/2026-04-22-ui-refinement-pass-review.md`
 
 - [x] ✅ Format every changed Dart file.

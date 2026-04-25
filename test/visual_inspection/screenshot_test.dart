@@ -3,57 +3,28 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/src/internals.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
-import 'package:flutter_dating_application_1/features/browse/pending_likers_provider.dart';
 import 'package:flutter_dating_application_1/features/browse/pending_likers_screen.dart';
-import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
-import 'package:flutter_dating_application_1/features/browse/standouts_provider.dart';
 import 'package:flutter_dating_application_1/features/browse/standouts_screen.dart';
-import 'package:flutter_dating_application_1/features/chat/conversation_thread_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_screen.dart';
-import 'package:flutter_dating_application_1/features/chat/conversations_provider.dart';
 import 'package:flutter_dating_application_1/features/home/app_home_screen.dart';
-import 'package:flutter_dating_application_1/features/home/backend_health_provider.dart';
 import 'package:flutter_dating_application_1/features/home/signed_in_shell.dart';
 import 'package:flutter_dating_application_1/features/location/location_completion_screen.dart';
-import 'package:flutter_dating_application_1/features/location/location_provider.dart';
-import 'package:flutter_dating_application_1/features/matches/matches_provider.dart';
-import 'package:flutter_dating_application_1/features/notifications/notifications_provider.dart';
 import 'package:flutter_dating_application_1/features/notifications/notifications_screen.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_edit_screen.dart';
-import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_screen.dart';
-import 'package:flutter_dating_application_1/features/safety/blocked_users_provider.dart';
 import 'package:flutter_dating_application_1/features/safety/blocked_users_screen.dart';
 import 'package:flutter_dating_application_1/features/settings/app_preferences_store.dart';
-import 'package:flutter_dating_application_1/features/stats/stats_provider.dart';
 import 'package:flutter_dating_application_1/features/stats/stats_screen.dart';
 import 'package:flutter_dating_application_1/features/stats/achievements_screen.dart';
 import 'package:flutter_dating_application_1/features/verification/verification_screen.dart';
 import 'package:flutter_dating_application_1/models/app_preferences.dart';
-import 'package:flutter_dating_application_1/models/achievement_summary.dart';
-import 'package:flutter_dating_application_1/models/blocked_user_summary.dart';
-import 'package:flutter_dating_application_1/models/browse_candidate.dart';
-import 'package:flutter_dating_application_1/models/browse_response.dart';
-import 'package:flutter_dating_application_1/models/conversation_summary.dart';
-import 'package:flutter_dating_application_1/models/daily_pick.dart';
-import 'package:flutter_dating_application_1/models/health_status.dart';
-import 'package:flutter_dating_application_1/models/location_metadata.dart';
-import 'package:flutter_dating_application_1/models/match_summary.dart';
-import 'package:flutter_dating_application_1/models/matches_response.dart';
-import 'package:flutter_dating_application_1/models/message_dto.dart';
-import 'package:flutter_dating_application_1/models/notification_item.dart';
-import 'package:flutter_dating_application_1/models/pending_liker.dart';
-import 'package:flutter_dating_application_1/models/standout.dart';
-import 'package:flutter_dating_application_1/models/user_detail.dart';
-import 'package:flutter_dating_application_1/models/user_stats.dart';
-import 'package:flutter_dating_application_1/models/user_summary.dart';
-import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
 import 'package:flutter_dating_application_1/theme/app_theme.dart';
 
+import 'fixtures/visual_scenarios.dart';
 import 'support/screenshot_capture.dart';
 
 void main() {
@@ -85,32 +56,7 @@ void main() {
     await _pumpVisualHarness(
       tester,
       child: ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          backendHealthProvider.overrideWith(
-            (ref) async => HealthStatus(
-              status: 'ok',
-              timestamp: DateTime.parse('2026-04-18T12:00:00Z'),
-            ),
-          ),
-          selectedUserProvider.overrideWith((ref) async => null),
-          availableUsersProvider.overrideWith(
-            (ref) async => const [
-              UserSummary(
-                id: '11111111-1111-1111-1111-111111111111',
-                name: 'Dana',
-                age: 27,
-                state: 'ACTIVE',
-              ),
-              UserSummary(
-                id: '22222222-2222-2222-2222-222222222222',
-                name: 'Noa',
-                age: 29,
-                state: 'ACTIVE',
-              ),
-            ],
-          ),
-        ],
+        overrides: [...devUserPickerOverrides(preferences)],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light(),
@@ -231,11 +177,8 @@ void main() {
       tester,
       child: ProviderScope(
         overrides: [
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          selectedUserProvider.overrideWith((ref) async => _currentUser),
-          conversationThreadProvider(
-            _conversation.id,
-          ).overrideWith((ref) async => _conversationMessages),
+          ...baseSignedInOverrides(preferences),
+          ...conversationThreadOverrides,
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -243,8 +186,8 @@ void main() {
           darkTheme: AppTheme.dark(),
           themeMode: ThemeMode.light,
           home: ConversationThreadScreen(
-            currentUser: _currentUser,
-            conversation: _conversation,
+            currentUser: currentUser,
+            conversation: firstConversation,
             refreshInterval: Duration.zero,
           ),
         ),
@@ -266,9 +209,7 @@ void main() {
     await _pumpSignedInVisualScreen(
       tester,
       preferences: preferences,
-      overrides: [
-        standoutsProvider.overrideWith((ref) async => _standoutsSnapshot),
-      ],
+      overrides: standoutsOverrides,
       child: const StandoutsScreen(),
     );
 
@@ -289,9 +230,7 @@ void main() {
     await _pumpSignedInVisualScreen(
       tester,
       preferences: preferences,
-      overrides: [
-        pendingLikersProvider.overrideWith((ref) async => _pendingLikers),
-      ],
+      overrides: pendingLikersOverrides,
       child: const PendingLikersScreen(),
     );
 
@@ -312,14 +251,10 @@ void main() {
     await _pumpSignedInVisualScreen(
       tester,
       preferences: preferences,
-      overrides: [
-        otherUserProfileProvider(
-          _otherUserProfileDetail.id,
-        ).overrideWith((ref) async => _otherUserProfileDetail),
-      ],
+      overrides: otherUserProfileOverrides,
       child: ProfileScreen.otherUser(
-        userId: _otherUserProfileDetail.id,
-        userName: _otherUserProfileDetail.name,
+        userId: otherUserProfileDetail.id,
+        userName: otherUserProfileDetail.name,
       ),
     );
 
@@ -338,7 +273,7 @@ void main() {
     await _pumpSignedInVisualScreen(
       tester,
       preferences: preferences,
-      child: ProfileEditScreen(initialDetail: _profileDetail),
+      child: ProfileEditScreen(initialDetail: profileDetail),
     );
 
     await _captureAndSave(
@@ -358,14 +293,7 @@ void main() {
     await _pumpSignedInVisualScreen(
       tester,
       preferences: preferences,
-      overrides: [
-        locationCountriesProvider.overrideWith(
-          (ref) async => _locationCountries,
-        ),
-        locationCitySuggestionsProvider(
-          const LocationCitySearchQuery(countryCode: 'IL', query: 'Tel'),
-        ).overrideWith((ref) async => _locationSuggestions),
-      ],
+      overrides: locationCompletionOverrides,
       child: const LocationCompletionScreen(),
     );
 
@@ -387,8 +315,8 @@ void main() {
     await _pumpSignedInVisualScreen(
       tester,
       preferences: preferences,
-      overrides: [statsProvider.overrideWith((ref) async => _userStats)],
-      child: const StatsScreen(currentUser: _currentUser),
+      overrides: statsOverrides,
+      child: const StatsScreen(currentUser: currentUser),
     );
 
     await _captureAndSave(
@@ -406,10 +334,8 @@ void main() {
     await _pumpSignedInVisualScreen(
       tester,
       preferences: preferences,
-      overrides: [
-        achievementsProvider.overrideWith((ref) async => _achievements),
-      ],
-      child: const AchievementsScreen(currentUser: _currentUser),
+      overrides: achievementsOverrides,
+      child: const AchievementsScreen(currentUser: currentUser),
     );
 
     await _captureAndSave(
@@ -448,9 +374,7 @@ void main() {
     await _pumpSignedInVisualScreen(
       tester,
       preferences: preferences,
-      overrides: [
-        blockedUsersProvider.overrideWith((ref) async => _blockedUsers),
-      ],
+      overrides: blockedUsersOverrides,
       child: const BlockedUsersScreen(),
     );
 
@@ -469,9 +393,7 @@ void main() {
     await _pumpSignedInVisualScreen(
       tester,
       preferences: preferences,
-      overrides: [
-        notificationsProvider.overrideWith((ref) async => _notifications),
-      ],
+      overrides: notificationsOverrides,
       child: const NotificationsScreen(),
     );
 
@@ -484,221 +406,6 @@ void main() {
 }
 
 const _goldenRootKey = ValueKey<String>('visual-review-root');
-
-const _currentUser = UserSummary(
-  id: '11111111-1111-1111-1111-111111111111',
-  name: 'Dana',
-  age: 27,
-  state: 'ACTIVE',
-);
-
-const _candidateUser = BrowseCandidate(
-  id: '22222222-2222-2222-2222-222222222222',
-  name: 'Noa',
-  age: 29,
-  state: 'ACTIVE',
-);
-
-const _dailyPick = DailyPick(
-  userId: '33333333-3333-3333-3333-333333333333',
-  userName: 'Maya',
-  userAge: 30,
-  date: '2026-04-18',
-  reason: 'High compatibility',
-  alreadySeen: false,
-);
-
-final _match = MatchSummary(
-  matchId:
-      '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
-  otherUserId: '22222222-2222-2222-2222-222222222222',
-  otherUserName: 'Noa',
-  state: 'ACTIVE',
-  createdAt: DateTime.parse('2026-04-18T14:00:00Z'),
-);
-
-final _conversation = ConversationSummary(
-  id: '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
-  otherUserId: '22222222-2222-2222-2222-222222222222',
-  otherUserName: 'Noa',
-  messageCount: 2,
-  lastMessageAt: DateTime.parse('2026-04-18T14:20:00Z'),
-);
-
-final _conversationMessages = [
-  MessageDto(
-    id: 'message-1',
-    conversationId:
-        '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
-    senderId: '22222222-2222-2222-2222-222222222222',
-    content: 'Hey Dana',
-    sentAt: DateTime.parse('2026-04-18T14:18:00Z'),
-  ),
-  MessageDto(
-    id: 'message-2',
-    conversationId:
-        '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
-    senderId: _currentUser.id,
-    content: 'Hey Noa, want to grab coffee this week?',
-    sentAt: DateTime.parse('2026-04-18T14:20:00Z'),
-  ),
-];
-
-final _profileDetail = UserDetail(
-  id: '11111111-1111-1111-1111-111111111111',
-  name: 'Dana',
-  age: 27,
-  bio: 'Loves coffee, beach walks, and polished UI states.',
-  gender: 'FEMALE',
-  interestedIn: ['MALE'],
-  approximateLocation: 'Tel Aviv',
-  maxDistanceKm: 50,
-  photoUrls: ['/photos/dana-1.jpg'],
-  state: 'ACTIVE',
-);
-
-final _otherUserProfileDetail = UserDetail(
-  id: '44444444-4444-4444-4444-444444444444',
-  name: 'Rin',
-  age: 28,
-  bio: 'Weekend climber, playlists curator, and unapologetic brunch optimist.',
-  gender: 'FEMALE',
-  interestedIn: ['FEMALE', 'MALE'],
-  approximateLocation: 'Haifa',
-  maxDistanceKm: 30,
-  photoUrls: const [],
-  state: 'ACTIVE',
-);
-
-const _standoutsSnapshot = StandoutsSnapshot(
-  standouts: [
-    Standout(
-      id: 'standout-1',
-      standoutUserId: '55555555-5555-5555-5555-555555555555',
-      standoutUserName: 'Leah',
-      standoutUserAge: 31,
-      rank: 1,
-      score: 98,
-      reason:
-          'Shared pace, music taste, and a strong match on conversation style.',
-      createdAt: null,
-      interactedAt: null,
-    ),
-    Standout(
-      id: 'standout-2',
-      standoutUserId: '66666666-6666-6666-6666-666666666666',
-      standoutUserName: 'Ari',
-      standoutUserAge: 29,
-      rank: 2,
-      score: 94,
-      reason: 'Backend rank suggests high reply odds this week.',
-      createdAt: null,
-      interactedAt: null,
-    ),
-  ],
-  totalCandidates: 2,
-  fromCache: false,
-  message: 'Fresh standout picks based on current activity.',
-);
-
-const _pendingLikers = [
-  PendingLiker(
-    userId: '77777777-7777-7777-7777-777777777777',
-    name: 'Nina',
-    age: 26,
-    likedAt: null,
-  ),
-  PendingLiker(
-    userId: '88888888-8888-8888-8888-888888888888',
-    name: 'Omer',
-    age: 30,
-    likedAt: null,
-  ),
-];
-
-const _locationCountries = [
-  LocationCountry(
-    code: 'IL',
-    name: 'Israel',
-    flagEmoji: '🇮🇱',
-    available: true,
-    defaultSelection: true,
-  ),
-  LocationCountry(
-    code: 'US',
-    name: 'United States',
-    flagEmoji: '🇺🇸',
-    available: true,
-    defaultSelection: false,
-  ),
-];
-
-const _locationSuggestions = [
-  LocationCity(
-    name: 'Tel Aviv',
-    district: 'Tel Aviv District',
-    countryCode: 'IL',
-    priority: 1,
-  ),
-  LocationCity(
-    name: 'Tel Mond',
-    district: 'Central District',
-    countryCode: 'IL',
-    priority: 2,
-  ),
-];
-
-const _userStats = UserStats(
-  items: [
-    UserStatItem(label: 'Likes sent', value: '18'),
-    UserStatItem(label: 'Matches this week', value: '4'),
-    UserStatItem(label: 'Conversation reply rate', value: '87%'),
-  ],
-);
-
-const _achievements = [
-  AchievementSummary(
-    title: 'First match streak',
-    subtitle: 'Matched with someone three days in a row',
-    progress: '3 / 3',
-    isUnlocked: true,
-  ),
-  AchievementSummary(
-    title: 'Conversation closer',
-    subtitle: 'Keep reply rates above 80%',
-    progress: '87%',
-    isUnlocked: false,
-  ),
-];
-
-const _blockedUsers = [
-  BlockedUserSummary(
-    userId: '99999999-9999-9999-9999-999999999999',
-    name: 'Kai',
-    statusLabel: 'Blocked after repeated spam',
-  ),
-];
-
-final _notifications = [
-  NotificationItem(
-    id: 'notification-1',
-    type: 'MATCH',
-    title: 'New match',
-    message: 'You and Maya matched a few minutes ago.',
-    createdAt: DateTime.parse('2026-04-20T15:55:00Z'),
-    isRead: false,
-    data: const {'matchId': 'match-2'},
-  ),
-  NotificationItem(
-    id: 'notification-2',
-    type: 'MESSAGE',
-    title: 'New message from Noa',
-    message: 'Noa replied and wants to plan the coffee date.',
-    createdAt: DateTime.parse('2026-04-20T15:59:00Z'),
-    isRead: true,
-    data: const {'conversationId': 'conversation-1'},
-  ),
-];
 
 Future<SharedPreferences> _preferencesWithTheme(
   AppThemeModePreference themeMode,
@@ -750,41 +457,13 @@ Future<void> _pumpSignedInShell(
   await _pumpVisualHarness(
     tester,
     child: ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(preferences),
-        backendHealthProvider.overrideWith(
-          (ref) async => HealthStatus(
-            status: 'ok',
-            timestamp: DateTime.parse('2026-04-18T12:00:00Z'),
-          ),
-        ),
-        browseProvider.overrideWith(
-          (ref) async => const BrowseResponse(
-            candidates: [_candidateUser],
-            dailyPick: _dailyPick,
-            dailyPickViewed: false,
-            locationMissing: false,
-          ),
-        ),
-        matchesProvider.overrideWith(
-          (ref) async => MatchesResponse(
-            matches: [_match],
-            totalCount: 1,
-            offset: 0,
-            limit: 20,
-            hasMore: false,
-          ),
-        ),
-        conversationsProvider.overrideWith((ref) async => [_conversation]),
-        profileProvider.overrideWith((ref) async => _profileDetail),
-        selectedUserProvider.overrideWith((ref) async => _currentUser),
-      ],
+      overrides: [...signedInShellOverrides(preferences)],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.light,
-        home: SignedInShell(currentUser: _currentUser),
+        home: SignedInShell(currentUser: currentUser),
       ),
     ),
   );
@@ -794,16 +473,12 @@ Future<void> _pumpSignedInVisualScreen(
   WidgetTester tester, {
   required SharedPreferences preferences,
   required Widget child,
-  List overrides = const <dynamic>[],
+  List<Override> overrides = const <Override>[],
 }) async {
   await _pumpVisualHarness(
     tester,
     child: ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(preferences),
-        selectedUserProvider.overrideWith((ref) async => _currentUser),
-        ...overrides,
-      ],
+      overrides: [...baseSignedInOverrides(preferences), ...overrides],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),

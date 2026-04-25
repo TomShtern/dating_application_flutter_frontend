@@ -434,7 +434,7 @@ String _formatFriendlyNotificationTimestamp(DateTime value, {DateTime? now}) {
     return 'Yesterday';
   }
   if (calendarDays < 7) {
-    return '$calendarDays day${calendarDays == 1 ? '' : 's'} ago';
+    return '$calendarDays days ago';
   }
 
   return formatShortDate(local);

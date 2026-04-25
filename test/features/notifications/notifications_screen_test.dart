@@ -72,7 +72,7 @@ void main() {
     expect(find.text('Unread'), findsOneWidget);
     expect(find.text('Mark read'), findsOneWidget);
     expect(find.textContaining('2h ago'), findsOneWidget);
-    expect(find.textContaining('Apr '), findsNothing);
+    expect(find.textContaining('3 days ago'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Read'),

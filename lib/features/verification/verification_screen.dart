@@ -106,7 +106,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                       runSpacing: 10,
                       children: [
                         _VerificationInfoChip(
-                          icon: Icons.mark_email_read_outlined,
+                          icon: startResult.method.toUpperCase() == 'PHONE'
+                              ? Icons.phone_outlined
+                              : Icons.mark_email_read_outlined,
                           label: formatDisplayLabel(startResult.method),
                         ),
                         _VerificationInfoChip(
