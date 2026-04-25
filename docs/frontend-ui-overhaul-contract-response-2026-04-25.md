@@ -176,7 +176,7 @@ Target additive fields on `matches`, `pending-likers`, and `standouts` are the s
    - `approximateLocation` will always be present and may be `null`.
    - `summaryLine` will always be present and may be `null`.
    - `state` remains the current `User.UserState` string when that field already exists on the row.
-   - This item does not add recommendation-explanation fields such as `reasonTags`; those belong to items 3 and 4.
+   - This item does not add recommendation-explanation fields; those belong to items 3 and 4 (item 3 provides `highlights`, item 4 provides `reasonTags` and `details`).
 7. Identity notes, especially matchId, conversationId, userId, target ids:
    - Browse candidates keep `id` as the user id.
    - Daily picks keep `userId`.

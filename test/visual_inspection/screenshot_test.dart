@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/src/internals.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -473,7 +472,7 @@ Future<void> _pumpSignedInVisualScreen(
   WidgetTester tester, {
   required SharedPreferences preferences,
   required Widget child,
-  List<Override> overrides = const <Override>[],
+  List overrides = const [],
 }) async {
   await _pumpVisualHarness(
     tester,

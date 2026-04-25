@@ -266,4 +266,4 @@ Responsibilities:
 
 ## Bottom line
 
-Option B should be implemented as a test-only visual fixture system with reusable builders and named screen scenarios. This keeps screenshot review deterministic, makes the screenshot harness easier to maintain, and improves the realism of visual review artifacts without introducing backend seeding or production-only demo data.
+A test-only visual fixture system with reusable builders and named screen scenarios should be implemented. This keeps screenshot review deterministic, makes the screenshot harness easier to maintain, and improves the realism of visual review artifacts without introducing backend seeding or production-only demo data.

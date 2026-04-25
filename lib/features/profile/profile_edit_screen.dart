@@ -28,6 +28,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   String? _selectedGender;
   late final Set<String> _selectedInterestedIn;
   late String _approximateLocation;
+  ResolvedLocation? _resolvedLocation;
   bool _isSaving = false;
 
   @override
@@ -264,6 +265,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
                             setState(() {
                               _approximateLocation = resolved.label;
+                              _resolvedLocation = resolved;
                             });
                           },
                           icon: const Icon(Icons.travel_explore_outlined),
@@ -308,6 +310,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       minAge: _parseOptionalInt(_minAgeController.text),
       maxAge: _parseOptionalInt(_maxAgeController.text),
       heightCm: _parseOptionalInt(_heightController.text),
+      location: _profileLocationRequestFrom(_resolvedLocation),
     );
 
     try {
@@ -384,6 +387,31 @@ String? _validateMaxAge(String? value, {required String minAgeValue}) {
 String? _trimmedOrNull(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+ProfileLocationRequest? _profileLocationRequestFrom(
+  ResolvedLocation? location,
+) {
+  if (location == null) {
+    return null;
+  }
+
+  final countryCode = location.countryCode?.trim();
+  final cityName = location.cityName?.trim();
+  if (countryCode == null ||
+      countryCode.isEmpty ||
+      cityName == null ||
+      cityName.isEmpty) {
+    return null;
+  }
+
+  final zipCode = location.zipCode?.trim();
+  return ProfileLocationRequest(
+    countryCode: countryCode,
+    cityName: cityName,
+    zipCode: zipCode == null || zipCode.isEmpty ? null : zipCode,
+    allowApproximate: location.allowApproximate ?? location.approximate,
+  );
 }
 
 String? _normalizedOrNull(String value) {

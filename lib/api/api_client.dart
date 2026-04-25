@@ -199,6 +199,11 @@ class ApiClient {
 
       return ResolvedLocation.fromJson(
         _expectMap(response.data, context: 'resolving a location selection'),
+      ).withProfileLocationInput(
+        countryCode: countryCode,
+        cityName: cityName,
+        zipCode: zipCode,
+        allowApproximate: allowApproximate,
       );
     } on DioException catch (error) {
       throw _toApiError(error);

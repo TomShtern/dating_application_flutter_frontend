@@ -324,6 +324,18 @@ void main() {
     expect(find.byType(LocationCompletionScreen), findsNothing);
     expect(find.text('Showing people near Haifa, Israel.'), findsOneWidget);
     expect(find.text('Update location'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(
+      apiClient.updatedRequests.last.location,
+      const ProfileLocationRequest(
+        countryCode: 'IL',
+        cityName: 'Haifa',
+        allowApproximate: true,
+      ),
+    );
   });
 }
 

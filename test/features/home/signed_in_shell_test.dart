@@ -230,10 +230,12 @@ void main() {
     await tester.pumpAndSettle();
 
     final summaryText = tester.widget<Text>(
-      find.descendant(
-        of: find.byKey(const Key('shell-active-user-summary')),
-        matching: find.byType(Text),
-      ),
+      find
+          .descendant(
+            of: find.byKey(const Key('shell-active-user-summary')),
+            matching: find.byType(Text),
+          )
+          .first,
     );
 
     expect(summaryText.maxLines, 1);

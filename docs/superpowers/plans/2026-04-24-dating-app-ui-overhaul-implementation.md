@@ -149,8 +149,10 @@ These items should be treated as **quality-preserving backend work**, not option
 - Modify: `lib/models/notification_item.dart`
 - Create: `lib/models/match_quality.dart`
 - Create: `lib/models/profile_presentation_context.dart`
+- Create: `lib/models/profile_edit_snapshot.dart`
 - Create: `test/models/match_quality_test.dart`
 - Create: `test/models/profile_presentation_context_test.dart`
+- Create: `test/models/profile_edit_snapshot_test.dart`
 - Modify: `test/models/browse_response_test.dart`
 - Modify: `test/models/standout_test.dart`
 - Modify: `test/models/notification_item_test.dart`

@@ -142,8 +142,7 @@ Screenshot data now lives under `test/visual_inspection/fixtures/`:
 
 When adding or updating screenshot coverage, prefer extending the catalog and scenario layer instead of defining large raw inline data blocks inside the screenshot test file.
 
-For the design rationale and structure, see `docs/superpowers/specs/2026-04-23-visual-review-fixtures-design.md`.
-
+For the design rationale and structure, see `docs/superpowers/plans/2026-04-23-visual-review-fixtures.md`.
 ## Notes
 
 - The screenshots use a fixed `412 x 915` phone-sized surface so the review stays consistent between runs.

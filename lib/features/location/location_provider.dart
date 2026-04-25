@@ -71,7 +71,12 @@ class LocationController {
     _ref.invalidate(profileProvider);
     _ref.invalidate(otherUserProfileProvider(currentUser.id));
     _ref.invalidate(browseProvider);
-    return resolved;
+    return resolved.withProfileLocationInput(
+      countryCode: countryCode,
+      cityName: cityName,
+      zipCode: zipCode,
+      allowApproximate: allowApproximate,
+    );
   }
 }
 

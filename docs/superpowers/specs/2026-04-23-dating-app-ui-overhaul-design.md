@@ -14,6 +14,14 @@ Baseline note: this brief intentionally uses the user-supplied `run-0008` screen
 - Treat the additional audit observations in this document as recommended requirements unless they contradict future user direction.
 - Preserve thin-client boundaries: the Flutter app may improve presentation, navigation, orchestration, and drill-down UX, but it must not invent server-owned business logic.
 - Use this document to decide both what to change and what not to change.
+- Treat the verification requirements below as merge-blocking quality gates for any implementation work derived from this brief.
+
+## Verification Requirements
+
+- Run `flutter analyze` for Dart changes.
+- Run relevant `flutter test` targets for any code changes.
+- Run `flutter test test/visual_inspection/screenshot_test.dart` after any UI change and inspect the generated visual output before merging.
+- CI or manual review must confirm the applicable commands passed; if a command cannot be run, the implementation notes must state the blocker and the remaining risk.
 
 ## Product context and non-negotiable constraints
 
@@ -569,7 +577,7 @@ The user did not attach the startup screenshot in this task, so it is not part o
 
 ### Data and API dependencies
 
-- `UserStats` is currently flattened into `label/value` items. Richer grouping, typing, trends, and units may require backend support or a carefully maintained frontend mapping layer.
+- `UserStats` is currently flattened into `label/value` items. Any frontend mapping layer for `UserStats` must be strictly presentational, such as grouping display categories, labels, and units. It must not compute, aggregate, derive, or infer match, moderation, or metric state from other fields. Richer typing, trends, units, or computed semantics should be treated as a backend contract gap and requested through API changes rather than reimplemented in the client.
 
 ## Verification
 
@@ -675,7 +683,7 @@ The user did not attach the startup screenshot in this task, so it is not part o
 - Avoid spending separate full-width cards on tiny facts.
 - Bring photos higher in the page hierarchy when photos exist.
 - Add a `Why this profile is shown` bottom sheet or equivalent drill-down.
-- If `Hide` is not yet backed by server persistence, document whether it will be a local temporary hide or a deferred backend dependency.
+- The `Hide` action must either be persisted by the backend or tracked as an explicit deferred backend dependency. Do not implement `Hide` as a client-only filter that is lost on restart or across devices. This follows the thin-client principle: moderation, matching, and relationship state are backend-owned. If the backend contract is missing, surface the API gap in the implementation notes instead of fabricating server-owned behavior locally.
 - Define a stronger no-photo or limited-data presentation so the screen still feels intentional when media is missing.
 
 ## Profile edit
@@ -978,10 +986,9 @@ The next implementation plan should explicitly decide how to handle the followin
    - The implementation plan should assess how much of `NotificationItem.data` can power contextual actions.
 
 6. Hide action on other-user profiles
-   - Decide whether this is:
-     - a local temporary client-side hide
-     - a backend-persisted preference
-     - deferred until a backend contract exists
+   - `Hide` must be either a backend-persisted preference or an explicitly deferred backend dependency.
+   - Do not ship a restart-lost or device-local client-only hide filter.
+   - If the API contract is missing, call out the backend gap rather than emulating moderation, matching, or relationship state in Dart.
 
 ## Recommended planning slices
 
@@ -1027,6 +1034,8 @@ This is not the implementation plan yet, but the likely planning order should be
 ## Above-the-fold acceptance cues
 
 These cues are not the full implementation plan, but they should help the future plan stay concrete.
+
+Before any implementation based on these cues is merged, reviewers must confirm the applicable verification gates passed: `flutter analyze` for Dart changes, relevant `flutter test` targets for code changes, and `flutter test test/visual_inspection/screenshot_test.dart` for UI changes with visual output inspected.
 
 ### Discover
 

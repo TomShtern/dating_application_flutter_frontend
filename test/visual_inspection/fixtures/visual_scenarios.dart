@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/src/internals.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
@@ -30,14 +29,14 @@ final _healthOverride = backendHealthProvider.overrideWith(
   (ref) async => _healthStatus,
 );
 
-List<Override> devUserPickerOverrides(SharedPreferences preferences) => [
+List devUserPickerOverrides(SharedPreferences preferences) => [
   sharedPreferencesProvider.overrideWithValue(preferences),
   _healthOverride,
   selectedUserProvider.overrideWith((ref) async => null),
   availableUsersProvider.overrideWith((ref) async => availableUsers),
 ];
 
-List<Override> signedInShellOverrides(SharedPreferences preferences) => [
+List signedInShellOverrides(SharedPreferences preferences) => [
   sharedPreferencesProvider.overrideWithValue(preferences),
   _healthOverride,
   browseProvider.overrideWith((ref) async => browseResponse),
@@ -47,50 +46,50 @@ List<Override> signedInShellOverrides(SharedPreferences preferences) => [
   selectedUserProvider.overrideWith((ref) async => currentUser),
 ];
 
-List<Override> get conversationThreadOverrides => [
+List get conversationThreadOverrides => [
   conversationThreadProvider(
     firstConversation.id,
   ).overrideWith((ref) async => conversationMessages),
 ];
 
-List<Override> get standoutsOverrides => [
+List get standoutsOverrides => [
   standoutsProvider.overrideWith((ref) async => standoutsSnapshot),
 ];
 
-List<Override> get pendingLikersOverrides => [
+List get pendingLikersOverrides => [
   pendingLikersProvider.overrideWith((ref) async => pendingLikers),
 ];
 
-List<Override> get otherUserProfileOverrides => [
+List get otherUserProfileOverrides => [
   otherUserProfileProvider(
     otherUserProfileDetail.id,
   ).overrideWith((ref) async => otherUserProfileDetail),
 ];
 
-List<Override> get locationCompletionOverrides => [
+List get locationCompletionOverrides => [
   locationCountriesProvider.overrideWith((ref) async => locationCountries),
   locationCitySuggestionsProvider(
     const LocationCitySearchQuery(countryCode: 'IL', query: 'Tel'),
   ).overrideWith((ref) async => locationSuggestions),
 ];
 
-List<Override> get statsOverrides => [
+List get statsOverrides => [
   statsProvider.overrideWith((ref) async => userStats),
 ];
 
-List<Override> get achievementsOverrides => [
+List get achievementsOverrides => [
   achievementsProvider.overrideWith((ref) async => achievements),
 ];
 
-List<Override> get blockedUsersOverrides => [
+List get blockedUsersOverrides => [
   blockedUsersProvider.overrideWith((ref) async => blockedUsers),
 ];
 
-List<Override> get notificationsOverrides => [
+List get notificationsOverrides => [
   notificationsProvider.overrideWith((ref) async => notifications),
 ];
 
-List<Override> baseSignedInOverrides(SharedPreferences preferences) => [
+List baseSignedInOverrides(SharedPreferences preferences) => [
   sharedPreferencesProvider.overrideWithValue(preferences),
   selectedUserProvider.overrideWith((ref) async => currentUser),
 ];

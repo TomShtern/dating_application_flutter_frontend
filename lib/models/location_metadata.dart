@@ -89,6 +89,10 @@ class ResolvedLocation {
     required this.precision,
     required this.approximate,
     required this.message,
+    this.countryCode,
+    this.cityName,
+    this.zipCode,
+    this.allowApproximate,
   });
 
   final String label;
@@ -97,6 +101,10 @@ class ResolvedLocation {
   final String precision;
   final bool approximate;
   final String message;
+  final String? countryCode;
+  final String? cityName;
+  final String? zipCode;
+  final bool? allowApproximate;
 
   factory ResolvedLocation.fromJson(Map<String, dynamic> json) {
     return ResolvedLocation(
@@ -106,6 +114,30 @@ class ResolvedLocation {
       precision: json['precision'] as String? ?? '',
       approximate: json['approximate'] as bool? ?? false,
       message: json['message'] as String? ?? '',
+      countryCode: json['countryCode'] as String?,
+      cityName: json['cityName'] as String?,
+      zipCode: json['zipCode'] as String?,
+      allowApproximate: json['allowApproximate'] as bool?,
+    );
+  }
+
+  ResolvedLocation withProfileLocationInput({
+    required String countryCode,
+    required String cityName,
+    String? zipCode,
+    required bool allowApproximate,
+  }) {
+    return ResolvedLocation(
+      label: label,
+      latitude: latitude,
+      longitude: longitude,
+      precision: precision,
+      approximate: approximate,
+      message: message,
+      countryCode: countryCode,
+      cityName: cityName,
+      zipCode: zipCode,
+      allowApproximate: allowApproximate,
     );
   }
 
@@ -121,10 +153,24 @@ class ResolvedLocation {
         other.longitude == longitude &&
         other.precision == precision &&
         other.approximate == approximate &&
-        other.message == message;
+        other.message == message &&
+        other.countryCode == countryCode &&
+        other.cityName == cityName &&
+        other.zipCode == zipCode &&
+        other.allowApproximate == allowApproximate;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(label, latitude, longitude, precision, approximate, message);
+  int get hashCode => Object.hash(
+    label,
+    latitude,
+    longitude,
+    precision,
+    approximate,
+    message,
+    countryCode,
+    cityName,
+    zipCode,
+    allowApproximate,
+  );
 }

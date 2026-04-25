@@ -1739,8 +1739,7 @@ Screenshot data is defined in `test/visual_inspection/fixtures/`:
 
 When adding a new screenshot scenario, add the data to the catalog and create a scenario getter in the scenarios file. The screenshot test should consume the scenario, not define raw data inline.
 
-See `docs/superpowers/specs/2026-04-23-visual-review-fixtures-design.md` for the full design.
-```
+See `docs/superpowers/plans/2026-04-23-visual-review-fixtures.md` for the full design.```
 
 - [ ] **Step 4: Commit all changes**
 
