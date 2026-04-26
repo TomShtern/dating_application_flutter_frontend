@@ -82,6 +82,16 @@ void main() {
     expect(find.text('Momentum right now'), findsNothing);
     expect(find.text('Latest backend snapshot'), findsNothing);
 
+    await tester.tap(find.text('Likes Sent'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stat detail'), findsOneWidget);
+    expect(find.text('Backend value'), findsOneWidget);
+    expect(find.text('12'), findsWidgets);
+
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.byTooltip('View achievements'));
     await tester.pumpAndSettle();
 
@@ -97,6 +107,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Early Bird'), findsOneWidget);
+
+    await tester.tap(find.text('Early Bird'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Achievement detail'), findsOneWidget);
+    expect(find.text('Unlocked'), findsWidgets);
+    expect(find.text('Opened the app before 8am'), findsWidgets);
   });
 
   testWidgets('uses a singular highlights label for one stat', (

@@ -11,6 +11,7 @@ import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/highlight_tag_row.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
+import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/shell_hero.dart';
@@ -300,24 +301,6 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => const LocationCompletionScreen(),
-      ),
-    );
-  }
-}
-
-class _AmbientGlow extends StatelessWidget {
-  const _AmbientGlow({required this.size, required this.color});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       ),
     );
   }
@@ -759,6 +742,10 @@ class _CandidateCard extends ConsumerWidget {
     final presentationContextState = ref.watch(
       presentationContextProvider(candidate.id),
     );
+    final photoUrl = _primaryPhotoUrl(
+      candidate.primaryPhotoUrl,
+      candidate.photoUrls,
+    );
 
     return Card(
       child: Padding(
@@ -766,117 +753,103 @@ class _CandidateCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(minHeight: 208),
-              padding: const EdgeInsets.all(18),
-              decoration: AppTheme.surfaceDecoration(
-                context,
-                gradient: AppTheme.accentGradient(context),
-                borderRadius: const BorderRadius.all(Radius.circular(26)),
-                prominent: true,
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned(
-                    top: -20,
-                    right: -8,
-                    child: _AmbientGlow(
-                      size: 74,
-                      color: Colors.white.withValues(alpha: 0.08),
+            Stack(
+              children: [
+                PersonMediaThumbnail(
+                  key: ValueKey('browse-candidate-media-${candidate.id}'),
+                  name: candidate.name,
+                  photoUrl: photoUrl,
+                  width: double.infinity,
+                  height: 248,
+                  borderRadius: const BorderRadius.all(Radius.circular(26)),
+                ),
+                Positioned(
+                  top: 14,
+                  left: 14,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: AppTheme.chipRadius,
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Text('New for you'),
                     ),
                   ),
-                  Positioned(
-                    bottom: -18,
-                    left: -12,
-                    child: _AmbientGlow(
-                      size: 56,
-                      color: Colors.white.withValues(alpha: 0.06),
-                    ),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: SafetyActionsButton(
+                    targetUserId: candidate.id,
+                    targetUserName: candidate.name,
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                ),
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.26),
+                      borderRadius: const BorderRadius.all(Radius.circular(22)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.16),
-                              borderRadius: AppTheme.chipRadius,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              child: Text(
-                                'New for you',
-                                style: Theme.of(context).textTheme.labelLarge
-                                    ?.copyWith(color: Colors.white),
-                              ),
-                            ),
+                          Text(
+                            candidate.name,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(color: Colors.white),
                           ),
-                          const Spacer(),
-                          SafetyActionsButton(
-                            targetUserId: candidate.id,
-                            targetUserName: candidate.name,
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 4,
+                            children: [
+                              if (candidate.age > 0)
+                                Text(
+                                  'Age ${candidate.age}',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.92,
+                                        ),
+                                      ),
+                                ),
+                              if (candidate.approximateLocation != null)
+                                Text(
+                                  candidate.approximateLocation!,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.92,
+                                        ),
+                                      ),
+                                ),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      UserAvatar(
-                        name: candidate.name,
-                        photoUrl: _primaryPhotoUrl(
-                          candidate.primaryPhotoUrl,
-                          candidate.photoUrls,
-                        ),
-                        radius: 30,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        candidate.name,
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(color: Colors.white),
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 4,
-                        children: [
-                          if (candidate.age > 0)
+                          if (candidate.summaryLine != null) ...[
+                            const SizedBox(height: 8),
                             Text(
-                              'Age ${candidate.age}',
-                              style: Theme.of(context).textTheme.bodyLarge
+                              candidate.summaryLine!,
+                              style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    color: Colors.white.withValues(alpha: 0.88),
                                   ),
                             ),
-                          if (candidate.approximateLocation != null)
-                            Text(
-                              candidate.approximateLocation!,
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                  ),
-                            ),
+                          ],
                         ],
                       ),
-                      if (candidate.summaryLine != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          candidate.summaryLine!,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.86),
-                              ),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
             SizedBox(height: AppTheme.listSpacing()),
             _BrowsePresentationContext(state: presentationContextState),

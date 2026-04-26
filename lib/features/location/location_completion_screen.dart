@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/location_metadata.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../theme/app_theme.dart';
 import 'location_provider.dart';
 
 class LocationCompletionScreen extends ConsumerStatefulWidget {
@@ -81,7 +82,7 @@ class _LocationCompletionScreenState
       appBar: AppBar(title: const Text('Choose your location')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppTheme.screenPadding(),
           child: countriesState.when(
             data: (countries) {
               final availableCountries = countries
@@ -90,9 +91,10 @@ class _LocationCompletionScreenState
 
               return ListView(
                 children: [
-                  Card(
+                  DecoratedBox(
+                    decoration: AppTheme.surfaceDecoration(context),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppTheme.sectionPadding(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -119,7 +121,7 @@ class _LocationCompletionScreenState
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        _CountryCodeBadge(code: country.code),
+                                        const _CountryFlagIcon(),
                                         const SizedBox(width: 12),
                                         Flexible(
                                           child: Text(
@@ -201,18 +203,17 @@ class _LocationCompletionScreenState
                           ),
                           if (_selectedCityLabel != null) ...[
                             const SizedBox(height: 10),
-                            Chip(
-                              label: Text('Using city: $_selectedCityLabel'),
-                            ),
+                            _SelectedCityCard(cityLabel: _selectedCityLabel!),
                           ],
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Card(
+                  SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+                  DecoratedBox(
+                    decoration: AppTheme.surfaceDecoration(context),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppTheme.sectionPadding(compact: true),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -243,7 +244,8 @@ class _LocationCompletionScreenState
                                         onTap: () {
                                           setState(() {
                                             _cityController.text = city.name;
-                                            _selectedCityLabel = city.name;
+                                            _selectedCityLabel =
+                                                _cityDisplayLabel(city);
                                           });
                                         },
                                       ),
@@ -344,10 +346,16 @@ class _LocationCompletionScreenState
   }
 }
 
-class _CountryCodeBadge extends StatelessWidget {
-  const _CountryCodeBadge({required this.code});
+String _cityDisplayLabel(LocationCity city) {
+  if (city.district.trim().isEmpty) {
+    return city.name;
+  }
 
-  final String code;
+  return '${city.name}, ${city.district}';
+}
+
+class _CountryFlagIcon extends StatelessWidget {
+  const _CountryFlagIcon();
 
   @override
   Widget build(BuildContext context) {
@@ -359,13 +367,49 @@ class _CountryCodeBadge extends StatelessWidget {
         borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Text(
-          code,
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.4,
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Icon(
+          Icons.flag_outlined,
+          size: 18,
+          color: theme.colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedCityCard extends StatelessWidget {
+  const _SelectedCityCard({required this.cityLabel});
+
+  final String cityLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.55),
+        borderRadius: AppTheme.cardRadius,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: colorScheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Selected city', style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 2),
+                  Text(cityLabel, style: theme.textTheme.bodyMedium),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

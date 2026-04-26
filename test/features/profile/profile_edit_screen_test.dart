@@ -66,25 +66,25 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Show people a version of you that feels true.'),
-      findsOneWidget,
-    );
-    expect(find.text('About'), findsOneWidget);
+    expect(find.text('Dana'), findsOneWidget);
+    expect(find.text('Basics'), findsOneWidget);
+    expect(find.text('Distance'), findsOneWidget);
+    expect(find.text('Up to 50 km'), findsOneWidget);
 
     final genderChip = tester.widget<ChoiceChip>(
       find.widgetWithText(ChoiceChip, 'Female'),
     );
     expect(genderChip.selected, isTrue);
 
-    expect(find.text(editSnapshot.editable.bio!), findsOneWidget);
+    expect(find.widgetWithText(FilterChip, 'Male'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Preferences'),
+      find.text('About'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Preferences'), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
+    expect(find.text(editSnapshot.editable.bio!), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Location'),
@@ -94,21 +94,19 @@ void main() {
     expect(find.text('Location'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.widgetWithText(FilterChip, 'Male'),
+      find.text('Fine-tune matching'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.widgetWithText(FilterChip, 'Male'), findsOneWidget);
-    expect(
-      _editableTextByValue(editSnapshot.editable.maxDistanceKm.toString()),
-      findsOneWidget,
-    );
+    await tester.tap(find.text('Age and height filters'));
+    await tester.pumpAndSettle();
+
     expect(_editableTextByValue('25'), findsOneWidget);
     expect(_editableTextByValue('35'), findsOneWidget);
     expect(_editableTextByValue('172'), findsOneWidget);
   });
 
-  testWidgets('validates numeric preferences before saving', (
+  testWidgets('updates maximum distance with the slider before saving', (
     WidgetTester tester,
   ) async {
     final apiClient = _FakeProfileApiClient();
@@ -125,20 +123,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('Maximum distance (km)'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.enterText(
-      find.bySemanticsLabel('Maximum distance (km)'),
-      '-1',
-    );
+    final slider = tester.widget<Slider>(find.byType(Slider));
+    slider.onChanged?.call(80);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Up to 80 km'), findsOneWidget);
+
     await tester.tap(find.widgetWithText(FilledButton, 'Save changes'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Please enter a valid maximum distance.'), findsOneWidget);
-    expect(apiClient.updatedRequests, isEmpty);
+    expect(apiClient.updatedRequests.last.maxDistanceKm, 80);
   });
 
   testWidgets('prevents a maximum preferred age below the minimum age', (
@@ -159,10 +153,12 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Minimum preferred age'),
+      find.text('Fine-tune matching'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.tap(find.text('Age and height filters'));
+    await tester.pumpAndSettle();
 
     await tester.enterText(
       find.bySemanticsLabel('Minimum preferred age'),
@@ -201,6 +197,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await tester.scrollUntilVisible(
+        find.text('About'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.enterText(
         find.byType(TextFormField).first,
         'A short bio for a sparse profile.',
@@ -251,23 +252,24 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Open editor'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      _editableTextByValue(editSnapshot.editable.bio!),
-      'Updated bio for the edit flow.',
-    );
     await tester.tap(find.widgetWithText(ChoiceChip, 'Non-binary'));
     await tester.pump();
 
-    await tester.scrollUntilVisible(
-      find.widgetWithText(FilterChip, 'Non-binary'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
     final interestedInChip = find.widgetWithText(FilterChip, 'Non-binary');
     await tester.ensureVisible(interestedInChip);
     await tester.pumpAndSettle();
     await tester.tap(interestedInChip);
     await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      _editableTextByValue(editSnapshot.editable.bio!),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.enterText(
+      _editableTextByValue(editSnapshot.editable.bio!),
+      'Updated bio for the edit flow.',
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'Save changes'));
     await tester.pumpAndSettle();
 

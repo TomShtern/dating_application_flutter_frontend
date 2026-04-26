@@ -73,26 +73,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           : 'No notifications yet.',
                       onRefresh: controller.refresh,
                     )
-                  else ...[
-                    for (
-                      var index = 0;
-                      index < notifications.length;
-                      index++
-                    ) ...[
-                      _NotificationTile(
-                        item: notifications[index],
-                        isBusy: _busyNotificationId == notifications[index].id,
-                        onMarkRead: notifications[index].isRead
-                            ? null
-                            : () => _handleMarkRead(notifications[index]),
-                        onOpenRoute: notifications[index].safeRoute == null
-                            ? null
-                            : () => _handleOpenRoute(notifications[index]),
-                      ),
-                      if (index != notifications.length - 1)
-                        SizedBox(height: AppTheme.listSpacing()),
-                    ],
-                  ],
+                  else
+                    ..._buildNotificationSections(
+                      notifications: notifications,
+                      busyNotificationId: _busyNotificationId,
+                      onMarkRead: _handleMarkRead,
+                      onOpenRoute: _handleOpenRoute,
+                    ),
                 ],
               ),
             );
@@ -240,6 +227,93 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           userId: route.data['fromUserId']!,
           userName: _routePersonName(item),
         ),
+      ),
+    );
+  }
+}
+
+List<Widget> _buildNotificationSections({
+  required List<NotificationItem> notifications,
+  required String? busyNotificationId,
+  required ValueChanged<NotificationItem> onMarkRead,
+  required ValueChanged<NotificationItem> onOpenRoute,
+}) {
+  final groups = <String, List<NotificationItem>>{
+    'Today': <NotificationItem>[],
+    'Yesterday': <NotificationItem>[],
+    'Earlier': <NotificationItem>[],
+  };
+
+  final now = DateTime.now();
+  for (final item in notifications) {
+    groups[_notificationGroupLabel(item.createdAt, now: now)]!.add(item);
+  }
+
+  final widgets = <Widget>[];
+  for (final entry in groups.entries) {
+    if (entry.value.isEmpty) {
+      continue;
+    }
+
+    if (widgets.isNotEmpty) {
+      widgets.add(SizedBox(height: AppTheme.sectionSpacing(compact: true)));
+    }
+    widgets.add(_NotificationSectionHeader(label: entry.key));
+    widgets.add(SizedBox(height: AppTheme.listSpacing(compact: true)));
+
+    for (var index = 0; index < entry.value.length; index++) {
+      final item = entry.value[index];
+      widgets.add(
+        _NotificationTile(
+          item: item,
+          isBusy: busyNotificationId == item.id,
+          onMarkRead: item.isRead ? null : () => onMarkRead(item),
+          onOpenRoute: item.safeRoute == null ? null : () => onOpenRoute(item),
+        ),
+      );
+      if (index != entry.value.length - 1) {
+        widgets.add(SizedBox(height: AppTheme.listSpacing()));
+      }
+    }
+  }
+
+  return widgets;
+}
+
+String _notificationGroupLabel(DateTime? createdAt, {required DateTime now}) {
+  if (createdAt == null) {
+    return 'Earlier';
+  }
+
+  final local = createdAt.toLocal();
+  final current = now.toLocal();
+  final today = DateTime(current.year, current.month, current.day);
+  final eventDate = DateTime(local.year, local.month, local.day);
+  final calendarDays = today.difference(eventDate).inDays;
+
+  if (calendarDays <= 0) {
+    return 'Today';
+  }
+  if (calendarDays == 1) {
+    return 'Yesterday';
+  }
+  return 'Earlier';
+}
+
+class _NotificationSectionHeader extends StatelessWidget {
+  const _NotificationSectionHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Text(
+      label,
+      style: theme.textTheme.titleSmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w800,
       ),
     );
   }

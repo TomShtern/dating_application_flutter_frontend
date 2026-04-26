@@ -48,7 +48,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('IL'), findsAtLeastNWidgets(1));
+    expect(find.byIcon(Icons.flag_outlined), findsAtLeastNWidgets(1));
+    expect(find.text('Israel'), findsAtLeastNWidgets(1));
+    expect(find.text('IL'), findsNothing);
     expect(find.text('Use this location'), findsOneWidget);
     expect(find.text('You can change this anytime.'), findsOneWidget);
   });
@@ -95,6 +97,26 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'Tel Aviv');
+    await tester.pumpAndSettle();
+
+    final locationScrollable = find
+        .descendant(
+          of: find.byType(LocationCompletionScreen),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    await tester.drag(locationScrollable, const Offset(0, -240));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.widgetWithText(ListTile, 'Tel Aviv').first,
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Selected city'), findsOneWidget);
+    expect(find.text('Tel Aviv, Central District'), findsOneWidget);
+
     final saveButton = find.widgetWithText(FilledButton, 'Use this location');
     await tester.scrollUntilVisible(
       saveButton,
@@ -140,7 +162,18 @@ class _FakeLocationApiClient extends ApiClient {
     String query = '',
     int limit = 10,
   }) async {
-    return const <LocationCity>[];
+    if (query.trim().length < 2) {
+      return const <LocationCity>[];
+    }
+
+    return const <LocationCity>[
+      LocationCity(
+        name: 'Tel Aviv',
+        district: 'Central District',
+        countryCode: 'IL',
+        priority: 10,
+      ),
+    ];
   }
 
   @override

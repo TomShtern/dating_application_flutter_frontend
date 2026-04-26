@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/blocked_user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import 'blocked_users_provider.dart';
+
+enum _BlockedUserMenuAction { unblock }
 
 class BlockedUsersScreen extends ConsumerStatefulWidget {
   const BlockedUsersScreen({super.key});
@@ -53,7 +56,7 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                     _BlockedUserTile(
                       user: users[index],
                       isBusy: _busyUserId == users[index].userId,
-                      onUnblock: () => _handleUnblock(users[index]),
+                      onUnblock: () => _confirmAndUnblock(users[index]),
                     ),
                     if (index != users.length - 1)
                       SizedBox(height: AppTheme.listSpacing(compact: true)),
@@ -80,6 +83,34 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmAndUnblock(BlockedUserSummary user) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Unblock ${user.name}?'),
+        content: const Text(
+          'This lets this profile appear again in app surfaces that the backend returns.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Unblock'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    await _handleUnblock(user);
   }
 
   Future<void> _handleUnblock(BlockedUserSummary user) async {
@@ -229,10 +260,25 @@ class _BlockedUserTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            TextButton(
-              onPressed: isBusy ? null : onUnblock,
-              child: Text(isBusy ? 'Working…' : 'Unblock'),
-            ),
+            isBusy
+                ? const SizedBox.square(
+                    dimension: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : AppOverflowMenuButton<_BlockedUserMenuAction>(
+                    tooltip: 'Blocked user options',
+                    items: const [
+                      PopupMenuItem<_BlockedUserMenuAction>(
+                        value: _BlockedUserMenuAction.unblock,
+                        child: Text('Unblock'),
+                      ),
+                    ],
+                    onSelected: (value) {
+                      if (value == _BlockedUserMenuAction.unblock) {
+                        onUnblock();
+                      }
+                    },
+                  ),
           ],
         ),
       ),

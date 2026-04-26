@@ -8,6 +8,7 @@ import '../../models/profile_update_request.dart';
 import '../../models/user_detail.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/formatting/display_text.dart';
+import '../../theme/app_theme.dart';
 import '../location/location_completion_screen.dart';
 import 'profile_provider.dart';
 
@@ -69,12 +70,12 @@ class _ProfileEditForm extends ConsumerStatefulWidget {
 class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _bioController;
-  late final TextEditingController _maxDistanceController;
   late final TextEditingController _minAgeController;
   late final TextEditingController _maxAgeController;
   late final TextEditingController _heightController;
   String? _selectedGender;
   late final Set<String> _selectedInterestedIn;
+  int? _maxDistanceKm;
   late String _approximateLocation;
   ResolvedLocation? _resolvedLocation;
   bool _isSaving = false;
@@ -89,11 +90,10 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
       editable.interestedIn,
     ).toSet();
     _approximateLocation = editable.location?.label ?? '';
-    _maxDistanceController = TextEditingController(
-      text: editable.maxDistanceKm != null && editable.maxDistanceKm! > 0
-          ? editable.maxDistanceKm.toString()
-          : '',
-    );
+    _maxDistanceKm =
+        editable.maxDistanceKm != null && editable.maxDistanceKm! > 0
+        ? editable.maxDistanceKm
+        : null;
     _minAgeController = TextEditingController(
       text: editable.minAge?.toString() ?? '',
     );
@@ -108,7 +108,6 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
   @override
   void dispose() {
     _bioController.dispose();
-    _maxDistanceController.dispose();
     _minAgeController.dispose();
     _maxAgeController.dispose();
     _heightController.dispose();
@@ -130,35 +129,17 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: AppTheme.screenPadding(),
             children: [
-              Text(
-                'Show people a version of you that feels true.',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Update the details you want to share, and leave anything blank if you'd rather skip it for now.",
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 20),
+              _ProfileEditHeader(snapshot: widget.snapshot),
+              SizedBox(height: AppTheme.sectionSpacing()),
               _ProfileEditSection(
-                title: 'About',
-                description: 'Share the details people connect with first.',
+                title: 'Basics',
+                description:
+                    'Set the identity and discovery signals people see first.',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextFormField(
-                      controller: _bioController,
-                      minLines: 3,
-                      maxLines: 5,
-                      decoration: const InputDecoration(
-                        labelText: 'Bio',
-                        hintText:
-                            'Share a little about your vibe, interests, or ideal first date',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     Text(
                       'Gender',
                       style: Theme.of(context).textTheme.titleSmall,
@@ -181,16 +162,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                           )
                           .toList(growable: false),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              _ProfileEditSection(
-                title: 'Preferences',
-                description: 'Set the basics that shape your recommendations.',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                    const SizedBox(height: 18),
                     Text(
                       'Interested in',
                       style: Theme.of(context).textTheme.titleSmall,
@@ -217,65 +189,70 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                           )
                           .toList(growable: false),
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _maxDistanceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Maximum distance (km)',
-                        hintText: '50',
-                        helperText: 'Leave blank if you want to decide later.',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return null;
-                        }
-
-                        final distance = int.tryParse(value.trim());
-                        if (distance == null || distance <= 0) {
-                          return 'Please enter a valid maximum distance.';
-                        }
-
-                        return null;
+                  ],
+                ),
+              ),
+              SizedBox(height: AppTheme.sectionSpacing()),
+              _ProfileEditSection(
+                title: 'Distance',
+                description: 'Choose how far the app should look for matches.',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _maxDistanceKm == null
+                                ? 'Not set yet'
+                                : 'Up to $_maxDistanceKm km',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        Text(
+                          '${_distanceSliderValue.round()} km',
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: _distanceSliderValue,
+                      min: 5,
+                      max: 150,
+                      divisions: 29,
+                      label: '${_distanceSliderValue.round()} km',
+                      onChanged: (value) {
+                        setState(() {
+                          _maxDistanceKm = value.round();
+                        });
                       },
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _minAgeController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Minimum preferred age',
-                        hintText: '25',
-                      ),
-                      validator: _validatePositiveInteger,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _maxAgeController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Maximum preferred age',
-                        hintText: '35',
-                      ),
-                      validator: (value) => _validateMaxAge(
-                        value,
-                        minAgeValue: _minAgeController.text,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _heightController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Height (cm)',
-                        hintText: '172',
-                      ),
-                      validator: _validatePositiveInteger,
+                    Text(
+                      _maxDistanceKm == null
+                          ? 'Move the slider when you want to set a distance.'
+                          : 'This value is sent as your maximum distance.',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppTheme.sectionSpacing()),
+              _ProfileEditSection(
+                title: 'About',
+                description:
+                    'Share the details people connect with after the basics.',
+                child: TextFormField(
+                  controller: _bioController,
+                  minLines: 3,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    labelText: 'Bio',
+                    hintText:
+                        'Share a little about your vibe, interests, or ideal first date',
+                  ),
+                ),
+              ),
+              SizedBox(height: AppTheme.sectionSpacing()),
               _ProfileEditSection(
                 title: 'Location',
                 description:
@@ -283,10 +260,15 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: const BorderRadius.all(Radius.circular(20)),
+                    borderRadius: AppTheme.cardRadius,
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withValues(alpha: 0.28),
+                    ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: AppTheme.sectionPadding(compact: true),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -335,6 +317,53 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                   ),
                 ),
               ),
+              SizedBox(height: AppTheme.sectionSpacing()),
+              _ProfileEditSection(
+                title: 'Fine-tune matching',
+                description:
+                    'Optional filters stay here so the main edit flow stays quick.',
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: const Text('Age and height filters'),
+                  subtitle: const Text('Leave blank to keep these flexible.'),
+                  children: [
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _minAgeController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Minimum preferred age',
+                        hintText: '25',
+                      ),
+                      validator: _validatePositiveInteger,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _maxAgeController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Maximum preferred age',
+                        hintText: '35',
+                      ),
+                      validator: (value) => _validateMaxAge(
+                        value,
+                        minAgeValue: _minAgeController.text,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _heightController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Height (cm)',
+                        hintText: '172',
+                      ),
+                      validator: _validatePositiveInteger,
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
             ],
           ),
@@ -361,7 +390,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
           : _genderOptions
                 .where(_selectedInterestedIn.contains)
                 .toList(growable: false),
-      maxDistanceKm: _parseOptionalInt(_maxDistanceController.text),
+      maxDistanceKm: _maxDistanceKm,
       minAge: _parseOptionalInt(_minAgeController.text),
       maxAge: _parseOptionalInt(_maxAgeController.text),
       heightCm: _parseOptionalInt(_heightController.text),
@@ -400,6 +429,8 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
       }
     }
   }
+
+  double get _distanceSliderValue => (_maxDistanceKm ?? 50).toDouble();
 }
 
 String? _validatePositiveInteger(String? value) {
@@ -514,6 +545,91 @@ const List<String> _genderOptions = <String>[
   'NON_BINARY',
   'OTHER',
 ];
+
+class _ProfileEditHeader extends StatelessWidget {
+  const _ProfileEditHeader({required this.snapshot});
+
+  final ProfileEditSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final readOnly = snapshot.readOnly;
+    final location = snapshot.editable.location?.label.trim();
+    final verificationText = readOnly.verified
+        ? 'Verified profile'
+        : 'Verification not complete';
+    final subtitleParts = <String>[
+      formatDisplayLabel(readOnly.state),
+      if (location != null && location.isNotEmpty) location,
+      verificationText,
+    ];
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: AppTheme.cardRadius,
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: const BorderRadius.all(Radius.circular(14)),
+              ),
+              child: Text(
+                _initialFor(readOnly.name),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    readOnly.name,
+                    style: theme.textTheme.titleMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitleParts.join(' · '),
+                    style: theme.textTheme.bodySmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Edit the core details first. Optional filters stay lower on the page.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _initialFor(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? '?' : trimmed.substring(0, 1).toUpperCase();
+}
 
 class _ProfileEditSection extends StatelessWidget {
   const _ProfileEditSection({

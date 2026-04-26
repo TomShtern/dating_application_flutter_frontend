@@ -25,13 +25,14 @@ void main() {
     WidgetTester tester,
   ) async {
     final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
     final notifications = [
       NotificationItem(
         id: 'notification-1',
         type: 'MATCH',
         title: 'It is a match',
         message: 'Noa liked you back.',
-        createdAt: now.subtract(const Duration(minutes: 5)).toUtc(),
+        createdAt: now.subtract(const Duration(minutes: 5)),
         isRead: false,
         data: const {},
       ),
@@ -40,7 +41,9 @@ void main() {
         type: 'MESSAGE',
         title: 'New message',
         message: 'You have a fresh reply waiting.',
-        createdAt: now.subtract(const Duration(days: 3, minutes: 10)).toUtc(),
+        createdAt: startOfToday
+            .subtract(const Duration(days: 3))
+            .add(const Duration(hours: 9)),
         isRead: true,
         data: const {},
       ),

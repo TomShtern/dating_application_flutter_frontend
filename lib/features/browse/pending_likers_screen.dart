@@ -5,7 +5,7 @@ import '../../api/api_error.dart';
 import '../../models/pending_liker.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/user_avatar.dart';
+import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import 'pending_likers_provider.dart';
@@ -174,13 +174,16 @@ class _PendingLikerCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(
+                PersonMediaThumbnail(
+                  key: ValueKey('pending-liker-media-${liker.userId}'),
                   name: liker.name,
                   photoUrl: _primaryPhotoUrl(
                     liker.primaryPhotoUrl,
                     liker.photoUrls,
                   ),
-                  radius: 22,
+                  width: 82,
+                  height: 104,
+                  borderRadius: const BorderRadius.all(Radius.circular(22)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -253,10 +256,6 @@ String _pendingLikerStatusLabel(PendingLiker liker) {
 }
 
 String _pendingLikerContextLine(PendingLiker liker) {
-  if (liker.approximateLocation != null) {
-    return liker.approximateLocation!;
-  }
-
   if (liker.likedAt case final likedAt?) {
     return '${liker.name} made the first move on ${formatShortDate(likedAt)}.';
   }

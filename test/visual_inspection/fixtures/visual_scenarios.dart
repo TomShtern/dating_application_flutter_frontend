@@ -44,6 +44,10 @@ List signedInShellOverrides(SharedPreferences preferences) => [
   conversationsProvider.overrideWith((ref) async => conversations),
   profileProvider.overrideWith((ref) async => profileDetail),
   selectedUserProvider.overrideWith((ref) async => currentUser),
+  ..._presentationContextOverrides(<String>[
+    browseResponse.candidates.first.id,
+    dailyPick.userId,
+  ]),
 ];
 
 List get conversationThreadOverrides => [
@@ -64,6 +68,7 @@ List get otherUserProfileOverrides => [
   otherUserProfileProvider(
     otherUserProfileDetail.id,
   ).overrideWith((ref) async => otherUserProfileDetail),
+  ..._presentationContextOverrides(<String>[otherUserProfileDetail.id]),
 ];
 
 List get locationCompletionOverrides => [
@@ -92,4 +97,17 @@ List get notificationsOverrides => [
 List baseSignedInOverrides(SharedPreferences preferences) => [
   sharedPreferencesProvider.overrideWithValue(preferences),
   selectedUserProvider.overrideWith((ref) async => currentUser),
+  profileEditSnapshotProvider.overrideWith(
+    (ref) async => visualProfileEditSnapshot,
+  ),
 ];
+
+List _presentationContextOverrides(List<String> userIds) {
+  return userIds
+      .map(
+        (userId) => presentationContextProvider(
+          userId,
+        ).overrideWith((ref) async => visualPresentationContexts[userId]!),
+      )
+      .toList(growable: false);
+}

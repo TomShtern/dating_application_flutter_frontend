@@ -7,10 +7,10 @@ import '../../models/match_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/user_avatar.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
@@ -136,6 +136,7 @@ class _MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final photoUrl = _primaryPhotoUrl(match.primaryPhotoUrl, match.photoUrls);
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
@@ -159,13 +160,13 @@ class _MatchCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    UserAvatar(
+                    PersonMediaThumbnail(
+                      key: ValueKey('match-media-${match.matchId}'),
                       name: match.otherUserName,
-                      photoUrl: _primaryPhotoUrl(
-                        match.primaryPhotoUrl,
-                        match.photoUrls,
-                      ),
-                      radius: 28,
+                      photoUrl: photoUrl,
+                      width: 92,
+                      height: 120,
+                      borderRadius: const BorderRadius.all(Radius.circular(24)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -183,6 +184,27 @@ class _MatchCard extends StatelessWidget {
                                 'Matched ${formatShortDate(match.createdAt)}',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ShellHeroPill(
+                                icon: Icons.favorite_border_rounded,
+                                label:
+                                    'Matched ${formatShortDate(match.createdAt)}',
+                              ),
+                              if (match.approximateLocation != null)
+                                ShellHeroPill(
+                                  icon: Icons.location_on_outlined,
+                                  label: match.approximateLocation!,
+                                ),
+                              ShellHeroPill(
+                                icon: Icons.verified_user_outlined,
+                                label: formatDisplayLabel(match.state),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -190,26 +212,6 @@ class _MatchCard extends StatelessWidget {
                       targetUserId: match.otherUserId,
                       targetUserName: match.otherUserName,
                       canUnmatch: true,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ShellHeroPill(
-                      icon: Icons.favorite_border_rounded,
-                      label: 'Matched ${formatShortDate(match.createdAt)}',
-                    ),
-                    if (match.approximateLocation != null)
-                      ShellHeroPill(
-                        icon: Icons.location_on_outlined,
-                        label: match.approximateLocation!,
-                      ),
-                    ShellHeroPill(
-                      icon: Icons.verified_user_outlined,
-                      label: formatDisplayLabel(match.state),
                     ),
                   ],
                 ),

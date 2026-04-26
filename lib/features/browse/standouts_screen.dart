@@ -5,16 +5,25 @@ import '../../api/api_error.dart';
 import '../../models/standout.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../shared/widgets/section_intro_card.dart';
-import '../../shared/widgets/user_avatar.dart';
 import '../profile/profile_screen.dart';
 import 'standouts_provider.dart';
 
-class StandoutsScreen extends ConsumerWidget {
+enum _StandoutsViewMode { grid, list }
+
+class StandoutsScreen extends ConsumerStatefulWidget {
   const StandoutsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StandoutsScreen> createState() => _StandoutsScreenState();
+}
+
+class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
+  _StandoutsViewMode _viewMode = _StandoutsViewMode.grid;
+
+  @override
+  Widget build(BuildContext context) {
     final standoutsState = ref.watch(standoutsProvider);
     final controller = ref.read(standoutsControllerProvider);
 
@@ -53,6 +62,32 @@ class StandoutsScreen extends ConsumerWidget {
                         const Chip(label: Text('Cached results')),
                     ],
                   ),
+                  if (snapshot.standouts.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: SegmentedButton<_StandoutsViewMode>(
+                        segments: const [
+                          ButtonSegment<_StandoutsViewMode>(
+                            value: _StandoutsViewMode.grid,
+                            icon: Icon(Icons.grid_view_rounded),
+                            label: Text('Grid'),
+                          ),
+                          ButtonSegment<_StandoutsViewMode>(
+                            value: _StandoutsViewMode.list,
+                            icon: Icon(Icons.view_agenda_outlined),
+                            label: Text('List'),
+                          ),
+                        ],
+                        selected: {_viewMode},
+                        onSelectionChanged: (selection) {
+                          setState(() {
+                            _viewMode = selection.first;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   if (snapshot.standouts.isEmpty)
                     AppAsyncState.empty(
@@ -60,13 +95,10 @@ class StandoutsScreen extends ConsumerWidget {
                           'No standouts are ready right now. Check back soon for a fresh set of highlights.',
                       onRefresh: controller.refresh,
                     )
+                  else if (_viewMode == _StandoutsViewMode.grid)
+                    _StandoutsGrid(standouts: snapshot.standouts)
                   else
-                    ...snapshot.standouts.map(
-                      (standout) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _StandoutCard(standout: standout),
-                      ),
-                    ),
+                    _StandoutsList(standouts: snapshot.standouts),
                 ],
               ),
             ),
@@ -81,6 +113,56 @@ class StandoutsScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _StandoutsGrid extends StatelessWidget {
+  const _StandoutsGrid({required this.standouts});
+
+  final List<Standout> standouts;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth >= 620 ? 2 : 1;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: standouts.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            mainAxisExtent: 360,
+          ),
+          itemBuilder: (context, index) {
+            return _StandoutCard(standout: standouts[index]);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _StandoutsList extends StatelessWidget {
+  const _StandoutsList({required this.standouts});
+
+  final List<Standout> standouts;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: standouts
+          .map(
+            (standout) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _StandoutCard(standout: standout),
+            ),
+          )
+          .toList(growable: false),
     );
   }
 }
@@ -114,14 +196,18 @@ class _StandoutCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(
+                PersonMediaThumbnail(
+                  key: ValueKey('standout-media-${standout.id}'),
                   name: standout.standoutUserName,
                   photoUrl: _primaryPhotoUrl(
                     standout.primaryPhotoUrl,
                     standout.photoUrls,
                   ),
-                  radius: 24,
+                  width: 84,
+                  height: 108,
+                  borderRadius: const BorderRadius.all(Radius.circular(22)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -150,25 +236,25 @@ class _StandoutCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 12),
+                      Text(
+                        _humanizeStandoutReason(standout),
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                      if (metadata != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          metadata,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              _humanizeStandoutReason(standout),
-              style: theme.textTheme.bodyLarge,
-            ),
-            if (metadata != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                metadata,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,

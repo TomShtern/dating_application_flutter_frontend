@@ -10,8 +10,6 @@ import '../../shared/media/media_url.dart';
 import '../../shared/widgets/highlight_tag_row.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/section_intro_card.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../location/location_completion_screen.dart';
 import '../safety/safety_action_sheet.dart';
@@ -167,6 +165,10 @@ class _ProfileContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
+          if (!isCurrentUser) ...[
+            SizedBox(height: AppTheme.sectionSpacing()),
+            _PhotoSection(photoUrls: detail.photoUrls),
+          ],
           if (!isCurrentUser && presentationContextState != null) ...[
             SizedBox(height: AppTheme.sectionSpacing()),
             _PresentationContextSection(state: presentationContextState!),
@@ -186,40 +188,11 @@ class _ProfileContent extends StatelessWidget {
             ),
           ],
           SizedBox(height: AppTheme.sectionSpacing()),
-          SectionIntroCard(
-            icon: Icons.person_search_outlined,
-            title: isCurrentUser ? 'Profile details' : 'Shared details',
-            description: isCurrentUser
-                ? 'Bio, preferences, location, and photos shape how your profile shows up across discovery.'
-                : 'A quick read on the basics, preferences, and photos shared on this profile.',
-          ),
-          SizedBox(height: AppTheme.sectionSpacing()),
-          _ProfileSection(
-            icon: Icons.person_outline_rounded,
-            title: 'Gender',
-            value: _gender(detail),
-          ),
-          _ProfileSection(
-            icon: Icons.favorite_outline_rounded,
-            title: 'Interested in',
-            value: _interestedIn(detail),
-          ),
-          _ProfileSection(
-            icon: Icons.location_on_outlined,
-            title: 'Approximate location',
-            value: _approximateLocation(detail),
-          ),
-          _ProfileSection(
-            icon: Icons.route_outlined,
-            title: 'Distance preference',
-            value: _distancePreference(detail),
-          ),
-          _ProfileSection(
-            icon: Icons.verified_user_outlined,
-            title: 'Profile status',
-            value: _state(detail),
-          ),
-          _PhotoSection(photoUrls: detail.photoUrls),
+          _ProfileDetailsCard(detail: detail, isCurrentUser: isCurrentUser),
+          if (isCurrentUser) ...[
+            SizedBox(height: AppTheme.sectionSpacing()),
+            _PhotoSection(photoUrls: detail.photoUrls),
+          ],
         ],
       ),
     );
@@ -335,29 +308,246 @@ class _ProfileHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShellHero(
-      title: _headline(detail),
-      description: _heroSummary(detail, isCurrentUser: isCurrentUser),
-      eyebrowLabel: isCurrentUser ? 'Your profile' : 'Profile snapshot',
-      eyebrowIcon: isCurrentUser
-          ? Icons.person_rounded
-          : Icons.visibility_outlined,
-      centerContent: true,
-      header: UserAvatar(
-        name: _displayName(detail),
-        photoUrl: detail.photoUrls.isEmpty ? null : detail.photoUrls.first,
-        radius: 48,
+    final colorScheme = Theme.of(context).colorScheme;
+    final readiness = _profileReadiness(detail);
+
+    return Card(
+      child: Padding(
+        padding: AppTheme.sectionPadding(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                UserAvatar(
+                  name: _displayName(detail),
+                  photoUrl: detail.photoUrls.isEmpty
+                      ? null
+                      : detail.photoUrls.first,
+                  radius: 38,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isCurrentUser ? 'Your profile' : 'Profile snapshot',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _headline(detail),
+                        style: Theme.of(context).textTheme.headlineSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _ProfileMetaPill(
+                            icon: Icons.verified_user_outlined,
+                            label: _state(detail),
+                          ),
+                          _ProfileMetaPill(
+                            icon: Icons.location_on_outlined,
+                            label: _approximateLocation(detail),
+                          ),
+                          if (detail.maxDistanceKm > 0)
+                            _ProfileMetaPill(
+                              icon: Icons.route_outlined,
+                              label: _distancePreference(detail),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (isCurrentUser) ...[
+              SizedBox(height: AppTheme.sectionSpacing()),
+              ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(999)),
+                child: LinearProgressIndicator(
+                  minHeight: 8,
+                  value: readiness.progress,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                readiness.label,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ] else ...[
+              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+              Text(
+                _heroSummary(detail, isCurrentUser: isCurrentUser),
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ],
+        ),
       ),
-      badges: [
-        ShellHeroPill(
-          icon: Icons.verified_user_outlined,
-          label: _state(detail),
+    );
+  }
+}
+
+class _ProfileMetaPill extends StatelessWidget {
+  const _ProfileMetaPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.32),
         ),
-        ShellHeroPill(
-          icon: Icons.location_on_outlined,
-          label: _approximateLocation(detail),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: colorScheme.primary),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _ProfileDetailsCard extends StatelessWidget {
+  const _ProfileDetailsCard({
+    required this.detail,
+    required this.isCurrentUser,
+  });
+
+  final UserDetail detail;
+  final bool isCurrentUser;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: AppTheme.sectionPadding(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isCurrentUser ? 'Profile details' : 'Shared details',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isCurrentUser
+                  ? 'The signals currently shaping discovery.'
+                  : 'The basics this person has chosen to share.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _ProfileFactTile(
+                  icon: Icons.person_outline_rounded,
+                  title: 'Gender',
+                  value: _gender(detail),
+                ),
+                _ProfileFactTile(
+                  icon: Icons.favorite_outline_rounded,
+                  title: 'Interested in',
+                  value: _interestedIn(detail),
+                ),
+                _ProfileFactTile(
+                  icon: Icons.location_on_outlined,
+                  title: 'Location',
+                  value: _approximateLocation(detail),
+                ),
+                _ProfileFactTile(
+                  icon: Icons.route_outlined,
+                  title: 'Distance',
+                  value: _distancePreference(detail),
+                ),
+                _ProfileFactTile(
+                  icon: Icons.verified_user_outlined,
+                  title: 'Status',
+                  value: _state(detail),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileFactTile extends StatelessWidget {
+  const _ProfileFactTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 142, maxWidth: 168),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: AppTheme.cardRadius,
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.26),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 18, color: colorScheme.primary),
+              const SizedBox(height: 8),
+              Text(title, style: Theme.of(context).textTheme.labelMedium),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.bodyMedium,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -442,11 +632,11 @@ class _ProfileCompletenessCard extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  ShellHeroPill(
+                  _ProfileMetaPill(
                     icon: Icons.check_circle_rounded,
                     label: '$completedCount essentials complete',
                   ),
-                  const ShellHeroPill(
+                  const _ProfileMetaPill(
                     icon: Icons.explore_rounded,
                     label: 'Ready for discovery',
                   ),
@@ -604,12 +794,19 @@ class _PhotoSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            ...photoUrls.map(
-              (photoUrl) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: UserAvatarPhoto(photoUrl: photoUrl),
+            SizedBox(
+              height: 126,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: photoUrls.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 10),
+                itemBuilder: (context, index) => ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: UserAvatarPhoto(
+                    photoUrl: photoUrls[index],
+                    height: 126,
+                    width: 156,
+                  ),
                 ),
               ),
             ),
@@ -621,15 +818,21 @@ class _PhotoSection extends StatelessWidget {
 }
 
 class _PhotoPlaceholder extends StatelessWidget {
-  const _PhotoPlaceholder({required this.message});
+  const _PhotoPlaceholder({
+    required this.message,
+    this.height = 220,
+    this.width = double.infinity,
+  });
 
   final String message;
+  final double height;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 220,
-      width: double.infinity,
+      height: height,
+      width: width,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -656,10 +859,24 @@ class _PhotoPlaceholder extends StatelessWidget {
   }
 }
 
+class _ProfileReadiness {
+  const _ProfileReadiness({required this.progress, required this.label});
+
+  final double progress;
+  final String label;
+}
+
 class UserAvatarPhoto extends ConsumerWidget {
-  const UserAvatarPhoto({super.key, required this.photoUrl});
+  const UserAvatarPhoto({
+    super.key,
+    required this.photoUrl,
+    this.height = 200,
+    this.width = double.infinity,
+  });
 
   final String photoUrl;
+  final double height;
+  final double width;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -669,23 +886,35 @@ class UserAvatarPhoto extends ConsumerWidget {
     );
 
     if (resolvedPhotoUrl == null) {
-      return const _PhotoPlaceholder(message: 'Unable to load photo');
+      return _PhotoPlaceholder(
+        message: 'Unable to load photo',
+        height: height,
+        width: width,
+      );
     }
 
     return Image.network(
       resolvedPhotoUrl,
-      height: 200,
-      width: double.infinity,
+      height: height,
+      width: width,
       fit: BoxFit.cover,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) {
           return child;
         }
 
-        return const _PhotoPlaceholder(message: 'Loading photo…');
+        return _PhotoPlaceholder(
+          message: 'Loading photo…',
+          height: height,
+          width: width,
+        );
       },
       errorBuilder: (context, error, stackTrace) {
-        return const _PhotoPlaceholder(message: 'Unable to load photo');
+        return _PhotoPlaceholder(
+          message: 'Unable to load photo',
+          height: height,
+          width: width,
+        );
       },
     );
   }
@@ -726,6 +955,25 @@ String _heroSummary(UserDetail detail, {required bool isCurrentUser}) {
   return isCurrentUser
       ? 'A quick view of the details other people can currently discover about you.'
       : 'A snapshot of the profile details this person has chosen to share.';
+}
+
+_ProfileReadiness _profileReadiness(UserDetail detail) {
+  final checklist = <bool>[
+    detail.bio.trim().isNotEmpty,
+    detail.interestedIn.isNotEmpty,
+    detail.approximateLocation.trim().isNotEmpty,
+    detail.photoUrls.isNotEmpty,
+  ];
+  final completed = checklist.where((done) => done).length;
+  final total = checklist.length;
+  final progress = total == 0 ? 0.0 : completed / total;
+
+  return _ProfileReadiness(
+    progress: progress,
+    label: completed == total
+        ? 'Profile ready · $completed of $total essentials complete'
+        : '$completed of $total essentials complete',
+  );
 }
 
 String _gender(UserDetail detail) {

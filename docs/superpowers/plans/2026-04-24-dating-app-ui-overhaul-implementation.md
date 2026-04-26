@@ -358,16 +358,16 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 - Modify: `test/features/profile/profile_edit_screen_test.dart`
 - Modify: `test/features/location/location_completion_screen_test.dart`
 
-- [ ] Tighten the self-profile hero so identity, compact state/location metadata, and a small readiness indicator are visible above the fold without explanatory clutter.
-- [ ] Remove the over-promotion of tiny facts into separate full-width cards.
-- [ ] Redesign the other-user profile hero to surface `Profile snapshot`, compact metadata, photos earlier, and a top-right overflow menu.
+- [x] ✅ Tighten the self-profile hero so identity, compact state/location metadata, and a small readiness indicator are visible above the fold without explanatory clutter.
+- [x] ✅ Remove the over-promotion of tiny facts into separate full-width cards.
+- [x] ✅ Redesign the other-user profile hero to surface `Profile snapshot`, compact metadata, photos earlier, and a top-right overflow menu.
 - [x] ✅ Wire `Why this profile is shown` to server-driven presentation-context data.
 - [x] ✅ Do not add persistent `Hide`; backend Stage A deferred hide/unhide support.
-- [ ] Reorder profile edit so basics, preferences, and distance come first; move `About` below those controls; replace distance text input with a slider plus live numeric value.
-- [ ] Demote advanced optional filters so the form feels intuitive instead of equally weighted from top to bottom.
+- [x] ✅ Reorder profile edit so basics, preferences, and distance come first; move `About` below those controls; replace distance text input with a slider plus live numeric value.
+- [x] ✅ Demote advanced optional filters so the form feels intuitive instead of equally weighted from top to bottom.
 - [x] ✅ Wire full profile-edit prefilling to `GET /api/users/{id}/profile-edit-snapshot`.
 - [x] ✅ Run affected profile tests: `flutter test test/features/profile/profile_screen_test.dart test/features/profile/profile_edit_screen_test.dart`
-- [ ] Run full Task 6 command including location completion when doing the complete profile/location redesign: `flutter test test/features/profile/profile_screen_test.dart test/features/profile/profile_edit_screen_test.dart test/features/location/location_completion_screen_test.dart`
+- [x] ✅ Run full Task 6 command including location completion when doing the complete profile/location redesign: `flutter test test/features/profile/profile_screen_test.dart test/features/profile/profile_edit_screen_test.dart test/features/location/location_completion_screen_test.dart`
 
 ### Task 7: Redesign `Standouts` and `Pending likers` with stronger prioritization and richer scanning
 
@@ -404,10 +404,10 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 - [ ] Use one strong unread signal per item, make row layout scale safely, and keep filters/bulk actions compact but obvious.
 - [x] ✅ Add type-aware notification routing only for the stabilized registry in `docs/frontend-ui-overhaul-contract-response-2026-04-25.md`.
 - [x] ✅ Keep unknown and incomplete notification types display-only.
-- [ ] Redesign stats and achievements conservatively against the current endpoints; make the UI cleaner without inventing grouped meanings or achievement semantics.
-- [ ] Keep stat detail sheets and achievement detail sheets shallow/current-data-backed until a P1 backend contract exists.
+- [x] ✅ Redesign stats and achievements conservatively against the current endpoints; make the UI cleaner without inventing grouped meanings or achievement semantics.
+- [x] ✅ Keep stat detail sheets and achievement detail sheets shallow/current-data-backed until a P1 backend contract exists.
 - [x] ✅ Run affected notification tests: `flutter test test/features/notifications/notifications_screen_test.dart`
-- [ ] Run full Task 8 command when doing the complete notifications/stats/achievements redesign: `flutter test test/features/notifications/notifications_screen_test.dart test/features/stats/stats_screen_test.dart test/features/stats/achievements_screen_test.dart`
+- [x] ✅ Run full Task 8 command when doing the complete notifications/stats/achievements redesign: `flutter test test/features/notifications/notifications_screen_test.dart test/features/stats/stats_screen_test.dart test/features/stats/achievements_screen_test.dart`
 
 ### Task 9: Polish `Verification`, `Location completion`, `Conversation thread`, and `Blocked users`
 
@@ -421,12 +421,12 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 - Modify: `test/features/chat/conversation_thread_screen_test.dart`
 - Modify: `test/features/safety/blocked_users_screen_test.dart`
 
-- [ ] Tighten verification into a guided two-step flow with clearer progression, stronger validation, and a clearly quarantined dev/debug area.
-- [ ] Do not add resend/cooldown UX; backend Stage A deferred resend/cooldown support.
-- [ ] Reduce whitespace and technical-looking badges in location completion, use flag + country label, and make the city suggestion/selection state feel deliberate.
-- [ ] Add a top-right overflow menu to the conversation thread, consolidate excess header actions, and improve the first-visible message alignment.
-- [ ] Compact the blocked-users intro, add overflow menus per row, and make unblock confirmation safer than a casual single tap.
-- [ ] Run: `flutter test test/features/verification/verification_screen_test.dart test/features/location/location_completion_screen_test.dart test/features/chat/conversation_thread_screen_test.dart test/features/safety/blocked_users_screen_test.dart`
+- [x] ✅ Tighten verification into a guided two-step flow with clearer progression, stronger validation, and a clearly quarantined dev/debug area.
+- [x] ✅ Do not add resend/cooldown UX; backend Stage A deferred resend/cooldown support.
+- [x] ✅ Reduce whitespace and technical-looking badges in location completion, use flag + country label, and make the city suggestion/selection state feel deliberate.
+- [x] ✅ Add a top-right overflow menu to the conversation thread, consolidate excess header actions, and improve the first-visible message alignment.
+- [x] ✅ Compact the blocked-users intro, add overflow menus per row, and make unblock confirmation safer than a casual single tap.
+- [x] ✅ Run: `flutter test test/features/verification/verification_screen_test.dart test/features/location/location_completion_screen_test.dart test/features/chat/conversation_thread_screen_test.dart test/features/safety/blocked_users_screen_test.dart`
 
 ### Task 10: Refresh the screenshot suite, run full verification, and document the result
 

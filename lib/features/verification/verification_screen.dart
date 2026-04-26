@@ -37,6 +37,11 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   Widget build(BuildContext context) {
     final startResult = _startResult;
     final confirmResult = _confirmResult;
+    final progressValue = confirmResult?.verified == true
+        ? 1.0
+        : startResult == null
+        ? 0.5
+        : 0.82;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Verification')),
@@ -45,6 +50,15 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: AppTheme.screenPadding(),
           children: [
+            _VerificationProgressCard(
+              progressValue: progressValue,
+              currentStep: startResult == null
+                  ? 'Step 1 of 2'
+                  : confirmResult?.verified == true
+                  ? 'Verified'
+                  : 'Step 2 of 2',
+            ),
+            SizedBox(height: AppTheme.sectionSpacing(compact: true)),
             _VerificationStepCard(
               stepLabel: 'Step 1',
               title: 'Start verification',
@@ -155,10 +169,11 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
   Future<void> _handleStart() async {
     final contact = _contactController.text.trim();
-    if (contact.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter an email or phone number first.')),
-      );
+    final validationMessage = _contactValidationMessage(contact);
+    if (validationMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationMessage)));
       return;
     }
 
@@ -194,6 +209,27 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         });
       }
     }
+  }
+
+  String? _contactValidationMessage(String contact) {
+    if (contact.isEmpty) {
+      return 'Enter an email or phone number first.';
+    }
+
+    if (_method == 'EMAIL') {
+      final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+      if (!emailPattern.hasMatch(contact)) {
+        return 'Enter a valid email address.';
+      }
+      return null;
+    }
+
+    final digitCount = RegExp(r'\d').allMatches(contact).length;
+    if (digitCount < 7) {
+      return 'Enter a valid phone number.';
+    }
+
+    return null;
   }
 
   Future<void> _handleConfirm() async {
@@ -233,6 +269,75 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         });
       }
     }
+  }
+}
+
+class _VerificationProgressCard extends StatelessWidget {
+  const _VerificationProgressCard({
+    required this.progressValue,
+    required this.currentStep,
+  });
+
+  final double progressValue;
+  final String currentStep;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surface.withValues(alpha: 0.92),
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.all(Radius.circular(14)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(9),
+                    child: Icon(
+                      Icons.verified_user_outlined,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Verify contact details',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                Text(
+                  currentStep,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(999)),
+              child: LinearProgressIndicator(
+                value: progressValue,
+                minHeight: 8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

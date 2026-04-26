@@ -8,12 +8,15 @@ import '../../models/conversation_summary.dart';
 import '../../models/message_dto.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
+import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'conversation_thread_provider.dart';
+
+enum _ConversationMenuAction { viewProfile, safetyActions, refresh }
 
 class ConversationThreadScreen extends ConsumerStatefulWidget {
   const ConversationThreadScreen({
@@ -97,38 +100,23 @@ class _ConversationThreadScreenState
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'View profile',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (context) => ProfileScreen.otherUser(
-                    userId: widget.conversation.otherUserId,
-                    userName: widget.conversation.otherUserName,
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.person_outline_rounded),
-          ),
-          SafetyActionsButton(
-            targetUserId: widget.conversation.otherUserId,
-            targetUserName: widget.conversation.otherUserName,
-            canUnmatch: true,
-            onCompleted: (context, outcome) {
-              if (outcome.removesRelationship) {
-                Navigator.of(context).maybePop();
-              }
-            },
-          ),
-          IconButton(
-            tooltip: 'Refresh messages',
-            onPressed: () => ref
-                .read(
-                  conversationThreadControllerProvider(widget.conversation.id),
-                )
-                .refresh(),
-            icon: const Icon(Icons.refresh),
+          AppOverflowMenuButton<_ConversationMenuAction>(
+            tooltip: 'Conversation options',
+            items: const [
+              PopupMenuItem<_ConversationMenuAction>(
+                value: _ConversationMenuAction.viewProfile,
+                child: Text('View profile'),
+              ),
+              PopupMenuItem<_ConversationMenuAction>(
+                value: _ConversationMenuAction.safetyActions,
+                child: Text('Safety actions'),
+              ),
+              PopupMenuItem<_ConversationMenuAction>(
+                value: _ConversationMenuAction.refresh,
+                child: Text('Refresh messages'),
+              ),
+            ],
+            onSelected: _handleConversationMenuAction,
           ),
         ],
       ),
@@ -263,6 +251,47 @@ class _ConversationThreadScreenState
         ),
       ),
     );
+  }
+
+  Future<void> _handleConversationMenuAction(
+    _ConversationMenuAction action,
+  ) async {
+    switch (action) {
+      case _ConversationMenuAction.viewProfile:
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => ProfileScreen.otherUser(
+              userId: widget.conversation.otherUserId,
+              userName: widget.conversation.otherUserName,
+            ),
+          ),
+        );
+      case _ConversationMenuAction.safetyActions:
+        final outcome = await showModalBottomSheet<SafetyActionOutcome>(
+          context: context,
+          showDragHandle: true,
+          builder: (sheetContext) => SafetyActionSheet(
+            targetUserId: widget.conversation.otherUserId,
+            targetUserName: widget.conversation.otherUserName,
+            canUnmatch: true,
+          ),
+        );
+
+        if (!mounted || outcome == null) {
+          return;
+        }
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(outcome.message)));
+        if (outcome.removesRelationship) {
+          Navigator.of(context).maybePop();
+        }
+      case _ConversationMenuAction.refresh:
+        await ref
+            .read(conversationThreadControllerProvider(widget.conversation.id))
+            .refresh();
+    }
   }
 
   Future<void> _handleSend() async {

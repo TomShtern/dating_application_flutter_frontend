@@ -51,11 +51,17 @@ void main() {
         find.text('Server says you both prioritize thoughtful conversation.'),
         findsOneWidget,
       );
+      expect(find.text('Grid'), findsOneWidget);
+      expect(find.text('List'), findsOneWidget);
       expect(find.text('Haifa'), findsOneWidget);
       expect(find.text('Museum dates and quiet coffee.'), findsOneWidget);
       expect(find.text('Rank #1'), findsNothing);
       expect(find.text('Score 97'), findsNothing);
       expect(find.text('#1 · 97 points'), findsOneWidget);
+      expect(
+        find.byKey(ValueKey('standout-media-${standout.id}')),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
       expect(find.widgetWithText(TextButton, 'Open profile'), findsOneWidget);
     },
@@ -86,6 +92,9 @@ void main() {
         child: const MaterialApp(home: StandoutsScreen()),
       ),
     );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Open profile'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(TextButton, 'Open profile'));

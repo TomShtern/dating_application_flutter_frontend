@@ -370,7 +370,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('View profile'));
+    expect(find.byTooltip('View profile'), findsNothing);
+    expect(find.byTooltip('Safety actions'), findsNothing);
+
+    await tester.tap(find.byTooltip('Conversation options'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('View profile'));
     await tester.pumpAndSettle();
 
     expect(find.text('Always up for a museum date.'), findsOneWidget);
@@ -406,10 +412,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Safety actions'));
+    expect(find.byTooltip('View profile'), findsNothing);
+    expect(find.byTooltip('Safety actions'), findsNothing);
+
+    await tester.tap(find.byTooltip('Conversation options'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Safety actions').last);
+    await tester.tap(find.text('Safety actions'));
     await tester.pumpAndSettle();
 
     expect(find.text('Block user'), findsOneWidget);

@@ -121,76 +121,97 @@ class _ConversationCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: AppTheme.cardRadius,
+          onTap: () => _openConversation(context),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(name: summary.otherUserName, radius: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    UserAvatar(name: summary.otherUserName, radius: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              summary.otherUserName,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  summary.otherUserName,
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                formatShortDate(summary.lastMessageAt),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(height: 10),
                           Text(
-                            formatShortDate(summary.lastMessageAt),
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(color: colorScheme.onSurfaceVariant),
+                            preview,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.mail_outline_rounded,
+                                size: 18,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  messageSummary,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        preview,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      'Tap anywhere to open',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(height: 6),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.mail_outline_rounded,
-                            size: 18,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              messageSummary,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                    const Spacer(),
+                    FilledButton.icon(
+                      onPressed: () => _openConversation(context),
+                      icon: const Icon(Icons.chat_bubble_outline_rounded),
+                      label: const Text('Open chat'),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              onPressed: () => _openConversation(context),
-              icon: const Icon(Icons.chat_bubble_rounded),
-              label: const Text('Open chat'),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -199,7 +220,7 @@ class _ConversationCard extends StatelessWidget {
 
 String _conversationPreview(ConversationSummary summary) {
   return switch (summary.messageCount) {
-    0 => 'New match — send the first message when you are ready.',
+    0 => 'New match - send the first message when you are ready.',
     1 => 'The chat has started and is easy to pick back up.',
     2 || 3 || 4 => 'A short back-and-forth is already underway.',
     _ => 'An active conversation is waiting for your next reply.',

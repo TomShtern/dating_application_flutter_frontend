@@ -10,6 +10,8 @@ import 'package:flutter_dating_application_1/models/matches_response.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/notification_item.dart';
 import 'package:flutter_dating_application_1/models/pending_liker.dart';
+import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
+import 'package:flutter_dating_application_1/models/profile_presentation_context.dart';
 import 'package:flutter_dating_application_1/models/standout.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_stats.dart';
@@ -27,6 +29,8 @@ export 'package:flutter_dating_application_1/models/matches_response.dart';
 export 'package:flutter_dating_application_1/models/message_dto.dart';
 export 'package:flutter_dating_application_1/models/notification_item.dart';
 export 'package:flutter_dating_application_1/models/pending_liker.dart';
+export 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
+export 'package:flutter_dating_application_1/models/profile_presentation_context.dart';
 export 'package:flutter_dating_application_1/models/standout.dart';
 export 'package:flutter_dating_application_1/models/user_detail.dart';
 export 'package:flutter_dating_application_1/models/user_stats.dart';
@@ -45,30 +49,50 @@ const browseCandidates = <BrowseCandidate>[
     name: 'Noa',
     age: 29,
     state: 'ACTIVE',
+    primaryPhotoUrl: '/photos/noa-1.jpg',
+    photoUrls: ['/photos/noa-1.jpg', '/photos/noa-2.jpg'],
+    approximateLocation: 'Haifa',
+    summaryLine: 'Museum dates, espresso, and dry humor.',
   ),
   BrowseCandidate(
     id: '33333333-3333-3333-3333-333333333333',
     name: 'Maya',
     age: 30,
     state: 'ACTIVE',
+    primaryPhotoUrl: '/photos/maya-1.jpg',
+    photoUrls: ['/photos/maya-1.jpg', '/photos/maya-2.jpg'],
+    approximateLocation: 'Tel Aviv',
+    summaryLine: 'Sunrise runs and strong coffee plans.',
   ),
   BrowseCandidate(
     id: '44444444-4444-4444-4444-444444444444',
     name: 'Rin',
     age: 28,
     state: 'ACTIVE',
+    primaryPhotoUrl: '/photos/rin-1.jpg',
+    photoUrls: ['/photos/rin-1.jpg'],
+    approximateLocation: 'Haifa',
+    summaryLine: 'Climbing gyms, playlists, and long brunches.',
   ),
   BrowseCandidate(
     id: '55555555-5555-5555-5555-555555555555',
     name: 'Leah',
     age: 31,
     state: 'ACTIVE',
+    primaryPhotoUrl: '/photos/leah-1.jpg',
+    photoUrls: ['/photos/leah-1.jpg'],
+    approximateLocation: 'Jerusalem',
+    summaryLine: 'Live music, gallery nights, and easy chemistry.',
   ),
   BrowseCandidate(
     id: '66666666-6666-6666-6666-666666666666',
     name: 'Ari',
     age: 26,
     state: 'ACTIVE',
+    primaryPhotoUrl: '/photos/ari-1.jpg',
+    photoUrls: ['/photos/ari-1.jpg'],
+    approximateLocation: 'Ramat Gan',
+    summaryLine: 'Bookstores, ramen, and playful banter.',
   ),
 ];
 
@@ -79,6 +103,10 @@ const dailyPick = DailyPick(
   date: '2026-04-23',
   reason: 'Strong compatibility on pace and conversation style.',
   alreadySeen: false,
+  primaryPhotoUrl: '/photos/maya-1.jpg',
+  photoUrls: ['/photos/maya-1.jpg', '/photos/maya-2.jpg'],
+  approximateLocation: 'Tel Aviv',
+  summaryLine: 'Sunrise runs and strong coffee plans.',
 );
 
 const browseResponse = BrowseResponse(
@@ -96,6 +124,10 @@ final matches = <MatchSummary>[
     otherUserName: 'Noa',
     state: 'ACTIVE',
     createdAt: DateTime.parse('2026-04-18T14:00:00Z'),
+    primaryPhotoUrl: '/photos/noa-1.jpg',
+    photoUrls: ['/photos/noa-1.jpg', '/photos/noa-2.jpg'],
+    approximateLocation: 'Haifa',
+    summaryLine: 'Museum dates, espresso, and dry humor.',
   ),
   MatchSummary(
     matchId:
@@ -104,6 +136,10 @@ final matches = <MatchSummary>[
     otherUserName: 'Maya',
     state: 'ACTIVE',
     createdAt: DateTime.parse('2026-04-17T10:00:00Z'),
+    primaryPhotoUrl: '/photos/maya-1.jpg',
+    photoUrls: ['/photos/maya-1.jpg', '/photos/maya-2.jpg'],
+    approximateLocation: 'Tel Aviv',
+    summaryLine: 'Sunrise runs and strong coffee plans.',
   ),
   MatchSummary(
     matchId:
@@ -112,6 +148,10 @@ final matches = <MatchSummary>[
     otherUserName: 'Leah',
     state: 'ACTIVE',
     createdAt: DateTime.parse('2026-04-15T09:30:00Z'),
+    primaryPhotoUrl: '/photos/leah-1.jpg',
+    photoUrls: ['/photos/leah-1.jpg'],
+    approximateLocation: 'Jerusalem',
+    summaryLine: 'Live music, gallery nights, and easy chemistry.',
   ),
   MatchSummary(
     matchId:
@@ -120,6 +160,10 @@ final matches = <MatchSummary>[
     otherUserName: 'Ari',
     state: 'ACTIVE',
     createdAt: DateTime.parse('2026-04-12T18:00:00Z'),
+    primaryPhotoUrl: '/photos/ari-1.jpg',
+    photoUrls: ['/photos/ari-1.jpg'],
+    approximateLocation: 'Ramat Gan',
+    summaryLine: 'Bookstores, ramen, and playful banter.',
   ),
   MatchSummary(
     matchId:
@@ -128,6 +172,10 @@ final matches = <MatchSummary>[
     otherUserName: 'Yael',
     state: 'ACTIVE',
     createdAt: DateTime.parse('2026-04-10T08:15:00Z'),
+    primaryPhotoUrl: '/photos/yael-1.jpg',
+    photoUrls: ['/photos/yael-1.jpg'],
+    approximateLocation: 'Jaffa',
+    summaryLine: 'Dinner dates and easy midweek replies.',
   ),
 ];
 
@@ -281,6 +329,10 @@ const standoutsSnapshot = StandoutsSnapshot(
       reason: 'Shared pace, music taste, and strong conversation chemistry.',
       createdAt: null,
       interactedAt: null,
+      primaryPhotoUrl: '/photos/leah-1.jpg',
+      photoUrls: ['/photos/leah-1.jpg'],
+      approximateLocation: 'Jerusalem',
+      summaryLine: 'Live music, gallery nights, and easy chemistry.',
     ),
     Standout(
       id: 'standout-2',
@@ -292,6 +344,10 @@ const standoutsSnapshot = StandoutsSnapshot(
       reason: 'Backend rank suggests high reply odds this week.',
       createdAt: null,
       interactedAt: null,
+      primaryPhotoUrl: '/photos/ari-1.jpg',
+      photoUrls: ['/photos/ari-1.jpg'],
+      approximateLocation: 'Ramat Gan',
+      summaryLine: 'Bookstores, ramen, and playful banter.',
     ),
     Standout(
       id: 'standout-3',
@@ -303,6 +359,10 @@ const standoutsSnapshot = StandoutsSnapshot(
       reason: 'Recent activity patterns line up unusually well.',
       createdAt: null,
       interactedAt: null,
+      primaryPhotoUrl: '/photos/shira-1.jpg',
+      photoUrls: ['/photos/shira-1.jpg'],
+      approximateLocation: 'Netanya',
+      summaryLine: 'Beach sunsets and quick-witted texts.',
     ),
     Standout(
       id: 'standout-4',
@@ -314,6 +374,10 @@ const standoutsSnapshot = StandoutsSnapshot(
       reason: 'Both of you are most active at nearly the same times.',
       createdAt: null,
       interactedAt: null,
+      primaryPhotoUrl: '/photos/tomer-1.jpg',
+      photoUrls: ['/photos/tomer-1.jpg'],
+      approximateLocation: 'Tel Aviv',
+      summaryLine: 'Late dinners, fast replies, and city walks.',
     ),
     Standout(
       id: 'standout-5',
@@ -325,6 +389,10 @@ const standoutsSnapshot = StandoutsSnapshot(
       reason: 'Close location patterns suggest easy real-world overlap.',
       createdAt: null,
       interactedAt: null,
+      primaryPhotoUrl: '/photos/neta-1.jpg',
+      photoUrls: ['/photos/neta-1.jpg'],
+      approximateLocation: 'Herzliya',
+      summaryLine: 'Ocean mornings and playful voice notes.',
     ),
   ],
   totalCandidates: 5,
@@ -338,30 +406,50 @@ const pendingLikers = <PendingLiker>[
     name: 'Nina',
     age: 26,
     likedAt: null,
+    primaryPhotoUrl: '/photos/nina-1.jpg',
+    photoUrls: ['/photos/nina-1.jpg'],
+    approximateLocation: 'Tel Aviv',
+    summaryLine: 'Sunset swims and vinyl shopping.',
   ),
   PendingLiker(
     userId: '88888888-8888-8888-8888-888888888888',
     name: 'Shira',
     age: 28,
     likedAt: null,
+    primaryPhotoUrl: '/photos/shira-1.jpg',
+    photoUrls: ['/photos/shira-1.jpg'],
+    approximateLocation: 'Netanya',
+    summaryLine: 'Beach sunsets and quick-witted texts.',
   ),
   PendingLiker(
     userId: '99999999-9999-9999-9999-999999999999',
     name: 'Tomer',
     age: 32,
     likedAt: null,
+    primaryPhotoUrl: '/photos/tomer-1.jpg',
+    photoUrls: ['/photos/tomer-1.jpg'],
+    approximateLocation: 'Tel Aviv',
+    summaryLine: 'Late dinners, fast replies, and city walks.',
   ),
   PendingLiker(
     userId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     name: 'Neta',
     age: 25,
     likedAt: null,
+    primaryPhotoUrl: '/photos/neta-1.jpg',
+    photoUrls: ['/photos/neta-1.jpg'],
+    approximateLocation: 'Herzliya',
+    summaryLine: 'Ocean mornings and playful voice notes.',
   ),
   PendingLiker(
     userId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
     name: 'Omer',
     age: 30,
     likedAt: null,
+    primaryPhotoUrl: '/photos/omer-1.jpg',
+    photoUrls: ['/photos/omer-1.jpg'],
+    approximateLocation: 'Bat Yam',
+    summaryLine: 'Night markets and spontaneous plans.',
   ),
 ];
 
@@ -391,57 +479,74 @@ const blockedUsers = <BlockedUserSummary>[
 final notifications = <NotificationItem>[
   NotificationItem(
     id: 'notif-1',
-    type: 'MATCH',
+    type: 'MATCH_FOUND',
     title: 'New match',
     message: 'You and Maya matched a few minutes ago.',
     createdAt: DateTime.parse('2026-04-23T11:00:00Z'),
     isRead: false,
-    data: const {'matchId': 'match-maya'},
+    data: const {
+      'matchId': 'match-maya',
+      'conversationId': 'match-maya',
+      'otherUserId': '33333333-3333-3333-3333-333333333333',
+    },
   ),
   NotificationItem(
     id: 'notif-2',
-    type: 'MESSAGE',
+    type: 'NEW_MESSAGE',
     title: 'New message from Noa',
     message: 'Noa replied about the coffee date this weekend.',
     createdAt: DateTime.parse('2026-04-23T10:30:00Z'),
     isRead: false,
-    data: const {'conversationId': _conversationId},
+    data: const {
+      'conversationId': _conversationId,
+      'senderId': '22222222-2222-2222-2222-222222222222',
+      'messageId': 'msg-13',
+    },
   ),
   NotificationItem(
     id: 'notif-3',
-    type: 'LIKE',
-    title: 'Someone liked you',
-    message: 'You have a new admirer waiting in likes.',
+    type: 'FRIEND_REQUEST',
+    title: 'Coffee request from Leah',
+    message: 'Leah wants to turn your match into a plan.',
     createdAt: DateTime.parse('2026-04-22T20:00:00Z'),
     isRead: true,
-    data: const {},
+    data: const {
+      'requestId': 'request-leah',
+      'fromUserId': '55555555-5555-5555-5555-555555555555',
+      'matchId': 'match-leah',
+    },
   ),
   NotificationItem(
     id: 'notif-4',
-    type: 'STANDOUT',
-    title: 'New standout',
-    message: 'Leah was highlighted as a standout pick for you.',
+    type: 'FUTURE_EVENT',
+    title: 'Future event',
+    message: 'Unknown notification types stay display-only.',
     createdAt: DateTime.parse('2026-04-22T15:00:00Z'),
     isRead: true,
-    data: const {'standoutId': 'standout-1'},
+    data: const {'conversationId': 'conversation-future'},
   ),
   NotificationItem(
     id: 'notif-5',
-    type: 'MATCH',
-    title: 'New match',
-    message: 'You and Leah matched yesterday.',
+    type: 'NEW_MESSAGE',
+    title: 'Incomplete message event',
+    message: 'Known types without required keys stay display-only too.',
     createdAt: DateTime.parse('2026-04-21T14:00:00Z'),
     isRead: true,
-    data: const {'matchId': 'match-leah'},
+    data: const {'conversationId': 'conversation-missing-sender'},
   ),
   NotificationItem(
     id: 'notif-6',
-    type: 'MESSAGE',
-    title: 'New message from Yael',
-    message: 'Yael sent a cheerful follow-up about dinner.',
+    type: 'FRIEND_REQUEST_ACCEPTED',
+    title: 'Yael said yes to dinner',
+    message: 'Your coffee plan turned into a real date.',
     createdAt: DateTime.parse('2026-04-21T09:00:00Z'),
     isRead: true,
-    data: const {'conversationId': 'conversation-yael'},
+    data: const {
+      'requestId': 'request-yael',
+      'accepterUserId': '77777777-7777-7777-7777-777777777777',
+      'matchId': 'match-yael',
+      'conversationId': 'conversation-yael',
+    },
   ),
   NotificationItem(
     id: 'notif-7',
@@ -519,7 +624,7 @@ final profileDetail = UserDetail(
   interestedIn: const ['MALE'],
   approximateLocation: 'Tel Aviv',
   maxDistanceKm: 50,
-  photoUrls: const ['/photos/dana-1.jpg'],
+  photoUrls: const ['/photos/dana-1.jpg', '/photos/dana-2.jpg'],
   state: currentUser.state,
 );
 
@@ -532,9 +637,79 @@ const otherUserProfileDetail = UserDetail(
   interestedIn: ['FEMALE', 'MALE'],
   approximateLocation: 'Haifa',
   maxDistanceKm: 30,
-  photoUrls: [],
+  photoUrls: ['/photos/rin-1.jpg', '/photos/rin-2.jpg'],
   state: 'ACTIVE',
 );
+
+final visualProfileEditSnapshot = ProfileEditSnapshot(
+  userId: '11111111-1111-1111-1111-111111111111',
+  editable: EditableProfileSnapshot(
+    bio:
+        'Loves coffee, beach walks, and polished UI states. Always planning the next brunch.',
+    gender: 'FEMALE',
+    interestedIn: ['MALE'],
+    maxDistanceKm: 50,
+    minAge: 25,
+    maxAge: 35,
+    heightCm: 172,
+    location: ProfileEditLocationSnapshot(
+      label: 'Tel Aviv',
+      latitude: 32.0853,
+      longitude: 34.7818,
+      precision: 'CITY',
+      countryCode: 'IL',
+      cityName: 'Tel Aviv',
+      approximate: false,
+    ),
+  ),
+  readOnly: ProfileEditReadOnly(
+    name: 'Dana',
+    state: 'ACTIVE',
+    photoUrls: ['/photos/dana-1.jpg', '/photos/dana-2.jpg'],
+    verified: true,
+    verificationMethod: 'EMAIL',
+    verifiedAt: DateTime.parse('2026-04-22T08:30:00Z'),
+  ),
+);
+
+final visualPresentationContexts = <String, ProfilePresentationContext>{
+  '22222222-2222-2222-2222-222222222222': ProfilePresentationContext(
+    viewerUserId: '11111111-1111-1111-1111-111111111111',
+    targetUserId: '22222222-2222-2222-2222-222222222222',
+    summary:
+        'Shown because this profile is nearby and overlaps with Dana\'s current preferences.',
+    reasonTags: ['nearby', 'shared_interests', 'eligible_match_pool'],
+    details: [
+      'This profile is within the current preferred distance.',
+      'You both keep choosing museum dates and strong coffee plans.',
+    ],
+    generatedAt: '2026-05-08T10:15:00Z',
+  ),
+  '33333333-3333-3333-3333-333333333333': ProfilePresentationContext(
+    viewerUserId: '11111111-1111-1111-1111-111111111111',
+    targetUserId: '33333333-3333-3333-3333-333333333333',
+    summary:
+        'Shown because Maya fits today\'s stronger signals for pace, distance, and conversation style.',
+    reasonTags: ['daily_pick', 'nearby', 'compatible_lifestyle'],
+    details: [
+      'Your current pace and routine signals line up especially well.',
+      'This daily pick is close enough to feel realistic right now.',
+    ],
+    generatedAt: '2026-05-08T10:15:00Z',
+  ),
+  '44444444-4444-4444-4444-444444444444': ProfilePresentationContext(
+    viewerUserId: '11111111-1111-1111-1111-111111111111',
+    targetUserId: '44444444-4444-4444-4444-444444444444',
+    summary:
+        'Shown because this profile is nearby and overlaps with your current preferences.',
+    reasonTags: ['nearby', 'shared_interests', 'same_relationship_goals'],
+    details: [
+      'This profile is within your preferred distance.',
+      'You both lean toward long brunches, climbing days, and strong playlists.',
+    ],
+    generatedAt: '2026-05-08T10:15:00Z',
+  ),
+};
 
 const availableUsers = <UserSummary>[
   currentUser,

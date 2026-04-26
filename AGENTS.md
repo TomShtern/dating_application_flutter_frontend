@@ -363,6 +363,8 @@ If PATH lookup fails in this environment, run Flutter through:
 - For shared providers, models, API methods, or app shell changes, run broader tests because many screens share those layers.
 - For UI changes, run screen-specific widget tests and the visual screenshot workflow.
 - For API contract changes, add or update API client/model tests.
+- Keep regression tests lightweight and necessary. During active development, prefer tests that protect real contracts, state transitions, routing safety, payload preservation, and prior bug fixes. Do not let new work become mostly regression-test churn; avoid freezing temporary layout structure, exact copy, or intermediate UI details unless they are a real requirement. As a rule of thumb, regression-test additions should stay a small minority of the work, roughly 20% or less, and often less for UI iteration.
+- Before adding a regression test, be able to name the concrete failure it prevents. If the risk is mainly visual polish, use the visual-review workflow and screenshot inspection instead of piling on brittle widget assertions.
 - Do not claim "fully fixed" or "end-to-end verified" unless you exercised the real path needed for that claim.
 - If a Flutter command hangs or cannot run in the sandbox, state that clearly and give the file-level verification you did perform.
 

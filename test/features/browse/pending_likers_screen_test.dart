@@ -14,6 +14,10 @@ void main() {
     name: 'Noa',
     age: 29,
     likedAt: null,
+    primaryPhotoUrl: '/photos/noa-1.jpg',
+    photoUrls: ['/photos/noa-1.jpg'],
+    approximateLocation: 'Haifa',
+    summaryLine: 'Museum dates and quiet coffee.',
   );
 
   final likers = <PendingLiker>[
@@ -22,12 +26,20 @@ void main() {
       name: 'Noa',
       age: 29,
       likedAt: DateTime(2026, 4, 18, 14, 20),
+      primaryPhotoUrl: '/photos/noa-1.jpg',
+      photoUrls: const ['/photos/noa-1.jpg'],
+      approximateLocation: 'Haifa',
+      summaryLine: 'Museum dates and quiet coffee.',
     ),
     const PendingLiker(
       userId: '33333333-3333-3333-3333-333333333333',
       name: 'Maya',
       age: 31,
       likedAt: null,
+      primaryPhotoUrl: '/photos/maya-1.jpg',
+      photoUrls: ['/photos/maya-1.jpg'],
+      approximateLocation: 'Tel Aviv',
+      summaryLine: 'Beach walks and strong espresso.',
     ),
   ];
 
@@ -61,6 +73,10 @@ void main() {
         'They liked your profile recently. Open it when you want a closer look.',
       ),
       findsNothing,
+    );
+    expect(
+      find.byKey(ValueKey('pending-liker-media-${likers.first.userId}')),
+      findsOneWidget,
     );
     expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
     expect(find.widgetWithText(FilledButton, 'Open profile'), findsNWidgets(2));

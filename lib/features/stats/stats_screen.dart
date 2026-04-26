@@ -8,6 +8,7 @@ import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../theme/app_theme.dart';
 import 'achievements_screen.dart';
+import 'stat_detail_sheet.dart';
 import 'stats_provider.dart';
 
 class StatsScreen extends ConsumerWidget {
@@ -92,45 +93,53 @@ class _StatSummaryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        color: colorScheme.surface.withValues(alpha: 0.9),
-      ),
-      child: Padding(
-        padding: AppTheme.sectionPadding(),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: const BorderRadius.all(Radius.circular(20)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Icon(
-                  _iconForStatLabel(item.label),
-                  color: colorScheme.primary,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppTheme.panelRadius,
+        onTap: () => showStatDetailSheet(context: context, item: item),
+        child: Ink(
+          decoration: AppTheme.surfaceDecoration(
+            context,
+            color: colorScheme.surface.withValues(alpha: 0.9),
+          ),
+          child: Padding(
+            padding: AppTheme.sectionPadding(),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: const BorderRadius.all(Radius.circular(18)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(11),
+                    child: Icon(
+                      Icons.analytics_outlined,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.label, style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 6),
+                      Text(item.value, style: theme.textTheme.headlineSmall),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.label, style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 10),
-                  Text(item.value, style: theme.textTheme.headlineSmall),
-                  if (_statDescriptor(item.label) case final descriptor?) ...[
-                    const SizedBox(height: 6),
-                    Text(descriptor, style: theme.textTheme.bodySmall),
-                  ],
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -230,42 +239,4 @@ class _StatsSummaryPill extends StatelessWidget {
       ),
     );
   }
-}
-
-IconData _iconForStatLabel(String label) {
-  final normalized = label.toLowerCase();
-
-  if (normalized.contains('match')) {
-    return Icons.favorite_rounded;
-  }
-  if (normalized.contains('like')) {
-    return Icons.thumb_up_alt_rounded;
-  }
-  if (normalized.contains('message') || normalized.contains('chat')) {
-    return Icons.chat_bubble_rounded;
-  }
-  if (normalized.contains('photo') || normalized.contains('profile')) {
-    return Icons.person_outline_rounded;
-  }
-
-  return Icons.bar_chart_rounded;
-}
-
-String? _statDescriptor(String label) {
-  final normalized = label.toLowerCase();
-
-  if (normalized.contains('match')) {
-    return 'Connections that turned mutual.';
-  }
-  if (normalized.contains('like')) {
-    return 'Activity from your recent swipes.';
-  }
-  if (normalized.contains('message') || normalized.contains('chat')) {
-    return 'Conversation momentum from recent replies.';
-  }
-  if (normalized.contains('photo') || normalized.contains('profile')) {
-    return 'How much attention your profile is drawing.';
-  }
-
-  return null;
 }

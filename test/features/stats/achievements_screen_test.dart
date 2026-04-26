@@ -49,10 +49,10 @@ void main() {
       expect(find.text('Overall progress'), findsOneWidget);
       expect(find.text('1 of 2 unlocked'), findsOneWidget);
       expect(find.text('1 still building'), findsOneWidget);
-      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.workspace_premium_rounded), findsWidgets);
       expect(
         find.text('3/5 conversations started', skipOffstage: false),
-        findsNWidgets(2),
+        findsOneWidget,
       );
 
       final overviewProgress = tester.widget<LinearProgressIndicator>(
@@ -60,13 +60,21 @@ void main() {
       );
       expect(overviewProgress.value, 0.5);
 
-      final itemProgress = tester.widget<LinearProgressIndicator>(
+      expect(
         find.byKey(
           const ValueKey('achievement-progress-Conversation Starter'),
           skipOffstage: false,
         ),
+        findsNothing,
       );
-      expect(itemProgress.value, 0.6);
+
+      await tester.tap(find.text('Conversation Starter'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Achievement detail'), findsOneWidget);
+      expect(find.text('In progress'), findsWidgets);
+      expect(find.text('Progress'), findsWidgets);
+      expect(find.text('3/5 conversations started'), findsWidgets);
     },
   );
 }

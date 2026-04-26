@@ -6,6 +6,7 @@ import '../../models/achievement_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../theme/app_theme.dart';
+import 'achievement_detail_sheet.dart';
 import 'stats_provider.dart';
 
 class AchievementsScreen extends ConsumerWidget {
@@ -221,36 +222,34 @@ class _AchievementCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final unlocked = achievement.isUnlocked == true;
-    final progressValue = _progressValue(
-      achievement.progress,
-      unlocked: unlocked,
-    );
-    final progressLabel = unlocked
-        ? 'Complete'
-        : achievement.progress ?? 'Still building';
 
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        gradient: unlocked
-            ? LinearGradient(
-                colors: [
-                  colorScheme.primaryContainer.withValues(alpha: 0.96),
-                  colorScheme.tertiaryContainer.withValues(alpha: 0.92),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
-        color: unlocked ? null : colorScheme.surface.withValues(alpha: 0.9),
-        prominent: unlocked,
-      ),
-      child: Padding(
-        padding: AppTheme.sectionPadding(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: AppTheme.panelRadius,
+        onTap: () => showAchievementDetailSheet(
+          context: context,
+          achievement: achievement,
+        ),
+        child: Ink(
+          decoration: AppTheme.surfaceDecoration(
+            context,
+            gradient: unlocked
+                ? LinearGradient(
+                    colors: [
+                      colorScheme.primaryContainer.withValues(alpha: 0.96),
+                      colorScheme.tertiaryContainer.withValues(alpha: 0.92),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: unlocked ? null : colorScheme.surface.withValues(alpha: 0.9),
+            prominent: unlocked,
+          ),
+          child: Padding(
+            padding: AppTheme.sectionPadding(),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DecoratedBox(
@@ -261,13 +260,13 @@ class _AchievementCard extends StatelessWidget {
                     color: unlocked
                         ? null
                         : colorScheme.surfaceContainerHighest,
-                    borderRadius: const BorderRadius.all(Radius.circular(20)),
+                    borderRadius: const BorderRadius.all(Radius.circular(18)),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(11),
                     child: Icon(
                       unlocked
-                          ? Icons.auto_awesome_rounded
+                          ? Icons.workspace_premium_rounded
                           : Icons.flag_outlined,
                       color: unlocked
                           ? colorScheme.onPrimary
@@ -275,7 +274,7 @@ class _AchievementCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,6 +287,15 @@ class _AchievementCard extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(subtitle, style: theme.textTheme.bodyMedium),
                       ],
+                      if (achievement.progress case final progress?) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          progress,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -298,90 +306,11 @@ class _AchievementCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (achievement.progress != null || unlocked) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text('Progress', style: theme.textTheme.labelLarge),
-                  const Spacer(),
-                  Text(
-                    progressLabel,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: unlocked
-                          ? colorScheme.primary
-                          : colorScheme.secondary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(999)),
-                child: LinearProgressIndicator(
-                  key: ValueKey('achievement-progress-${achievement.title}'),
-                  value: progressValue,
-                  minHeight: 8,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    unlocked ? colorScheme.primary : colorScheme.secondary,
-                  ),
-                ),
-              ),
-              if (achievement.progress case final progress?) ...[
-                const SizedBox(height: 8),
-                Text(progress, style: theme.textTheme.bodySmall),
-              ],
-            ],
-          ],
+          ),
         ),
       ),
     );
   }
-}
-
-double? _progressValue(String? progress, {required bool unlocked}) {
-  if (unlocked) {
-    return 1;
-  }
-  if (progress == null) {
-    return null;
-  }
-
-  final fractionMatch = RegExp(
-    r'(\d+(?:\.\d+)?)\s*(?:/|of)\s*(\d+(?:\.\d+)?)',
-    caseSensitive: false,
-  ).firstMatch(progress);
-  if (fractionMatch != null) {
-    final current = double.tryParse(fractionMatch.group(1)!);
-    final total = double.tryParse(fractionMatch.group(2)!);
-    if (current != null && total != null && total > 0) {
-      final ratio = current / total;
-      if (ratio <= 0) {
-        return 0;
-      }
-      if (ratio >= 1) {
-        return 1;
-      }
-      return ratio;
-    }
-  }
-
-  final percentageMatch = RegExp(r'(\d+(?:\.\d+)?)\s*%').firstMatch(progress);
-  if (percentageMatch != null) {
-    final percent = double.tryParse(percentageMatch.group(1)!);
-    if (percent != null) {
-      final ratio = percent / 100;
-      if (ratio <= 0) {
-        return 0;
-      }
-      if (ratio >= 1) {
-        return 1;
-      }
-      return ratio;
-    }
-  }
-
-  return null;
 }
 
 class _AchievementStatusBadge extends StatelessWidget {

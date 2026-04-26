@@ -31,6 +31,10 @@ void main() {
     otherUserName: 'Noa',
     state: 'ACTIVE',
     createdAt: DateTime.parse('2026-04-18T12:34:56Z'),
+    primaryPhotoUrl: '/photos/noa-1.jpg',
+    photoUrls: const ['/photos/noa-1.jpg'],
+    approximateLocation: 'Haifa',
+    summaryLine: 'Museum dates and quiet coffee.',
   );
 
   testWidgets('opens the conversation thread when a match card is tapped', (
@@ -152,6 +156,34 @@ void main() {
     expect(find.text('Block user'), findsOneWidget);
     expect(find.text('Report user'), findsOneWidget);
     expect(find.text('Unmatch'), findsOneWidget);
+  });
+
+  testWidgets('renders a dedicated media panel for match cards', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          matchesProvider.overrideWith(
+            (ref) async => MatchesResponse(
+              matches: [match],
+              totalCount: 1,
+              offset: 0,
+              limit: 20,
+              hasMore: false,
+            ),
+          ),
+        ],
+        child: MaterialApp(home: MatchesScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(ValueKey('match-media-${match.matchId}')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('opens a Why we match sheet with live match-quality details', (

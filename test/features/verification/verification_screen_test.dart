@@ -72,12 +72,26 @@ void main() {
     );
     expect(find.text('Debug helpers stay separate'), findsNothing);
     expect(find.text('How it works'), findsNothing);
+    expect(find.textContaining('Resend'), findsNothing);
+    expect(find.textContaining('cooldown'), findsNothing);
 
     await tester.scrollUntilVisible(
       find.widgetWithText(FilledButton, 'Send verification code'),
       250,
       scrollable: verificationScrollable(),
     );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'not-an-email');
+    await tester.tap(
+      find.widgetWithText(FilledButton, 'Send verification code'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(apiClient.startedContact, isNull);
+    expect(find.text('Enter a valid email address.'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).first, 'dana@example.com');
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, 'dana@example.com');

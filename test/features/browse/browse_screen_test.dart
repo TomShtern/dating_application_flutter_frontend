@@ -37,6 +37,10 @@ void main() {
     name: 'Noa',
     age: 29,
     state: 'ACTIVE',
+    primaryPhotoUrl: '/photos/noa-1.jpg',
+    photoUrls: ['/photos/noa-1.jpg'],
+    approximateLocation: 'Haifa',
+    summaryLine: 'Museum dates and quiet coffee.',
   );
 
   const matchId =
@@ -297,6 +301,40 @@ void main() {
     expect(find.text('Shown because this profile is nearby.'), findsOneWidget);
     expect(
       find.text('This profile is within your preferred distance.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('renders a dedicated media panel for the current candidate', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
+    final apiClient = _FakeBrowseApiClient(
+      browseResponse: browseResponse,
+      likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
+          backendHealthProvider.overrideWith(
+            (ref) async =>
+                HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
+          ),
+        ],
+        child: const MaterialApp(home: BrowseScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(ValueKey('browse-candidate-media-${candidate.id}')),
       findsOneWidget,
     );
   });
