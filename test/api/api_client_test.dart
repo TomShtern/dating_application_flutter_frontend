@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/api/api_endpoints.dart';
 import 'package:flutter_dating_application_1/models/match_quality.dart';
+import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
+import 'package:flutter_dating_application_1/models/profile_presentation_context.dart';
 import 'package:flutter_dating_application_1/models/profile_update_request.dart';
 
 void main() {
@@ -48,6 +50,91 @@ void main() {
       expect(
         recorder.requests.single.path,
         ApiEndpoints.matchQuality(userId, matchId),
+      );
+      expect(recorder.requests.single.extra['userId'], userId);
+    },
+  );
+
+  test(
+    'getProfilePresentationContext uses the Stage B route and parses response',
+    () async {
+      final recorder = _RequestRecorder();
+      const viewerId = '11111111-1111-1111-1111-111111111111';
+      const targetId = '33333333-3333-3333-3333-333333333333';
+      final client = ApiClient(
+        dio: _buildTestDio(
+          recorder: recorder,
+          responder: (options) => {
+            'viewerUserId': viewerId,
+            'targetUserId': targetId,
+            'summary': 'Shown because this profile is nearby.',
+            'reasonTags': ['nearby', 'shared_interests'],
+            'details': ['This profile is within your preferred distance.'],
+            'generatedAt': '2026-05-08T10:15:00Z',
+          },
+        ),
+      );
+
+      final context = await client.getProfilePresentationContext(
+        viewerUserId: viewerId,
+        targetUserId: targetId,
+      );
+
+      expect(context, isA<ProfilePresentationContext>());
+      expect(context.targetUserId, targetId);
+      expect(context.reasonTags, ['nearby', 'shared_interests']);
+      expect(
+        recorder.requests.single.path,
+        ApiEndpoints.profilePresentationContext(viewerId, targetId),
+      );
+      expect(recorder.requests.single.extra['userId'], viewerId);
+    },
+  );
+
+  test(
+    'getProfileEditSnapshot uses the Stage B route and parses response',
+    () async {
+      final recorder = _RequestRecorder();
+      const userId = '11111111-1111-1111-1111-111111111111';
+      final client = ApiClient(
+        dio: _buildTestDio(
+          recorder: recorder,
+          responder: (options) => {
+            'userId': userId,
+            'editable': {
+              'bio': 'Runner, coffee person, and weekend hiker.',
+              'interestedIn': ['MALE'],
+              'interests': ['COFFEE'],
+              'dealbreakers': {
+                'acceptableSmoking': ['NEVER'],
+                'acceptableDrinking': [],
+                'acceptableKidsStance': ['OPEN'],
+                'acceptableLookingFor': ['LONG_TERM'],
+                'acceptableEducation': ['BACHELORS'],
+                'maxAgeDifference': 6,
+              },
+            },
+            'readOnly': {
+              'name': 'Dana',
+              'state': 'ACTIVE',
+              'photoUrls': ['/photos/dana-1.jpg'],
+              'verified': true,
+              'verificationMethod': 'EMAIL',
+              'verifiedAt': '2026-04-24T08:30:00Z',
+            },
+          },
+        ),
+      );
+
+      final snapshot = await client.getProfileEditSnapshot(userId: userId);
+
+      expect(snapshot, isA<ProfileEditSnapshot>());
+      expect(snapshot.userId, userId);
+      expect(snapshot.editable.interests, ['COFFEE']);
+      expect(snapshot.readOnly.photoUrls, ['/photos/dana-1.jpg']);
+      expect(
+        recorder.requests.single.path,
+        ApiEndpoints.profileEditSnapshot(userId),
       );
       expect(recorder.requests.single.extra['userId'], userId);
     },

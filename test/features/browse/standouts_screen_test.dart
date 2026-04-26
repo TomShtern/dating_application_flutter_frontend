@@ -16,9 +16,13 @@ void main() {
     standoutUserAge: 29,
     rank: 1,
     score: 97,
-    reason: 'Backend rank suggests high reply odds this week',
+    reason: 'Server says you both prioritize thoughtful conversation.',
     createdAt: null,
     interactedAt: null,
+    primaryPhotoUrl: '/photos/noa-1.jpg',
+    photoUrls: ['/photos/noa-1.jpg'],
+    approximateLocation: 'Haifa',
+    summaryLine: 'Museum dates and quiet coffee.',
   );
 
   const snapshot = StandoutsSnapshot(
@@ -29,7 +33,7 @@ void main() {
   );
 
   testWidgets(
-    'humanizes backend-flavored standout copy and keeps one clear profile action',
+    'renders server-provided standout copy and keeps one clear profile action',
     (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -40,21 +44,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.textContaining('Backend rank suggests high reply odds this week'),
-        findsNothing,
-      );
-      expect(
-        find.text(
-          'These picks feel especially promising right now, so you can start with the profiles most worth a closer look.',
-        ),
+        find.text('Backend rank suggests high reply odds this week'),
         findsOneWidget,
       );
       expect(
-        find.text(
-          'This profile looks especially promising for an easy back-and-forth right now.',
-        ),
+        find.text('Server says you both prioritize thoughtful conversation.'),
         findsOneWidget,
       );
+      expect(find.text('Haifa'), findsOneWidget);
+      expect(find.text('Museum dates and quiet coffee.'), findsOneWidget);
       expect(find.text('Rank #1'), findsNothing);
       expect(find.text('Score 97'), findsNothing);
       expect(find.text('#1 · 97 points'), findsOneWidget);

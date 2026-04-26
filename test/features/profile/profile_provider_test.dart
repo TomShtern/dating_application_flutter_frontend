@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
+import 'package:flutter_dating_application_1/models/profile_presentation_context.dart';
 import 'package:flutter_dating_application_1/models/profile_update_request.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
@@ -48,6 +50,34 @@ void main() {
     gender: 'FEMALE',
     interestedIn: ['MALE', 'FEMALE'],
     maxDistanceKm: 15,
+  );
+
+  const editSnapshot = ProfileEditSnapshot(
+    userId: '11111111-1111-1111-1111-111111111111',
+    editable: EditableProfileSnapshot(
+      bio: 'Loves coffee and beach walks.',
+      gender: 'FEMALE',
+      interestedIn: ['MALE'],
+      maxDistanceKm: 50,
+      minAge: 25,
+      maxAge: 35,
+      heightCm: 172,
+      location: ProfileEditLocationSnapshot(label: 'Tel Aviv'),
+    ),
+    readOnly: ReadOnlyProfileSnapshot(
+      name: 'Dana',
+      state: 'ACTIVE',
+      photoUrls: ['/photos/dana-1.jpg'],
+    ),
+  );
+
+  const presentationContext = ProfilePresentationContext(
+    viewerUserId: '11111111-1111-1111-1111-111111111111',
+    targetUserId: '22222222-2222-2222-2222-222222222222',
+    summary: 'Shown because this profile is nearby.',
+    reasonTags: ['nearby'],
+    details: ['This profile is within your preferred distance.'],
+    generatedAt: '2026-05-08T10:15:00Z',
   );
 
   test(
@@ -145,16 +175,86 @@ void main() {
       ]);
     },
   );
+
+  test(
+    'profileEditSnapshotProvider loads backend edit-prefill values',
+    () async {
+      final apiClient = _FakeProfileApiClient(
+        responses: {
+          currentUser.id: currentUserDetail,
+          otherUserDetail.id: otherUserDetail,
+        },
+        editSnapshot: editSnapshot,
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final snapshot = await container.read(profileEditSnapshotProvider.future);
+
+      expect(snapshot.userId, currentUser.id);
+      expect(snapshot.editable.minAge, 25);
+      expect(snapshot.editable.maxAge, 35);
+      expect(snapshot.editable.heightCm, 172);
+      expect(apiClient.editSnapshotUserIds, [currentUser.id]);
+    },
+  );
+
+  test(
+    'presentationContextProvider loads context for the selected viewer',
+    () async {
+      final apiClient = _FakeProfileApiClient(
+        responses: {
+          currentUser.id: currentUserDetail,
+          otherUserDetail.id: otherUserDetail,
+        },
+        presentationContext: presentationContext,
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final context = await container.read(
+        presentationContextProvider(otherUserDetail.id).future,
+      );
+
+      expect(context.summary, 'Shown because this profile is nearby.');
+      expect(context.details, [
+        'This profile is within your preferred distance.',
+      ]);
+      expect(apiClient.presentationContextViewerIds, [currentUser.id]);
+      expect(apiClient.presentationContextTargetIds, [otherUserDetail.id]);
+    },
+  );
 }
 
 class _FakeProfileApiClient extends ApiClient {
-  _FakeProfileApiClient({required this.responses}) : super(dio: Dio());
+  _FakeProfileApiClient({
+    required this.responses,
+    this.editSnapshot,
+    this.presentationContext,
+  }) : super(dio: Dio());
 
   final Map<String, UserDetail> responses;
+  final ProfileEditSnapshot? editSnapshot;
+  final ProfilePresentationContext? presentationContext;
   final List<String> requestedUserIds = <String>[];
   final List<String?> requestedActingUserIds = <String?>[];
   final List<String> updatedUserIds = <String>[];
   final List<ProfileUpdateRequest> updatedRequests = <ProfileUpdateRequest>[];
+  final List<String> editSnapshotUserIds = <String>[];
+  final List<String> presentationContextViewerIds = <String>[];
+  final List<String> presentationContextTargetIds = <String>[];
 
   @override
   Future<UserDetail> getUserDetail({
@@ -187,5 +287,23 @@ class _FakeProfileApiClient extends ApiClient {
       photoUrls: previous.photoUrls,
       state: previous.state,
     );
+  }
+
+  @override
+  Future<ProfileEditSnapshot> getProfileEditSnapshot({
+    required String userId,
+  }) async {
+    editSnapshotUserIds.add(userId);
+    return editSnapshot!;
+  }
+
+  @override
+  Future<ProfilePresentationContext> getProfilePresentationContext({
+    required String viewerUserId,
+    required String targetUserId,
+  }) async {
+    presentationContextViewerIds.add(viewerUserId);
+    presentationContextTargetIds.add(targetUserId);
+    return presentationContext!;
   }
 }

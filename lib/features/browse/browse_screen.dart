@@ -6,8 +6,10 @@ import '../../models/browse_candidate.dart';
 import '../../models/browse_response.dart';
 import '../../models/conversation_summary.dart';
 import '../../models/daily_pick.dart';
+import '../../models/profile_presentation_context.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/highlight_tag_row.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
@@ -17,6 +19,7 @@ import '../chat/conversation_thread_screen.dart';
 import '../home/backend_health_banner.dart';
 import '../location/location_completion_screen.dart';
 import '../profile/profile_screen.dart';
+import '../profile/profile_provider.dart';
 import '../safety/safety_action_sheet.dart';
 import 'pending_likers_screen.dart';
 import 'browse_provider.dart';
@@ -662,14 +665,17 @@ class _BrowseActionBar extends StatelessWidget {
   }
 }
 
-class _DailyPickCard extends StatelessWidget {
+class _DailyPickCard extends ConsumerWidget {
   const _DailyPickCard({required this.dailyPick});
 
   final DailyPick dailyPick;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final presentationContextState = ref.watch(
+      presentationContextProvider(dailyPick.userId),
+    );
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
@@ -690,7 +696,14 @@ class _DailyPickCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(name: dailyPick.userName, radius: 22),
+                UserAvatar(
+                  name: dailyPick.userName,
+                  photoUrl: _primaryPhotoUrl(
+                    dailyPick.primaryPhotoUrl,
+                    dailyPick.photoUrls,
+                  ),
+                  radius: 22,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -702,16 +715,32 @@ class _DailyPickCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Featured for you because ${dailyPick.reason}',
+                        dailyPick.alreadySeen
+                            ? 'Already seen today'
+                            : 'Featured for today',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      if (dailyPick.approximateLocation != null ||
+                          dailyPick.summaryLine != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          [
+                            dailyPick.approximateLocation,
+                            dailyPick.summaryLine,
+                          ].whereType<String>().join(' · '),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            _BrowsePresentationContext(state: presentationContextState),
           ],
         ),
       ),
@@ -719,14 +748,18 @@ class _DailyPickCard extends StatelessWidget {
   }
 }
 
-class _CandidateCard extends StatelessWidget {
+class _CandidateCard extends ConsumerWidget {
   const _CandidateCard({required this.candidate, required this.onViewProfile});
 
   final BrowseCandidate candidate;
   final VoidCallback onViewProfile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final presentationContextState = ref.watch(
+      presentationContextProvider(candidate.id),
+    );
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -793,7 +826,14 @@ class _CandidateCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      UserAvatar(name: candidate.name, radius: 30),
+                      UserAvatar(
+                        name: candidate.name,
+                        photoUrl: _primaryPhotoUrl(
+                          candidate.primaryPhotoUrl,
+                          candidate.photoUrls,
+                        ),
+                        radius: 30,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         candidate.name,
@@ -805,27 +845,41 @@ class _CandidateCard extends StatelessWidget {
                         spacing: 10,
                         runSpacing: 4,
                         children: [
-                          Text(
-                            'Age ${candidate.age}',
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                          ),
-                          Text(
-                            '${formatDisplayLabel(candidate.state)} profile',
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                          ),
+                          if (candidate.age > 0)
+                            Text(
+                              'Age ${candidate.age}',
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
+                            ),
+                          if (candidate.approximateLocation != null)
+                            Text(
+                              candidate.approximateLocation!,
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
+                            ),
                         ],
                       ),
+                      if (candidate.summaryLine != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          candidate.summaryLine!,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.86),
+                              ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
               ),
             ),
+            SizedBox(height: AppTheme.listSpacing()),
+            _BrowsePresentationContext(state: presentationContextState),
             SizedBox(height: AppTheme.listSpacing()),
             Row(
               children: [
@@ -838,6 +892,112 @@ class _CandidateCard extends StatelessWidget {
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String? _primaryPhotoUrl(String? primaryPhotoUrl, List<String> photoUrls) {
+  if (primaryPhotoUrl != null && primaryPhotoUrl.trim().isNotEmpty) {
+    return primaryPhotoUrl;
+  }
+
+  return photoUrls.isEmpty ? null : photoUrls.first;
+}
+
+class _BrowsePresentationContext extends StatelessWidget {
+  const _BrowsePresentationContext({required this.state});
+
+  final AsyncValue<ProfilePresentationContext> state;
+
+  @override
+  Widget build(BuildContext context) {
+    return state.when(
+      data: (contextData) =>
+          _BrowsePresentationContextContent(contextData: contextData),
+      loading: () => const _BrowseWhyPlaceholder(
+        message: 'Loading recommendation context...',
+      ),
+      error: (error, stackTrace) => const _BrowseWhyPlaceholder(
+        message: 'Recommendation context is unavailable right now.',
+      ),
+    );
+  }
+}
+
+class _BrowsePresentationContextContent extends StatelessWidget {
+  const _BrowsePresentationContextContent({required this.contextData});
+
+  final ProfilePresentationContext contextData;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Why this profile is shown',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 6),
+            Text(contextData.summary),
+            if (contextData.reasonTags.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              HighlightTagRow(
+                tags: contextData.reasonTags
+                    .map(formatDisplayLabel)
+                    .toList(growable: false),
+                icon: Icons.sell_outlined,
+              ),
+            ],
+            if (contextData.details.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              ...contextData.details.map(
+                (detail) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(detail),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BrowseWhyPlaceholder extends StatelessWidget {
+  const _BrowseWhyPlaceholder({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Why this profile is shown',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 6),
+            Text(message),
           ],
         ),
       ),

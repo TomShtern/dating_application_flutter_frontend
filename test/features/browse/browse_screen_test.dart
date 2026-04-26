@@ -14,9 +14,11 @@ import 'package:flutter_dating_application_1/features/profile/profile_provider.d
 import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
 import 'package:flutter_dating_application_1/models/browse_candidate.dart';
 import 'package:flutter_dating_application_1/models/browse_response.dart';
+import 'package:flutter_dating_application_1/models/daily_pick.dart';
 import 'package:flutter_dating_application_1/models/health_status.dart';
 import 'package:flutter_dating_application_1/models/like_result.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
+import 'package:flutter_dating_application_1/models/profile_presentation_context.dart';
 import 'package:flutter_dating_application_1/models/undo_swipe_result.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
@@ -277,7 +279,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Session details'), findsNothing);
-    expect(find.text('Active profile'), findsWidgets);
+    expect(find.text('Active profile'), findsNothing);
     expect(find.textContaining('backend-driven'), findsNothing);
     expect(
       find.textContaining('browse payload is intentionally lean'),
@@ -291,6 +293,63 @@ void main() {
     );
     expect(find.textContaining('Browsing as Dana'), findsOneWidget);
     expect(find.text('See full profile'), findsOneWidget);
+    expect(find.text('Why this profile is shown'), findsOneWidget);
+    expect(find.text('Shown because this profile is nearby.'), findsOneWidget);
+    expect(
+      find.text('This profile is within your preferred distance.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows daily pick presentation context from the backend', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
+    const dailyPickResponse = BrowseResponse(
+      candidates: [],
+      dailyPick: DailyPick(
+        userId: '22222222-2222-2222-2222-222222222222',
+        userName: 'Noa',
+        userAge: 29,
+        date: '2026-05-08',
+        reason: 'legacy reason should not render',
+        alreadySeen: false,
+      ),
+      dailyPickViewed: false,
+      locationMissing: false,
+    );
+    final apiClient = _FakeBrowseApiClient(
+      browseResponse: dailyPickResponse,
+      likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => dailyPickResponse),
+          backendHealthProvider.overrideWith(
+            (ref) async =>
+                HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
+          ),
+        ],
+        child: const MaterialApp(home: BrowseScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today\'s daily pick'), findsOneWidget);
+    expect(find.text('Featured for today'), findsOneWidget);
+    expect(find.text('legacy reason should not render'), findsNothing);
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -280));
+    await tester.pumpAndSettle();
+    expect(find.text('Why this profile is shown'), findsOneWidget);
+    expect(find.text('Shown because this profile is nearby.'), findsOneWidget);
   });
 
   testWidgets('keeps browse diagnostics inside developer-only framing', (
@@ -321,11 +380,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final developerOnly = find.text('Developer only');
-    await tester.scrollUntilVisible(developerOnly, 200);
+    await tester.scrollUntilVisible(
+      find.text('Browse diagnostics'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
-    expect(developerOnly, findsOneWidget);
+    for (var index = 0; index < 4; index++) {
+      await tester.drag(find.byType(ListView).first, const Offset(0, -420));
+      await tester.pumpAndSettle();
+      if (find.text('Browse diagnostics').evaluate().isNotEmpty) {
+        break;
+      }
+    }
+
     expect(find.text('Browse diagnostics'), findsOneWidget);
     expect(find.text('Connection status'), findsOneWidget);
 
@@ -424,5 +493,20 @@ class _FakeBrowseApiClient extends ApiClient {
   @override
   Future<UndoSwipeResult> undoLastSwipe({required String userId}) async {
     return undoResult;
+  }
+
+  @override
+  Future<ProfilePresentationContext> getProfilePresentationContext({
+    required String viewerUserId,
+    required String targetUserId,
+  }) async {
+    return const ProfilePresentationContext(
+      viewerUserId: '11111111-1111-1111-1111-111111111111',
+      targetUserId: '22222222-2222-2222-2222-222222222222',
+      summary: 'Shown because this profile is nearby.',
+      reasonTags: ['nearby', 'eligible_match_pool'],
+      details: ['This profile is within your preferred distance.'],
+      generatedAt: '2026-05-08T10:15:00Z',
+    );
   }
 }

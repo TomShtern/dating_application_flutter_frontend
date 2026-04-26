@@ -3,22 +3,70 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../models/location_metadata.dart';
+import '../../models/profile_edit_snapshot.dart';
 import '../../models/profile_update_request.dart';
 import '../../models/user_detail.dart';
+import '../../shared/widgets/app_async_state.dart';
 import '../../shared/formatting/display_text.dart';
 import '../location/location_completion_screen.dart';
 import 'profile_provider.dart';
 
-class ProfileEditScreen extends ConsumerStatefulWidget {
-  const ProfileEditScreen({super.key, required this.initialDetail});
+class ProfileEditScreen extends ConsumerWidget {
+  const ProfileEditScreen({super.key, this.initialDetail});
 
-  final UserDetail initialDetail;
+  @Deprecated('Profile editing now loads ProfileEditSnapshot from the backend.')
+  final UserDetail? initialDetail;
 
   @override
-  ConsumerState<ProfileEditScreen> createState() => _ProfileEditScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final snapshotState = ref.watch(profileEditSnapshotProvider);
+
+    return snapshotState.when(
+      data: (snapshot) => _ProfileEditForm(snapshot: snapshot),
+      loading: () => const Scaffold(
+        appBar: _ProfileEditAppBar(),
+        body: SafeArea(
+          child: AppAsyncState.loading(message: 'Loading profile details…'),
+        ),
+      ),
+      error: (error, stackTrace) => Scaffold(
+        appBar: const _ProfileEditAppBar(),
+        body: SafeArea(
+          child: AppAsyncState.error(
+            message: error is ApiError
+                ? error.message
+                : 'Unable to load profile details right now.',
+            onRetry: () => ref.invalidate(profileEditSnapshotProvider),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
+class _ProfileEditAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
+  const _ProfileEditAppBar();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(title: const Text('Edit your profile'));
+  }
+}
+
+class _ProfileEditForm extends ConsumerStatefulWidget {
+  const _ProfileEditForm({required this.snapshot});
+
+  final ProfileEditSnapshot snapshot;
+
+  @override
+  ConsumerState<_ProfileEditForm> createState() => _ProfileEditScreenState();
+}
+
+class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _bioController;
   late final TextEditingController _maxDistanceController;
@@ -34,20 +82,27 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   @override
   void initState() {
     super.initState();
-    _bioController = TextEditingController(text: widget.initialDetail.bio);
-    _selectedGender = _normalizedOrNull(widget.initialDetail.gender);
+    final editable = widget.snapshot.editable;
+    _bioController = TextEditingController(text: editable.bio ?? '');
+    _selectedGender = _normalizedOrNull(editable.gender ?? '');
     _selectedInterestedIn = _orderedInterestedInValues(
-      widget.initialDetail.interestedIn,
+      editable.interestedIn,
     ).toSet();
-    _approximateLocation = widget.initialDetail.approximateLocation;
+    _approximateLocation = editable.location?.label ?? '';
     _maxDistanceController = TextEditingController(
-      text: widget.initialDetail.maxDistanceKm > 0
-          ? widget.initialDetail.maxDistanceKm.toString()
+      text: editable.maxDistanceKm != null && editable.maxDistanceKm! > 0
+          ? editable.maxDistanceKm.toString()
           : '',
     );
-    _minAgeController = TextEditingController();
-    _maxAgeController = TextEditingController();
-    _heightController = TextEditingController();
+    _minAgeController = TextEditingController(
+      text: editable.minAge?.toString() ?? '',
+    );
+    _maxAgeController = TextEditingController(
+      text: editable.maxAge?.toString() ?? '',
+    );
+    _heightController = TextEditingController(
+      text: editable.heightCm?.toString() ?? '',
+    );
   }
 
   @override
@@ -63,7 +118,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit your profile')),
+      appBar: const _ProfileEditAppBar(),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: FilledButton(

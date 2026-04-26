@@ -174,7 +174,14 @@ class _PendingLikerCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(name: liker.name, radius: 22),
+                UserAvatar(
+                  name: liker.name,
+                  photoUrl: _primaryPhotoUrl(
+                    liker.primaryPhotoUrl,
+                    liker.photoUrls,
+                  ),
+                  radius: 22,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -191,6 +198,15 @@ class _PendingLikerCard extends StatelessWidget {
                         _pendingLikerContextLine(liker),
                         style: theme.textTheme.bodyMedium,
                       ),
+                      if (liker.summaryLine != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          liker.summaryLine!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -205,6 +221,11 @@ class _PendingLikerCard extends StatelessWidget {
                   avatar: const Icon(Icons.schedule_rounded, size: 18),
                   label: Text(statusLabel),
                 ),
+                if (liker.approximateLocation != null)
+                  Chip(
+                    avatar: const Icon(Icons.location_on_outlined, size: 18),
+                    label: Text(liker.approximateLocation!),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -232,9 +253,21 @@ String _pendingLikerStatusLabel(PendingLiker liker) {
 }
 
 String _pendingLikerContextLine(PendingLiker liker) {
+  if (liker.approximateLocation != null) {
+    return liker.approximateLocation!;
+  }
+
   if (liker.likedAt case final likedAt?) {
     return '${liker.name} made the first move on ${formatShortDate(likedAt)}.';
   }
 
   return '${liker.name} is one of your newest likes.';
+}
+
+String? _primaryPhotoUrl(String? primaryPhotoUrl, List<String> photoUrls) {
+  if (primaryPhotoUrl != null && primaryPhotoUrl.trim().isNotEmpty) {
+    return primaryPhotoUrl;
+  }
+
+  return photoUrls.isEmpty ? null : photoUrls.first;
 }

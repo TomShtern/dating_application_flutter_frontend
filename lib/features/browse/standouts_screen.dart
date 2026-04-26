@@ -115,7 +115,14 @@ class _StandoutCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                UserAvatar(name: standout.standoutUserName, radius: 24),
+                UserAvatar(
+                  name: standout.standoutUserName,
+                  photoUrl: _primaryPhotoUrl(
+                    standout.primaryPhotoUrl,
+                    standout.photoUrls,
+                  ),
+                  radius: 24,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -129,11 +136,20 @@ class _StandoutCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Worth a closer look',
+                        standout.approximateLocation ?? 'Standout profile',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      if (standout.summaryLine != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          standout.summaryLine!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -196,7 +212,7 @@ String? _standoutMetadata(Standout standout) {
 
 String _humanizeStandoutsIntro(String message) {
   final trimmed = message.trim();
-  if (trimmed.isEmpty || _looksBackendAuthored(trimmed)) {
+  if (trimmed.isEmpty) {
     return 'These picks feel especially promising right now, so you can start with the profiles most worth a closer look.';
   }
 
@@ -206,30 +222,16 @@ String _humanizeStandoutsIntro(String message) {
 String _humanizeStandoutReason(Standout standout) {
   final reason = standout.reason.trim();
   if (reason.isEmpty) {
-    return standout.rank > 0 && standout.rank <= 3
-        ? 'One of the most promising profiles in your current picks.'
-        : 'This profile stood out as a strong place to start a conversation.';
-  }
-
-  if (_looksBackendAuthored(reason)) {
-    if (reason.toLowerCase().contains('reply odds')) {
-      return 'This profile looks especially promising for an easy back-and-forth right now.';
-    }
-
-    return standout.interactedAt != null
-        ? 'Worth another look if you want to pick the conversation back up.'
-        : 'This profile looks like a strong fit for a good conversation.';
+    return standout.summaryLine ?? 'Standout profile';
   }
 
   return reason;
 }
 
-bool _looksBackendAuthored(String value) {
-  final lower = value.toLowerCase();
+String? _primaryPhotoUrl(String? primaryPhotoUrl, List<String> photoUrls) {
+  if (primaryPhotoUrl != null && primaryPhotoUrl.trim().isNotEmpty) {
+    return primaryPhotoUrl;
+  }
 
-  return lower.contains('backend') ||
-      lower.contains('reply odds') ||
-      lower.contains('rank suggests') ||
-      lower.contains('scoring model') ||
-      lower.contains('candidate');
+  return photoUrls.isEmpty ? null : photoUrls.first;
 }

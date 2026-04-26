@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
-import '../../shared/formatting/display_text.dart';
+import '../../models/conversation_summary.dart';
 import '../../models/notification_item.dart';
+import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
+import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../theme/app_theme.dart';
+import '../auth/selected_user_provider.dart';
+import '../chat/conversation_thread_screen.dart';
+import '../profile/profile_screen.dart';
 import 'notifications_provider.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -80,6 +85,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         onMarkRead: notifications[index].isRead
                             ? null
                             : () => _handleMarkRead(notifications[index]),
+                        onOpenRoute: notifications[index].safeRoute == null
+                            ? null
+                            : () => _handleOpenRoute(notifications[index]),
                       ),
                       if (index != notifications.length - 1)
                         SizedBox(height: AppTheme.listSpacing()),
@@ -165,6 +173,76 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       }
     }
   }
+
+  Future<void> _handleOpenRoute(NotificationItem item) async {
+    final route = item.safeRoute;
+    if (route == null) {
+      return;
+    }
+
+    final currentUser = await ref.read(selectedUserProvider.future);
+    if (!mounted) {
+      return;
+    }
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please choose a dev user first.')),
+      );
+      return;
+    }
+
+    switch (route.destination) {
+      case NotificationDestination.chatThread:
+        _openChatThread(context, currentUser, item, route);
+      case NotificationDestination.profile:
+        _openProfile(context, item, route);
+    }
+  }
+
+  void _openChatThread(
+    BuildContext context,
+    UserSummary currentUser,
+    NotificationItem item,
+    NotificationRoute route,
+  ) {
+    final conversationId = route.data['conversationId']!;
+    final otherUserId =
+        route.data['otherUserId'] ??
+        route.data['senderId'] ??
+        route.data['accepterUserId'] ??
+        '';
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => ConversationThreadScreen(
+          currentUser: currentUser,
+          conversation: ConversationSummary(
+            id: conversationId,
+            otherUserId: otherUserId,
+            otherUserName: _routePersonName(item),
+            messageCount: 0,
+            lastMessageAt:
+                item.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openProfile(
+    BuildContext context,
+    NotificationItem item,
+    NotificationRoute route,
+  ) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => ProfileScreen.otherUser(
+          userId: route.data['fromUserId']!,
+          userName: _routePersonName(item),
+        ),
+      ),
+    );
+  }
 }
 
 class _NotificationTile extends StatelessWidget {
@@ -172,11 +250,13 @@ class _NotificationTile extends StatelessWidget {
     required this.item,
     required this.isBusy,
     required this.onMarkRead,
+    required this.onOpenRoute,
   });
 
   final NotificationItem item;
   final bool isBusy;
   final VoidCallback? onMarkRead;
+  final VoidCallback? onOpenRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +267,7 @@ class _NotificationTile extends StatelessWidget {
     final message = item.message.isEmpty
         ? 'No details provided.'
         : item.message;
+    final route = item.safeRoute;
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
@@ -252,15 +333,25 @@ class _NotificationTile extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (unread) ...[
+                  if (unread || route != null) ...[
                     const SizedBox(height: 14),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilledButton.tonalIcon(
-                        onPressed: isBusy ? null : onMarkRead,
-                        icon: const Icon(Icons.done_rounded),
-                        label: Text(isBusy ? 'Working…' : 'Mark read'),
-                      ),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        if (route != null)
+                          FilledButton.icon(
+                            onPressed: onOpenRoute,
+                            icon: Icon(_routeIcon(route.destination)),
+                            label: Text(route.actionLabel),
+                          ),
+                        if (unread)
+                          FilledButton.tonalIcon(
+                            onPressed: isBusy ? null : onMarkRead,
+                            icon: const Icon(Icons.done_rounded),
+                            label: Text(isBusy ? 'Working…' : 'Mark read'),
+                          ),
+                      ],
                     ),
                   ],
                 ],
@@ -396,19 +487,37 @@ class _NotificationStatusBadge extends StatelessWidget {
 
 IconData _iconForType(String type) {
   switch (type.toUpperCase()) {
-    case 'MATCH':
+    case 'MATCH_FOUND':
       return Icons.favorite_rounded;
-    case 'MESSAGE':
+    case 'NEW_MESSAGE':
       return Icons.chat_bubble_rounded;
-    case 'LIKE':
-      return Icons.thumb_up_alt_rounded;
     case 'FRIEND_REQUEST':
       return Icons.people_alt_rounded;
-    case 'MODERATION':
+    case 'FRIEND_REQUEST_ACCEPTED':
+      return Icons.handshake_rounded;
+    case 'GRACEFUL_EXIT':
       return Icons.shield_outlined;
     default:
       return Icons.notifications_none_rounded;
   }
+}
+
+IconData _routeIcon(NotificationDestination destination) {
+  switch (destination) {
+    case NotificationDestination.chatThread:
+      return Icons.forum_rounded;
+    case NotificationDestination.profile:
+      return Icons.person_outline_rounded;
+  }
+}
+
+String _routePersonName(NotificationItem item) {
+  final title = item.title.trim();
+  if (title.isNotEmpty) {
+    return title;
+  }
+
+  return 'Profile';
 }
 
 String _formatFriendlyNotificationTimestamp(DateTime value, {DateTime? now}) {

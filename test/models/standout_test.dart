@@ -15,11 +15,22 @@ void main() {
           'rank': 1,
           'score': 97,
           'reason': 'High compatibility',
+          'primaryPhotoUrl': '/photos/noa-1.jpg',
+          'photoUrls': ['/photos/noa-1.jpg'],
+          'approximateLocation': 'Tel Aviv',
+          'summaryLine': 'Coffee walks and weekend hikes',
         },
       ],
     });
 
     expect(snapshot.standouts, hasLength(1));
     expect(snapshot.standouts.single.standoutUserName, 'Noa');
+    expect(snapshot.standouts.single.primaryPhotoUrl, '/photos/noa-1.jpg');
+    expect(snapshot.standouts.single.photoUrls, ['/photos/noa-1.jpg']);
+    expect(snapshot.standouts.single.approximateLocation, 'Tel Aviv');
+    expect(
+      snapshot.standouts.single.summaryLine,
+      'Coffee walks and weekend hikes',
+    );
   });
 }

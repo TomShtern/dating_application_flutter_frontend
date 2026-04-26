@@ -159,7 +159,14 @@ class _MatchCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    UserAvatar(name: match.otherUserName, radius: 28),
+                    UserAvatar(
+                      name: match.otherUserName,
+                      photoUrl: _primaryPhotoUrl(
+                        match.primaryPhotoUrl,
+                        match.photoUrls,
+                      ),
+                      radius: 28,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -171,7 +178,9 @@ class _MatchCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Mutual interest is already there — now it is time for a real hello.',
+                            match.summaryLine ??
+                                match.approximateLocation ??
+                                'Matched ${formatShortDate(match.createdAt)}',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
@@ -193,6 +202,11 @@ class _MatchCard extends StatelessWidget {
                       icon: Icons.favorite_border_rounded,
                       label: 'Matched ${formatShortDate(match.createdAt)}',
                     ),
+                    if (match.approximateLocation != null)
+                      ShellHeroPill(
+                        icon: Icons.location_on_outlined,
+                        label: match.approximateLocation!,
+                      ),
                     ShellHeroPill(
                       icon: Icons.verified_user_outlined,
                       label: formatDisplayLabel(match.state),
@@ -228,4 +242,12 @@ class _MatchCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String? _primaryPhotoUrl(String? primaryPhotoUrl, List<String> photoUrls) {
+  if (primaryPhotoUrl != null && primaryPhotoUrl.trim().isNotEmpty) {
+    return primaryPhotoUrl;
+  }
+
+  return photoUrls.isEmpty ? null : photoUrls.first;
 }

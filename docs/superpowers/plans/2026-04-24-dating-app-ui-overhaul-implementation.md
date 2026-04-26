@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** Revised after frontend foundation completion and backend Stage B implementation report on 2026-04-26. Ready for Stage B frontend integration plus the remaining layout-shell tasks.
+**Status:** Revised after frontend foundation completion, backend Stage B implementation report, and Task 1B frontend Stage B integration completion on 2026-04-26. Continue with the remaining layout-shell tasks.
 
 **Design input:** `docs/superpowers/specs/2026-04-23-dating-app-ui-overhaul-design.md`
 
@@ -19,9 +19,11 @@
 - The design brief was re-read and validated against the live codebase on 2026-04-24.
 - The backend Stage A contract response was received in `docs/frontend-ui-overhaul-contract-response-2026-04-25.md` on 2026-04-25 and is now the contract checkpoint for execution.
 - Backend Stage B was reported implemented on 2026-04-26, with the response document updated to say the Stage B additions landed additively against the same JSON shapes.
-- Frontend reports Task 2, Task 3, and the Task 1 live-contract subset are implemented and verified in the current branch/worktree.
+- Frontend reports Task 2, Task 3, the Task 1 live-contract subset, and Task 1B Stage B contract integration are implemented and verified in the current branch/worktree.
 - `matchId == conversationId` is confirmed by backend as live; the frontend may use `matchId` anywhere a conversation id is required.
-- `GET /api/users/{id}/match-quality/{matchId}` is confirmed live by backend, but is **not currently wired through the live frontend API layer**.
+- `GET /api/users/{id}/match-quality/{matchId}` is confirmed live by backend and wired through the frontend API layer.
+- `GET /api/users/{id}/profile-edit-snapshot` is wired through the frontend API layer and profile edit prefill.
+- `GET /api/users/{viewerId}/presentation-context/{targetId}` is wired through the frontend API layer and server-driven explanation surfaces.
 - `LocationCountry.flagEmoji` already exists in the current models and should be used in the UI.
 - `BrowseCandidate`, `MatchSummary`, `PendingLiker`, `DailyPick`, and the current stats payload are all thinner than the desired UI.
 - Missing endpoint or DTO support is **not** a reason to weaken the redesign. When the current contract is insufficient, this plan calls it out explicitly as backend work.
@@ -34,10 +36,10 @@ Backend Stage B is reported implemented. Use these gates during frontend executi
 |------|----------------|---------------------|
 | Match-to-conversation identity | Exists now; frontend reports implemented | Keep using `matchId` as the conversation id and keep chat-opening tests green. |
 | Match quality | Exists now; frontend reports implemented in Matches | Continue building `Why we match` against the real response shape. |
-| Person summary media/context | Stage B reported implemented | Wire `primaryPhotoUrl`, `photoUrls`, `approximateLocation`, and `summaryLine` in DTOs and people surfaces. |
-| Profile edit snapshot | Stage B reported implemented | Wire full edit-prefill to `GET /api/users/{id}/profile-edit-snapshot`. |
-| Notification schema stabilization | Stage B reported implemented | Wire type-aware notification routing/actions only for the stabilized registry; unknown future types remain display-only. |
-| Presentation context | Stage B reported implemented | Wire `GET /api/users/{viewerId}/presentation-context/{targetId}` and show server-driven `Why this profile is shown`. |
+| Person summary media/context | ✅ Stage B reported implemented and frontend wired | `primaryPhotoUrl`, `photoUrls`, `approximateLocation`, and `summaryLine` are wired in DTOs and affected people surfaces. |
+| Profile edit snapshot | ✅ Stage B reported implemented and frontend wired | Full edit-prefill is wired to `GET /api/users/{id}/profile-edit-snapshot`. |
+| Notification schema stabilization | ✅ Stage B reported implemented and frontend wired | Type-aware notification routing/actions are limited to the stabilized registry; unknown future types remain display-only. |
+| Presentation context | ✅ Stage B reported implemented and frontend wired | `GET /api/users/{viewerId}/presentation-context/{targetId}` is wired and server-driven `Why this profile is shown` is displayed. |
 | Stats and achievements richer semantics | P1 follow-up | Improve current layouts conservatively; do not invent grouped stat meaning or achievement detail semantics. |
 
 ### Current execution order
@@ -45,9 +47,9 @@ Backend Stage B is reported implemented. Use these gates during frontend executi
 Foundation work is reported complete. Continue in this order:
 
 1. Review the current frontend worktree and keep Task 2, Task 3, and Task 1 live-contract changes intact.
-2. Task 1B — Stage B frontend contract integration pass.
-3. Tasks 4 through 9 — continue layout/surface work with the Stage B DTOs available.
-4. Task 10 — full visual/test verification and review report.
+2. ✅ Task 1B — Stage B frontend contract integration pass.
+3. Tasks 4 through 9 — continue the remaining layout/surface work with the Stage B DTOs available.
+4. Task 10 — final post-overhaul visual/test verification and review report.
 
 ## Scope matrix
 
@@ -80,10 +82,10 @@ These items should be treated as **quality-preserving backend work**, not option
 |----------|------------|----------------|-------------------------|
 | P0 | Correct `Message now` and chat-thread routing | Exists now: `matchId == conversationId` | Verify current flows and do not wait for a new conversation id field. |
 | P0 | `Why we match` bottom sheet on `Matches` | Exists now: `GET /api/users/{id}/match-quality/{matchId}` | Wire API/model/tests now against the Stage A response shape. |
-| P0 | Photo-backed person cards in `Discover`, `Matches`, `Pending likers`, `Standouts`, and compact `Daily pick` | Stage B reported implemented | Wire additive fields and verify graceful null/no-photo behavior. |
-| P0 | `Why this profile is shown` on `Discover` and other-user profile | Stage B reported implemented | Wire endpoint/model and show only server-driven reasons. |
-| P0 | Complete profile-edit prefilling | Stage B reported implemented | Wire snapshot endpoint/model and update edit-prefill tests. |
-| P0 | Notification deep links and quick actions | Stage B reported implemented | Wire only stabilized known types; unknown types remain display-only. |
+| P0 | Photo-backed person cards in `Discover`, `Matches`, `Pending likers`, `Standouts`, and compact `Daily pick` | ✅ Stage B frontend wiring complete | Additive fields are wired and graceful null/no-photo behavior is preserved. |
+| P0 | `Why this profile is shown` on `Discover` and other-user profile | ✅ Stage B frontend wiring complete | Endpoint/model are wired and only server-driven reasons are shown. |
+| P0 | Complete profile-edit prefilling | ✅ Stage B frontend wiring complete | Snapshot endpoint/model are wired and edit-prefill tests are updated. |
+| P0 | Notification deep links and quick actions | ✅ Stage B frontend wiring complete | Only stabilized known types route; unknown and incomplete types remain display-only. |
 | P1 | Stats grouping + stat detail sheets | Follow-up contract needed | Improve current presentation conservatively; do not infer stat meaning. |
 | P1 | Achievement drill-downs that feel meaningful | Follow-up contract needed | Improve current presentation conservatively; do not infer achievement semantics. |
 | P1 | Persistent `Hide` action on other-user profiles | Deferred | Do not ship persistent hide. If UI includes `Hide`, label it as deferred or omit it. |
@@ -230,18 +232,27 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 - Modify: `lib/models/notification_item.dart`
 - Create: `lib/models/profile_presentation_context.dart`
 - Create: `lib/models/profile_edit_snapshot.dart`
+- Create: `lib/models/person_summary_fields.dart`
 - Create: `test/models/profile_presentation_context_test.dart`
 - Create: `test/models/profile_edit_snapshot_test.dart`
+- Create: `test/models/person_summary_contract_test.dart`
 - Modify: `test/models/browse_response_test.dart`
 - Modify: `test/models/standout_test.dart`
 - Modify: `test/models/notification_item_test.dart`
 
-- [ ] Extend summary DTOs with `primaryPhotoUrl`, `photoUrls`, `approximateLocation`, and `summaryLine`.
-- [ ] Add `profile-edit-snapshot` endpoint/model wiring.
-- [ ] Update `NotificationItem` tests for the stabilized type/data registry; do not deep-link unknown types.
-- [ ] Add `presentation-context` endpoint/model wiring.
-- [ ] Keep any P1 stats/achievements/conversation/hide/verification additions out of this pass unless the manager explicitly promotes them.
-- [ ] Run the expanded API/model tests after each confirmed backend contract is wired.
+- [x] ✅ Extend summary DTOs with `primaryPhotoUrl`, `photoUrls`, `approximateLocation`, and `summaryLine`.
+- [x] ✅ Add `profile-edit-snapshot` endpoint/model wiring.
+- [x] ✅ Update `NotificationItem` tests for the stabilized type/data registry; do not deep-link unknown types.
+- [x] ✅ Add `presentation-context` endpoint/model wiring.
+- [x] ✅ Keep any P1 stats/achievements/conversation/hide/verification additions out of this pass unless the manager explicitly promotes them.
+- [x] ✅ Run the expanded API/model tests after each confirmed backend contract is wired.
+
+**Completed verification on 2026-04-26:**
+- ✅ `flutter analyze`
+- ✅ `flutter test test/models/browse_response_test.dart test/models/standout_test.dart test/models/person_summary_contract_test.dart test/models/profile_presentation_context_test.dart test/models/profile_edit_snapshot_test.dart test/models/notification_item_test.dart test/api/api_client_test.dart`
+- ✅ Affected feature tests for browse, pending likers, standouts, matches, profile, profile edit, and notifications
+- ✅ Full `flutter test`
+- ✅ `flutter test test/visual_inspection/screenshot_test.dart` through the full suite, producing visual review run `0012`
 
 ### Task 2: Rebuild the visual foundation and shared UI kit
 
@@ -313,8 +324,8 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 - [ ] Use photo-backed candidate cards whenever the payload supports it, and fall back gracefully when it does not.
 - [ ] Add concise, server-driven reasons/chips plus a compact compatibility meter only when those signals are truly provided by the backend.
 - [ ] Keep swipe as a first-class interaction and demote the full-profile affordance so it no longer competes with the core decision loop.
-- [ ] Wire Stage B person-summary fields and presentation-context data, while preserving intentional no-photo/current-contract fallbacks.
-- [ ] Run: `flutter test test/features/browse/browse_screen_test.dart`
+- [x] ✅ Wire Stage B person-summary fields and presentation-context data, while preserving intentional no-photo/current-contract fallbacks.
+- [x] ✅ Run: `flutter test test/features/browse/browse_screen_test.dart`
 
 ### Task 5: Redesign `Matches` and `Chats` as compact, people-first lists
 
@@ -331,6 +342,7 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 - [ ] Keep `Message now` primary and add a clearly labeled `Why we match` trigger that opens a bottom sheet.
 - [ ] Wire the match factors sheet to the live backend match-quality endpoint from Task 1; do not infer compatibility from unrelated fields.
 - [ ] Use `matchId` as the conversation id when opening chat, per the accepted Stage A backend contract.
+- [x] ✅ Wire Stage B richer match preview fields where applicable.
 - [ ] Make conversation rows denser, whole-row tappable, and more socially legible than the current productivity-inbox feel.
 - [ ] Add overflow menus to both match cards and conversation rows, and remove any remaining shield-style ambiguity.
 - [ ] Normalize how recency, unread/new state, and secondary actions are displayed across these two list surfaces.
@@ -349,12 +361,13 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 - [ ] Tighten the self-profile hero so identity, compact state/location metadata, and a small readiness indicator are visible above the fold without explanatory clutter.
 - [ ] Remove the over-promotion of tiny facts into separate full-width cards.
 - [ ] Redesign the other-user profile hero to surface `Profile snapshot`, compact metadata, photos earlier, and a top-right overflow menu.
-- [ ] Wire `Why this profile is shown` to server-driven presentation-context data.
-- [ ] Do not add persistent `Hide`; backend Stage A deferred hide/unhide support.
+- [x] ✅ Wire `Why this profile is shown` to server-driven presentation-context data.
+- [x] ✅ Do not add persistent `Hide`; backend Stage A deferred hide/unhide support.
 - [ ] Reorder profile edit so basics, preferences, and distance come first; move `About` below those controls; replace distance text input with a slider plus live numeric value.
 - [ ] Demote advanced optional filters so the form feels intuitive instead of equally weighted from top to bottom.
-- [ ] Wire full profile-edit prefilling to `GET /api/users/{id}/profile-edit-snapshot`.
-- [ ] Run: `flutter test test/features/profile/profile_screen_test.dart test/features/profile/profile_edit_screen_test.dart test/features/location/location_completion_screen_test.dart`
+- [x] ✅ Wire full profile-edit prefilling to `GET /api/users/{id}/profile-edit-snapshot`.
+- [x] ✅ Run affected profile tests: `flutter test test/features/profile/profile_screen_test.dart test/features/profile/profile_edit_screen_test.dart`
+- [ ] Run full Task 6 command including location completion when doing the complete profile/location redesign: `flutter test test/features/profile/profile_screen_test.dart test/features/profile/profile_edit_screen_test.dart test/features/location/location_completion_screen_test.dart`
 
 ### Task 7: Redesign `Standouts` and `Pending likers` with stronger prioritization and richer scanning
 
@@ -368,10 +381,11 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 
 - [ ] Add a list/grid toggle to `Standouts`, with grid as the default view.
 - [ ] Replace the oversized intro card with a compact summary row or chip cluster.
+- [x] ✅ Wire Stage B person-summary fields into standout and liker cards.
 - [ ] Make standout and liker cards image-forward, compact, and whole-card tappable, with overflow menus in the top-right.
-- [ ] Surface prioritization, freshness, and the most important reason(s) without falling back to repetitive filler sentences.
-- [ ] Use real backend reason/score data where present and avoid inventing explanatory richness when payloads are thin.
-- [ ] Run: `flutter test test/features/browse/standouts_screen_test.dart test/features/browse/pending_likers_screen_test.dart`
+- [x] ✅ Surface prioritization, freshness, and the most important reason(s) without falling back to repetitive filler sentences.
+- [x] ✅ Use real backend reason/score data where present and avoid inventing explanatory richness when payloads are thin.
+- [x] ✅ Run: `flutter test test/features/browse/standouts_screen_test.dart test/features/browse/pending_likers_screen_test.dart`
 
 ### Task 8: Rebuild `Notifications` and redesign `Stats` + `Achievements` around meaningful detail
 
@@ -388,10 +402,12 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 
 - [ ] Rebuild notifications from a grouped inbox model (`Today`, `Yesterday`, `Earlier`) instead of the current stacked-card structure.
 - [ ] Use one strong unread signal per item, make row layout scale safely, and keep filters/bulk actions compact but obvious.
-- [ ] Add type-aware notification routing only for the stabilized registry in `docs/frontend-ui-overhaul-contract-response-2026-04-25.md`.
+- [x] ✅ Add type-aware notification routing only for the stabilized registry in `docs/frontend-ui-overhaul-contract-response-2026-04-25.md`.
+- [x] ✅ Keep unknown and incomplete notification types display-only.
 - [ ] Redesign stats and achievements conservatively against the current endpoints; make the UI cleaner without inventing grouped meanings or achievement semantics.
 - [ ] Keep stat detail sheets and achievement detail sheets shallow/current-data-backed until a P1 backend contract exists.
-- [ ] Run: `flutter test test/features/notifications/notifications_screen_test.dart test/features/stats/stats_screen_test.dart test/features/stats/achievements_screen_test.dart`
+- [x] ✅ Run affected notification tests: `flutter test test/features/notifications/notifications_screen_test.dart`
+- [ ] Run full Task 8 command when doing the complete notifications/stats/achievements redesign: `flutter test test/features/notifications/notifications_screen_test.dart test/features/stats/stats_screen_test.dart test/features/stats/achievements_screen_test.dart`
 
 ### Task 9: Polish `Verification`, `Location completion`, `Conversation thread`, and `Blocked users`
 
@@ -423,9 +439,9 @@ Still later P1/P2: grouped/typed stats, richer achievements, conversation enrich
 - Modify: `docs/superpowers/plans/2026-04-24-dating-app-ui-overhaul-implementation.md`
 
 - [ ] Update screenshot fixtures and scenarios so the new shells, cards, menus, list/grid mode, grouped notifications, and profile states are all captured deterministically.
-- [ ] Run `flutter analyze` and fix any analyzer issues introduced by the overhaul.
-- [ ] Run the full `flutter test` suite and fix regressions before claiming the pass is complete.
-- [ ] Run `flutter test test/visual_inspection/screenshot_test.dart` to generate a fresh visual review run.
+- [x] ✅ Run `flutter analyze` and fix any analyzer issues introduced by Task 1B.
+- [x] ✅ Run the full `flutter test` suite and fix regressions before claiming Task 1B is complete.
+- [x] ✅ Run `flutter test test/visual_inspection/screenshot_test.dart` to generate a fresh visual review run for Task 1B.
 - [ ] Inspect `visual_review/latest/index.html` and all changed PNGs, then do a final consistency pass on spacing, chip semantics, overflow labels, nav overlap, empty states, and no-photo fallbacks.
 - [ ] Verify both light and dark themes before closing the work.
 - [ ] Write the post-implementation review report and update this plan so every completed task is marked clearly.

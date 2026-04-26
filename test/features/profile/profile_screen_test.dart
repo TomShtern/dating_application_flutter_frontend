@@ -8,6 +8,8 @@ import 'package:flutter_dating_application_1/api/api_error.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_edit_screen.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+import 'package:flutter_dating_application_1/models/profile_presentation_context.dart';
+import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_screen.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
@@ -46,6 +48,31 @@ void main() {
     state: 'ACTIVE',
   );
 
+  const presentationContext = ProfilePresentationContext(
+    viewerUserId: '33333333-3333-3333-3333-333333333333',
+    targetUserId: '11111111-1111-1111-1111-111111111111',
+    summary: 'Shown because this profile is nearby.',
+    reasonTags: ['nearby', 'eligible_match_pool'],
+    details: ['This profile is within your preferred distance.'],
+    generatedAt: '2026-05-08T10:15:00Z',
+  );
+
+  const editSnapshot = ProfileEditSnapshot(
+    userId: '11111111-1111-1111-1111-111111111111',
+    editable: EditableProfileSnapshot(
+      bio: 'Loves coffee and beach walks.',
+      gender: 'FEMALE',
+      interestedIn: ['MALE'],
+      maxDistanceKm: 50,
+      location: ProfileEditLocationSnapshot(label: 'Tel Aviv'),
+    ),
+    readOnly: ReadOnlyProfileSnapshot(
+      name: 'Dana',
+      state: 'ACTIVE',
+      photoUrls: ['/photos/dana-1.jpg'],
+    ),
+  );
+
   testWidgets('shows a loading state before the profile resolves', (
     WidgetTester tester,
   ) async {
@@ -74,6 +101,9 @@ void main() {
           otherUserProfileProvider(
             sparseDetail.id,
           ).overrideWith((ref) async => sparseDetail),
+          presentationContextProvider(
+            sparseDetail.id,
+          ).overrideWith((ref) async => presentationContext),
         ],
         child: MaterialApp(
           home: ProfileScreen.otherUser(
@@ -88,6 +118,12 @@ void main() {
     expect(find.text('Noa, 29'), findsOneWidget);
     expect(find.text('About Noa'), findsOneWidget);
     expect(find.text('Shared details'), findsOneWidget);
+    expect(find.text('Why this profile is shown'), findsOneWidget);
+    expect(find.text('Shown because this profile is nearby.'), findsOneWidget);
+    expect(
+      find.text('This profile is within your preferred distance.'),
+      findsOneWidget,
+    );
     expect(find.text('No bio added yet.'), findsOneWidget);
     expect(find.text('Not specified'), findsNWidgets(2));
     expect(find.text('Location not shared'), findsAtLeastNWidgets(1));
@@ -105,6 +141,9 @@ void main() {
           otherUserProfileProvider(
             detail.id,
           ).overrideWith((ref) async => detail),
+          presentationContextProvider(
+            detail.id,
+          ).overrideWith((ref) async => presentationContext),
         ],
         child: MaterialApp(
           home: ProfileScreen.otherUser(
@@ -161,7 +200,10 @@ void main() {
   ) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [profileProvider.overrideWith((ref) async => detail)],
+        overrides: [
+          profileProvider.overrideWith((ref) async => detail),
+          profileEditSnapshotProvider.overrideWith((ref) async => editSnapshot),
+        ],
         child: const MaterialApp(home: ProfileScreen.currentUser()),
       ),
     );
@@ -209,6 +251,9 @@ void main() {
           otherUserProfileProvider(
             detail.id,
           ).overrideWith((ref) async => detail),
+          presentationContextProvider(
+            detail.id,
+          ).overrideWith((ref) async => presentationContext),
         ],
         child: MaterialApp(
           home: ProfileScreen.otherUser(
@@ -234,6 +279,9 @@ void main() {
           otherUserProfileProvider(
             detail.id,
           ).overrideWith((ref) async => detail),
+          presentationContextProvider(
+            detail.id,
+          ).overrideWith((ref) async => presentationContext),
         ],
         child: MaterialApp(
           home: ProfileScreen.otherUser(

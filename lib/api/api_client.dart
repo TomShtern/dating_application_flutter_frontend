@@ -14,6 +14,8 @@ import '../models/matches_response.dart';
 import '../models/achievement_summary.dart';
 import '../models/notification_item.dart';
 import '../models/pending_liker.dart';
+import '../models/profile_edit_snapshot.dart';
+import '../models/profile_presentation_context.dart';
 import '../models/profile_update_request.dart';
 import '../models/standout.dart';
 import '../models/undo_swipe_result.dart';
@@ -124,6 +126,41 @@ class ApiClient {
         ApiEndpoints.updateProfile(userId),
         data: request.toJson(),
         options: Options(extra: {'userId': userId}),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<ProfileEditSnapshot> getProfileEditSnapshot({
+    required String userId,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.profileEditSnapshot(userId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return ProfileEditSnapshot.fromJson(
+        _expectMap(response.data, context: 'loading profile edit values'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<ProfilePresentationContext> getProfilePresentationContext({
+    required String viewerUserId,
+    required String targetUserId,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.profilePresentationContext(viewerUserId, targetUserId),
+        options: Options(extra: {'userId': viewerUserId}),
+      );
+
+      return ProfilePresentationContext.fromJson(
+        _expectMap(response.data, context: 'loading presentation context'),
       );
     } on DioException catch (error) {
       throw _toApiError(error);

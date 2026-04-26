@@ -1,3 +1,5 @@
+import 'person_summary_fields.dart';
+
 class Standout {
   const Standout({
     required this.id,
@@ -9,6 +11,10 @@ class Standout {
     required this.reason,
     required this.createdAt,
     required this.interactedAt,
+    this.primaryPhotoUrl,
+    this.photoUrls = const <String>[],
+    this.approximateLocation,
+    this.summaryLine,
   });
 
   final String id;
@@ -20,6 +26,10 @@ class Standout {
   final String reason;
   final DateTime? createdAt;
   final DateTime? interactedAt;
+  final String? primaryPhotoUrl;
+  final List<String> photoUrls;
+  final String? approximateLocation;
+  final String? summaryLine;
 
   factory Standout.fromJson(Map<String, dynamic> json) {
     return Standout(
@@ -32,6 +42,10 @@ class Standout {
       reason: json['reason'] as String? ?? '',
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
       interactedAt: DateTime.tryParse(json['interactedAt'] as String? ?? ''),
+      primaryPhotoUrl: parseNullableString(json['primaryPhotoUrl']),
+      photoUrls: parseStringList(json['photoUrls']),
+      approximateLocation: parseNullableString(json['approximateLocation']),
+      summaryLine: parseNullableString(json['summaryLine']),
     );
   }
 }

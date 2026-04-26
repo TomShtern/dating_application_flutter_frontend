@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/app_config.dart';
 import '../../api/api_error.dart';
+import '../../models/profile_presentation_context.dart';
 import '../../models/user_detail.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/media/media_url.dart';
+import '../../shared/widgets/highlight_tag_row.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/section_intro_card.dart';
@@ -35,6 +37,9 @@ class ProfileScreen extends ConsumerWidget {
     final profileState = _isCurrentUser
         ? ref.watch(profileProvider)
         : ref.watch(otherUserProfileProvider(userId!));
+    final presentationContextState = _isCurrentUser
+        ? null
+        : ref.watch(presentationContextProvider(userId!));
     final controller = ref.read(profileControllerProvider);
     final title = _isCurrentUser
         ? 'My profile'
@@ -58,8 +63,7 @@ class ProfileScreen extends ConsumerWidget {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (context) =>
-                          ProfileEditScreen(initialDetail: detail),
+                      builder: (context) => const ProfileEditScreen(),
                     ),
                   );
                 },
@@ -98,12 +102,12 @@ class ProfileScreen extends ConsumerWidget {
             data: (detail) => _ProfileContent(
               detail: detail,
               isCurrentUser: _isCurrentUser,
+              presentationContextState: presentationContextState,
               onEditProfile: _isCurrentUser
                   ? () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (context) =>
-                              ProfileEditScreen(initialDetail: detail),
+                          builder: (context) => const ProfileEditScreen(),
                         ),
                       );
                     }
@@ -145,12 +149,14 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({
     required this.detail,
     required this.isCurrentUser,
+    this.presentationContextState,
     this.onEditProfile,
     this.onFixLocation,
   });
 
   final UserDetail detail;
   final bool isCurrentUser;
+  final AsyncValue<ProfilePresentationContext>? presentationContextState;
   final VoidCallback? onEditProfile;
   final VoidCallback? onFixLocation;
 
@@ -161,6 +167,10 @@ class _ProfileContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
+          if (!isCurrentUser && presentationContextState != null) ...[
+            SizedBox(height: AppTheme.sectionSpacing()),
+            _PresentationContextSection(state: presentationContextState!),
+          ],
           SizedBox(height: AppTheme.sectionSpacing()),
           _ProfileSection(
             icon: Icons.notes_rounded,
@@ -211,6 +221,107 @@ class _ProfileContent extends StatelessWidget {
           ),
           _PhotoSection(photoUrls: detail.photoUrls),
         ],
+      ),
+    );
+  }
+}
+
+class _PresentationContextSection extends StatelessWidget {
+  const _PresentationContextSection({required this.state});
+
+  final AsyncValue<ProfilePresentationContext> state;
+
+  @override
+  Widget build(BuildContext context) {
+    return state.when(
+      data: (contextData) => _PresentationContextCard(contextData: contextData),
+      loading: () => const _ProfileSection(
+        icon: Icons.lightbulb_outline_rounded,
+        title: 'Why this profile is shown',
+        value: 'Loading recommendation context...',
+      ),
+      error: (error, stackTrace) => const _ProfileSection(
+        icon: Icons.lightbulb_outline_rounded,
+        title: 'Why this profile is shown',
+        value: 'Recommendation context is unavailable right now.',
+      ),
+    );
+  }
+}
+
+class _PresentationContextCard extends StatelessWidget {
+  const _PresentationContextCard({required this.contextData});
+
+  final ProfilePresentationContext contextData;
+
+  @override
+  Widget build(BuildContext context) {
+    final details = contextData.details;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Icon(
+                      Icons.lightbulb_outline_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Why this profile is shown',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(contextData.summary),
+            if (contextData.reasonTags.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              HighlightTagRow(
+                tags: contextData.reasonTags
+                    .map(formatDisplayLabel)
+                    .toList(growable: false),
+                icon: Icons.sell_outlined,
+              ),
+            ],
+            if (details.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ...details.map(
+                (detail) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 3),
+                        child: Icon(Icons.check_circle_outline, size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(detail)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

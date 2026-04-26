@@ -7,9 +7,10 @@ import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/location/location_completion_screen.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_edit_screen.dart';
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
 import 'package:flutter_dating_application_1/models/location_metadata.dart';
+import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
 import 'package:flutter_dating_application_1/models/profile_update_request.dart';
-import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 void main() {
@@ -20,38 +21,47 @@ void main() {
     state: 'ACTIVE',
   );
 
-  const detail = UserDetail(
-    id: '11111111-1111-1111-1111-111111111111',
-    name: 'Dana',
-    age: 27,
-    bio: 'Loves coffee and beach walks.',
-    gender: 'FEMALE',
-    interestedIn: ['MALE'],
-    approximateLocation: 'Tel Aviv',
-    maxDistanceKm: 50,
-    photoUrls: ['/photos/dana-1.jpg'],
-    state: 'ACTIVE',
+  const editSnapshot = ProfileEditSnapshot(
+    userId: '11111111-1111-1111-1111-111111111111',
+    editable: EditableProfileSnapshot(
+      bio: 'Loves coffee and beach walks.',
+      gender: 'FEMALE',
+      interestedIn: ['MALE'],
+      maxDistanceKm: 50,
+      minAge: 25,
+      maxAge: 35,
+      heightCm: 172,
+      location: ProfileEditLocationSnapshot(label: 'Tel Aviv'),
+    ),
+    readOnly: ReadOnlyProfileSnapshot(
+      name: 'Dana',
+      state: 'ACTIVE',
+      photoUrls: ['/photos/dana-1.jpg'],
+    ),
   );
 
-  const sparseDetail = UserDetail(
-    id: '11111111-1111-1111-1111-111111111111',
-    name: 'Dana',
-    age: 27,
-    bio: '',
-    gender: '',
-    interestedIn: [],
-    approximateLocation: 'Tel Aviv',
-    maxDistanceKm: 0,
-    photoUrls: [],
-    state: 'ACTIVE',
+  const sparseEditSnapshot = ProfileEditSnapshot(
+    userId: '11111111-1111-1111-1111-111111111111',
+    editable: EditableProfileSnapshot(
+      interestedIn: [],
+      location: ProfileEditLocationSnapshot(label: 'Tel Aviv'),
+    ),
+    readOnly: ReadOnlyProfileSnapshot(
+      name: 'Dana',
+      state: 'ACTIVE',
+      photoUrls: [],
+    ),
   );
 
   testWidgets('loads the initial profile values into the edit form', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: ProfileEditScreen(initialDetail: detail)),
+      ProviderScope(
+        overrides: [
+          profileEditSnapshotProvider.overrideWith((ref) async => editSnapshot),
+        ],
+        child: const MaterialApp(home: ProfileEditScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -67,7 +77,7 @@ void main() {
     );
     expect(genderChip.selected, isTrue);
 
-    expect(find.text(detail.bio), findsOneWidget);
+    expect(find.text(editSnapshot.editable.bio!), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Preferences'),
@@ -90,9 +100,12 @@ void main() {
     );
     expect(find.widgetWithText(FilterChip, 'Male'), findsOneWidget);
     expect(
-      _editableTextByValue(detail.maxDistanceKm.toString()),
+      _editableTextByValue(editSnapshot.editable.maxDistanceKm.toString()),
       findsOneWidget,
     );
+    expect(_editableTextByValue('25'), findsOneWidget);
+    expect(_editableTextByValue('35'), findsOneWidget);
+    expect(_editableTextByValue('172'), findsOneWidget);
   });
 
   testWidgets('validates numeric preferences before saving', (
@@ -105,10 +118,9 @@ void main() {
         overrides: [
           apiClientProvider.overrideWithValue(apiClient),
           selectedUserProvider.overrideWith((ref) async => currentUser),
+          profileEditSnapshotProvider.overrideWith((ref) async => editSnapshot),
         ],
-        child: const MaterialApp(
-          home: ProfileEditScreen(initialDetail: detail),
-        ),
+        child: const MaterialApp(home: ProfileEditScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -139,10 +151,9 @@ void main() {
         overrides: [
           apiClientProvider.overrideWithValue(apiClient),
           selectedUserProvider.overrideWith((ref) async => currentUser),
+          profileEditSnapshotProvider.overrideWith((ref) async => editSnapshot),
         ],
-        child: const MaterialApp(
-          home: ProfileEditScreen(initialDetail: detail),
-        ),
+        child: const MaterialApp(home: ProfileEditScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -181,10 +192,11 @@ void main() {
           overrides: [
             apiClientProvider.overrideWithValue(apiClient),
             selectedUserProvider.overrideWith((ref) async => currentUser),
+            profileEditSnapshotProvider.overrideWith(
+              (ref) async => sparseEditSnapshot,
+            ),
           ],
-          child: const MaterialApp(
-            home: ProfileEditScreen(initialDetail: sparseDetail),
-          ),
+          child: const MaterialApp(home: ProfileEditScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -212,6 +224,7 @@ void main() {
         overrides: [
           apiClientProvider.overrideWithValue(apiClient),
           selectedUserProvider.overrideWith((ref) async => currentUser),
+          profileEditSnapshotProvider.overrideWith((ref) async => editSnapshot),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -221,8 +234,7 @@ void main() {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (context) =>
-                            const ProfileEditScreen(initialDetail: detail),
+                        builder: (context) => const ProfileEditScreen(),
                       ),
                     );
                   },
@@ -240,7 +252,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
-      _editableTextByValue(detail.bio),
+      _editableTextByValue(editSnapshot.editable.bio!),
       'Updated bio for the edit flow.',
     );
     await tester.tap(find.widgetWithText(ChoiceChip, 'Non-binary'));
@@ -266,6 +278,9 @@ void main() {
     );
     expect(apiClient.updatedRequests.last.gender, 'NON_BINARY');
     expect(apiClient.updatedRequests.last.maxDistanceKm, 50);
+    expect(apiClient.updatedRequests.last.minAge, 25);
+    expect(apiClient.updatedRequests.last.maxAge, 35);
+    expect(apiClient.updatedRequests.last.heightCm, 172);
     expect(
       apiClient.updatedRequests.last.interestedIn,
       containsAllInOrder(const ['MALE', 'NON_BINARY']),
@@ -291,10 +306,9 @@ void main() {
         overrides: [
           apiClientProvider.overrideWithValue(apiClient),
           selectedUserProvider.overrideWith((ref) async => currentUser),
+          profileEditSnapshotProvider.overrideWith((ref) async => editSnapshot),
         ],
-        child: const MaterialApp(
-          home: ProfileEditScreen(initialDetail: detail),
-        ),
+        child: const MaterialApp(home: ProfileEditScreen()),
       ),
     );
     await tester.pumpAndSettle();

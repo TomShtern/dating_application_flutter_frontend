@@ -11,6 +11,12 @@ class ApiEndpoints {
 
   static String updateProfile(String userId) => '/api/users/$userId/profile';
 
+  static String profileEditSnapshot(String userId) =>
+      '/api/users/$userId/profile-edit-snapshot';
+
+  static String profilePresentationContext(String viewerId, String targetId) =>
+      '/api/users/$viewerId/presentation-context/$targetId';
+
   static String blockUser(String userId, String targetId) =>
       '/api/users/$userId/block/$targetId';
 

@@ -1,3 +1,5 @@
+import 'person_summary_fields.dart';
+
 class DailyPick {
   const DailyPick({
     required this.userId,
@@ -6,6 +8,10 @@ class DailyPick {
     required this.date,
     required this.reason,
     required this.alreadySeen,
+    this.primaryPhotoUrl,
+    this.photoUrls = const <String>[],
+    this.approximateLocation,
+    this.summaryLine,
   });
 
   final String userId;
@@ -14,6 +20,10 @@ class DailyPick {
   final String date;
   final String reason;
   final bool alreadySeen;
+  final String? primaryPhotoUrl;
+  final List<String> photoUrls;
+  final String? approximateLocation;
+  final String? summaryLine;
 
   factory DailyPick.fromJson(Map<String, dynamic> json) {
     return DailyPick(
@@ -23,6 +33,10 @@ class DailyPick {
       date: json['date'] as String? ?? '',
       reason: json['reason'] as String? ?? '',
       alreadySeen: json['alreadySeen'] as bool? ?? false,
+      primaryPhotoUrl: parseNullableString(json['primaryPhotoUrl']),
+      photoUrls: parseStringList(json['photoUrls']),
+      approximateLocation: parseNullableString(json['approximateLocation']),
+      summaryLine: parseNullableString(json['summaryLine']),
     );
   }
 }
