@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../models/verification_result.dart';
-import '../../shared/widgets/developer_only_callout_card.dart';
-import '../../shared/formatting/display_text.dart';
 import '../../shared/formatting/date_formatting.dart';
+import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/developer_only_callout_card.dart';
+import '../../shared/widgets/section_intro_card.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import 'verification_provider.dart';
 
@@ -42,6 +44,11 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         : startResult == null
         ? 0.5
         : 0.82;
+    final currentStep = confirmResult?.verified == true
+        ? 'Verified ✓'
+        : startResult == null
+        ? 'Step 1 of 2'
+        : 'Step 2 of 2';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Verification')),
@@ -50,14 +57,29 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: AppTheme.screenPadding(),
           children: [
-            _VerificationProgressCard(
-              progressValue: progressValue,
-              currentStep: startResult == null
-                  ? 'Step 1 of 2'
-                  : confirmResult?.verified == true
-                  ? 'Verified'
-                  : 'Step 2 of 2',
+            SectionIntroCard(
+              icon: Icons.verified_user_rounded,
+              title: 'Verify your account',
+              description:
+                  'Confirm your email or phone. Verified profiles get a badge and build more trust with matches.',
+              trailing: _VerificationStepPill(currentStep: currentStep),
+              badges: const [
+                ShellHeroPill(
+                  icon: Icons.verified_outlined,
+                  label: 'Verified badge',
+                ),
+                ShellHeroPill(
+                  icon: Icons.security_outlined,
+                  label: 'More trust',
+                ),
+                ShellHeroPill(
+                  icon: Icons.favorite_outlined,
+                  label: 'Better matches',
+                ),
+              ],
             ),
+            const SizedBox(height: AppTheme.cardGap),
+            _VerificationProgressBar(value: progressValue),
             SizedBox(height: AppTheme.sectionSpacing(compact: true)),
             _VerificationStepCard(
               stepLabel: 'Step 1',
@@ -67,25 +89,28 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment<String>(
-                        value: 'EMAIL',
-                        label: Text('Email'),
-                      ),
-                      ButtonSegment<String>(
-                        value: 'PHONE',
-                        label: Text('Phone'),
-                      ),
-                    ],
-                    selected: {_method},
-                    onSelectionChanged: (selection) {
-                      setState(() {
-                        _method = selection.first;
-                      });
-                    },
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment<String>(
+                          value: 'EMAIL',
+                          label: Text('Email'),
+                        ),
+                        ButtonSegment<String>(
+                          value: 'PHONE',
+                          label: Text('Phone'),
+                        ),
+                      ],
+                      selected: {_method},
+                      onSelectionChanged: (selection) {
+                        setState(() {
+                          _method = selection.first;
+                        });
+                      },
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.compactCardPadding),
                   TextField(
                     controller: _contactController,
                     decoration: InputDecoration(
@@ -95,19 +120,24 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                           : '+1 555 555 5555',
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: _starting ? null : _handleStart,
-                    icon: const Icon(Icons.verified_outlined),
-                    label: Text(
-                      _starting ? 'Starting…' : 'Send verification code',
+                  const SizedBox(height: AppTheme.compactCardPadding),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _starting ? null : _handleStart,
+                      icon: const Icon(Icons.verified_outlined),
+                      label: Text(
+                        _starting ? 'Starting…' : 'Send verification code',
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+            SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+            const _VerificationTrustSection(),
             if (startResult != null) ...[
-              SizedBox(height: AppTheme.sectionSpacing()),
+              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
               _VerificationStepCard(
                 stepLabel: 'Step 2',
                 title: 'Enter the code',
@@ -117,8 +147,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
+                      spacing: AppTheme.cardGap,
+                      runSpacing: AppTheme.cardGap,
                       children: [
                         _VerificationInfoChip(
                           icon: startResult.method.toUpperCase() == 'PHONE'
@@ -134,23 +164,26 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                     ),
                     if (kDebugMode &&
                         startResult.devVerificationCode.trim().isNotEmpty) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppTheme.compactCardPadding),
                       _DevelopmentOnlyCodeCard(
                         code: startResult.devVerificationCode,
                       ),
                     ],
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppTheme.compactCardPadding),
                     TextField(
                       controller: _codeController,
                       decoration: const InputDecoration(
                         labelText: 'Verification code',
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: _confirming ? null : _handleConfirm,
-                      child: Text(
-                        _confirming ? 'Confirming…' : 'Confirm verification',
+                    const SizedBox(height: AppTheme.compactCardPadding),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _confirming ? null : _handleConfirm,
+                        child: Text(
+                          _confirming ? 'Confirming…' : 'Confirm verification',
+                        ),
                       ),
                     ),
                   ],
@@ -158,7 +191,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               ),
             ],
             if (confirmResult != null) ...[
-              SizedBox(height: AppTheme.sectionSpacing()),
+              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
               _VerificationOutcomeCard(result: confirmResult),
             ],
           ],
@@ -272,13 +305,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   }
 }
 
-class _VerificationProgressCard extends StatelessWidget {
-  const _VerificationProgressCard({
-    required this.progressValue,
-    required this.currentStep,
-  });
+class _VerificationStepPill extends StatelessWidget {
+  const _VerificationStepPill({required this.currentStep});
 
-  final double progressValue;
   final String currentStep;
 
   @override
@@ -286,56 +315,35 @@ class _VerificationProgressCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        color: colorScheme.surface.withValues(alpha: 0.92),
-      ),
-      child: Padding(
-        padding: AppTheme.sectionPadding(compact: true),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: const BorderRadius.all(Radius.circular(14)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(9),
-                    child: Icon(
-                      Icons.verified_user_outlined,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Verify contact details',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-                Text(
-                  currentStep,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-              child: LinearProgressIndicator(
-                value: progressValue,
-                minHeight: 8,
-              ),
-            ),
-          ],
+    return Theme(
+      data: theme.copyWith(
+        textTheme: theme.textTheme.copyWith(
+          labelLarge: theme.textTheme.labelLarge?.copyWith(
+            color: colorScheme.primary,
+          ),
         ),
+      ),
+      child: ShellHeroPill(label: currentStep),
+    );
+  }
+}
+
+class _VerificationProgressBar extends StatelessWidget {
+  const _VerificationProgressBar({required this.value});
+
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: AppTheme.chipRadius,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: value),
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        builder: (context, animatedValue, _) {
+          return LinearProgressIndicator(value: animatedValue, minHeight: 6);
+        },
       ),
     );
   }
@@ -362,29 +370,127 @@ class _VerificationStepCard extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: colorScheme.surface.withValues(alpha: 0.9),
+        color: colorScheme.surface,
       ),
       child: Padding(
-        padding: AppTheme.sectionPadding(),
+        padding: AppTheme.sectionPadding(compact: true),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _SectionLabel(stepLabel),
+            const SizedBox(height: AppTheme.cardGap),
+            Text(title, style: theme.textTheme.titleLarge),
+            const SizedBox(height: AppTheme.cardGap),
             Text(
-              stepLabel,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w700,
+              description,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(title, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(description, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.cardGap),
             child,
           ],
         ),
       ),
+    );
+  }
+}
+
+class _VerificationTrustSection extends StatelessWidget {
+  const _VerificationTrustSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surfaceContainerLow,
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionLabel('How it works'),
+            SizedBox(height: AppTheme.cardGap),
+            _TrustBullet(
+              icon: Icons.mail_outline_rounded,
+              text: 'We send a one-time code to your email or phone.',
+            ),
+            SizedBox(height: AppTheme.compactCardGap),
+            _TrustBullet(
+              icon: Icons.lock_outline_rounded,
+              text: 'The code confirms you own the contact method.',
+            ),
+            SizedBox(height: AppTheme.compactCardGap),
+            _TrustBullet(
+              icon: Icons.badge_outlined,
+              text: 'Your profile gets a Verified badge visible to matches.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: AppTheme.chipRadius,
+            child: SizedBox(
+              width: 3,
+              child: ColoredBox(
+                color: colorScheme.primary.withValues(alpha: 0.85),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppTheme.cardGap),
+          Text(
+            title,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrustBullet extends StatelessWidget {
+  const _TrustBullet({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: colorScheme.primary.withValues(alpha: 0.7)),
+        const SizedBox(width: AppTheme.cardGap),
+        Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
+      ],
     );
   }
 }
@@ -401,17 +507,21 @@ class _VerificationInfoChip extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: AppTheme.surfaceDecoration(
+        context,
         color: colorScheme.surfaceContainerHighest,
         borderRadius: AppTheme.chipRadius,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.cardGap,
+          vertical: AppTheme.compactCardGap,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16, color: colorScheme.primary),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppTheme.compactCardGap),
             Text(label, style: theme.textTheme.labelLarge),
           ],
         ),
@@ -447,50 +557,78 @@ class _VerificationOutcomeCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final verified = result.verified;
 
+    if (verified) {
+      final textColor = colorScheme.onPrimary;
+
+      return DecoratedBox(
+        decoration: AppTheme.surfaceDecoration(
+          context,
+          gradient: AppTheme.accentGradient(context),
+          prominent: true,
+        ),
+        child: Padding(
+          padding: AppTheme.sectionPadding(),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.verified_rounded, size: 32, color: textColor),
+              const SizedBox(width: AppTheme.cardPadding),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Account verified',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.cardGap),
+                    Text(
+                      result.verifiedAt == null
+                          ? 'Your contact details are confirmed and your profile can show the Verified badge to matches.'
+                          : 'Verified at ${formatDateTimeStamp(result.verifiedAt!)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: textColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color:
-            (verified
-                    ? colorScheme.secondaryContainer
-                    : colorScheme.surfaceContainerHighest)
-                .withValues(alpha: 0.72),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.72),
       ),
       child: Padding(
         padding: AppTheme.sectionPadding(),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: verified ? colorScheme.primary : colorScheme.surface,
-                borderRadius: const BorderRadius.all(Radius.circular(20)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Icon(
-                  verified
-                      ? Icons.verified_rounded
-                      : Icons.error_outline_rounded,
-                  color: verified ? colorScheme.onPrimary : colorScheme.primary,
-                ),
-              ),
+            Icon(
+              Icons.error_outline_rounded,
+              color: colorScheme.primary,
+              size: 28,
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: AppTheme.cardPadding),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    verified ? 'Verification complete' : 'Verification pending',
+                    'Verification pending',
                     style: theme.textTheme.titleLarge,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.cardGap),
                   Text(
                     result.verifiedAt == null
-                        ? (verified
-                              ? 'Your contact details are now confirmed.'
-                              : 'No verification timestamp was returned yet.')
+                        ? 'No verification timestamp was returned yet.'
                         : 'Verified at ${formatDateTimeStamp(result.verifiedAt!)}',
                     style: theme.textTheme.bodyMedium,
                   ),

@@ -11,6 +11,7 @@ import 'package:flutter_dating_application_1/models/conversation_summary.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
+import 'package:flutter_dating_application_1/theme/app_theme.dart';
 
 void main() {
   const currentUser = UserSummary(
@@ -75,6 +76,9 @@ void main() {
           selectedUserProvider.overrideWith((ref) async => currentUser),
         ],
         child: MaterialApp(
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: ThemeMode.light,
           home: ConversationThreadScreen(
             currentUser: currentUser,
             conversation: conversation,
@@ -90,10 +94,11 @@ void main() {
       find.text('A detail, a question, or a simple plan works well.'),
       findsNothing,
     );
+    expect(find.text('Active recently'), findsOneWidget);
     expect(find.text('Hey Dana'), findsOneWidget);
 
     final initialSendButton = tester.widget<IconButton>(
-      find.widgetWithIcon(IconButton, Icons.send_rounded),
+      find.widgetWithIcon(IconButton, Icons.arrow_upward_rounded),
     );
     expect(initialSendButton.onPressed, isNull);
 
@@ -101,16 +106,30 @@ void main() {
     await tester.pump();
 
     final enabledSendButton = tester.widget<IconButton>(
-      find.widgetWithIcon(IconButton, Icons.send_rounded),
+      find.widgetWithIcon(IconButton, Icons.arrow_upward_rounded),
     );
     expect(enabledSendButton.onPressed, isNotNull);
 
-    await tester.tap(find.widgetWithIcon(IconButton, Icons.send_rounded));
+    await tester.tap(
+      find.widgetWithIcon(IconButton, Icons.arrow_upward_rounded),
+    );
     await tester.pumpAndSettle();
 
     expect(apiClient.lastSentContent, 'Hey there');
     expect(find.text('You'), findsNothing);
     expect(find.text('Hey there'), findsOneWidget);
+
+    final incomingBubbleDecoration = _nearestDecoratedBoxDecoration(
+      tester,
+      find.text('Hey Dana'),
+    );
+    expect(incomingBubbleDecoration.color, AppTheme.matchTint);
+
+    final outgoingBubbleDecoration = _nearestDecoratedBoxDecoration(
+      tester,
+      find.text('Hey there'),
+    );
+    expect(outgoingBubbleDecoration.gradient, isA<LinearGradient>());
 
     final messageField = tester.widget<TextField>(find.byType(TextField));
     expect(messageField.controller?.text, isEmpty);
@@ -161,6 +180,9 @@ void main() {
             selectedUserProvider.overrideWith((ref) async => currentUser),
           ],
           child: MaterialApp(
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: ThemeMode.light,
             home: ConversationThreadScreen(
               currentUser: currentUser,
               conversation: conversation,
@@ -171,12 +193,25 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('3 messages so far'), findsOneWidget);
-      expect(find.text('Started Apr 18, 2026'), findsOneWidget);
+      expect(find.text('Be genuine, be curious'), findsOneWidget);
+      expect(
+        find.text('3 messages so far · Started Apr 18, 2026'),
+        findsOneWidget,
+      );
       expect(find.text('Apr 18, 2026'), findsOneWidget);
       expect(find.text('Apr 19, 2026'), findsOneWidget);
 
-      final summaryTop = tester.getTopLeft(find.text('3 messages so far')).dy;
+      final summaryCardDecoration = _ancestorDecoratedBoxDecorationWhere(
+        tester,
+        find.text('Be genuine, be curious'),
+        (decoration) => decoration.gradient != null,
+      );
+      final summaryGradient = summaryCardDecoration.gradient! as LinearGradient;
+      expect(summaryGradient.colors.first, AppTheme.matchTint);
+
+      final summaryTop = tester
+          .getTopLeft(find.text('Be genuine, be curious'))
+          .dy;
       final screenHeight = tester.getSize(find.byType(Scaffold)).height;
       expect(summaryTop, lessThan(screenHeight * 0.55));
 
@@ -206,6 +241,9 @@ void main() {
           selectedUserProvider.overrideWith((ref) async => currentUser),
         ],
         child: MaterialApp(
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: ThemeMode.light,
           home: ConversationThreadScreen(
             currentUser: currentUser,
             conversation: conversation,
@@ -261,6 +299,9 @@ void main() {
           selectedUserProvider.overrideWith((ref) async => currentUser),
         ],
         child: MaterialApp(
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: ThemeMode.light,
           home: ConversationThreadScreen(
             currentUser: currentUser,
             conversation: conversation,
@@ -313,6 +354,9 @@ void main() {
           selectedUserProvider.overrideWith((ref) async => currentUser),
         ],
         child: MaterialApp(
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: ThemeMode.light,
           home: ConversationThreadScreen(
             currentUser: currentUser,
             conversation: conversation,
@@ -361,6 +405,9 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: ThemeMode.light,
           home: ConversationThreadScreen(
             currentUser: currentUser,
             conversation: conversation,
@@ -377,6 +424,59 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('View profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Always up for a museum date.'), findsOneWidget);
+  });
+
+  testWidgets('opens the other user profile from the tappable app bar title', (
+    WidgetTester tester,
+  ) async {
+    final apiClient = _FakeConversationThreadApiClient(
+      messageResponses: const [[]],
+      sentMessage: MessageDto(
+        id: 'message-1',
+        conversationId: conversation.id,
+        senderId: currentUser.id,
+        content: 'Hey there',
+        sentAt: DateTime.parse('2026-04-18T14:21:00Z'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          otherUserProfileProvider(conversation.otherUserId).overrideWith(
+            (ref) async => const UserDetail(
+              id: '22222222-2222-2222-2222-222222222222',
+              name: 'Noa',
+              age: 29,
+              bio: 'Always up for a museum date.',
+              gender: 'FEMALE',
+              interestedIn: ['MALE'],
+              approximateLocation: 'Haifa',
+              maxDistanceKm: 25,
+              photoUrls: ['/photos/noa-1.jpg'],
+              state: 'ACTIVE',
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: ThemeMode.light,
+          home: ConversationThreadScreen(
+            currentUser: currentUser,
+            conversation: conversation,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Active recently'));
     await tester.pumpAndSettle();
 
     expect(find.text('Always up for a museum date.'), findsOneWidget);
@@ -403,6 +503,9 @@ void main() {
           selectedUserProvider.overrideWith((ref) async => currentUser),
         ],
         child: MaterialApp(
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: ThemeMode.light,
           home: ConversationThreadScreen(
             currentUser: currentUser,
             conversation: conversation,
@@ -461,4 +564,36 @@ class _FakeConversationThreadApiClient extends ApiClient {
     lastSentContent = content;
     return sentMessage;
   }
+}
+
+BoxDecoration _nearestDecoratedBoxDecoration(
+  WidgetTester tester,
+  Finder descendant,
+) {
+  return _ancestorDecoratedBoxDecorationWhere(tester, descendant, (_) => true);
+}
+
+BoxDecoration _ancestorDecoratedBoxDecorationWhere(
+  WidgetTester tester,
+  Finder descendant,
+  bool Function(BoxDecoration decoration) predicate,
+) {
+  final element = tester.element(descendant);
+  BoxDecoration? decoration;
+
+  element.visitAncestorElements((ancestor) {
+    final widget = ancestor.widget;
+    if (widget is DecoratedBox && widget.decoration is BoxDecoration) {
+      final candidate = widget.decoration as BoxDecoration;
+      if (predicate(candidate)) {
+        decoration = candidate;
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  expect(decoration, isNotNull);
+  return decoration!;
 }

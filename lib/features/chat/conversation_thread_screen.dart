@@ -89,15 +89,63 @@ class _ConversationThreadScreenState
       conversationThreadProvider(widget.conversation.id),
     );
     final trimmedMessage = _messageController.text.trim();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            UserAvatar(name: widget.conversation.otherUserName, radius: 16),
-            const SizedBox(width: 12),
-            Expanded(child: Text(widget.conversation.otherUserName)),
-          ],
+        title: InkWell(
+          onTap: () => _handleConversationMenuAction(
+            _ConversationMenuAction.viewProfile,
+          ),
+          borderRadius: AppTheme.chipRadius,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                UserAvatar(name: widget.conversation.otherUserName, radius: 18),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.conversation.otherUserName,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: AppTheme.activeColor(context),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              'Active recently',
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           AppOverflowMenuButton<_ConversationMenuAction>(
@@ -196,12 +244,11 @@ class _ConversationThreadScreenState
               DecoratedBox(
                 decoration: AppTheme.surfaceDecoration(
                   context,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.surface.withValues(alpha: 0.94),
+                  color: colorScheme.surface.withValues(alpha: 0.97),
+                  prominent: true,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -240,7 +287,7 @@ class _ConversationThreadScreenState
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.send_rounded),
+                            : const Icon(Icons.arrow_upward_rounded),
                       ),
                     ],
                   ),
@@ -526,41 +573,51 @@ class _SparseThreadSummaryCard extends StatelessWidget {
     final countLabel = messageCount == 1
         ? '1 message so far'
         : '$messageCount messages so far';
+    final summaryGradient = LinearGradient(
+      colors: theme.brightness == Brightness.dark
+          ? [colorScheme.surfaceContainerLow, AppTheme.matchTintColor(context)]
+          : [AppTheme.matchTint, colorScheme.surface],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: colorScheme.surface.withValues(alpha: 0.9),
+        gradient: summaryGradient,
+        prominent: true,
       ),
       child: Padding(
         padding: AppTheme.sectionPadding(compact: true),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            UserAvatar(name: otherUserName, radius: 18),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(countLabel, style: theme.textTheme.titleSmall),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Started ${formatShortDate(startedAt)}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
+            UserAvatar(name: otherUserName, radius: 32),
+            const SizedBox(height: 12),
+            Text(
+              otherUserName,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '$countLabel · Started ${formatShortDate(startedAt)}',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: 14),
             DecoratedBox(
               decoration: AppTheme.glassDecoration(context),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+                  horizontal: 14,
+                  vertical: 8,
                 ),
                 child: Text(
-                  'Stay curious',
-                  style: theme.textTheme.labelMedium?.copyWith(
+                  'Be genuine, be curious',
+                  style: theme.textTheme.labelLarge?.copyWith(
                     color: colorScheme.primary,
                   ),
                 ),
@@ -612,9 +669,25 @@ class _MessageBubble extends StatelessWidget {
     final message = entry.message!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final bubbleColor = entry.isOutgoing
-        ? colorScheme.primaryContainer
-        : colorScheme.surfaceContainerLow;
+    final incomingBubbleColor = theme.brightness == Brightness.dark
+        ? colorScheme.surfaceContainerLow
+        : AppTheme.matchTint;
+    final bubbleDecoration = entry.isOutgoing
+        ? BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.primaryContainer,
+                colorScheme.primaryContainer.withValues(alpha: 0.70),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: _messageBubbleRadius(entry),
+          )
+        : BoxDecoration(
+            color: incomingBubbleColor,
+            borderRadius: _messageBubbleRadius(entry),
+          );
 
     return Align(
       alignment: entry.isOutgoing
@@ -623,10 +696,7 @@ class _MessageBubble extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 320),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: bubbleColor,
-            borderRadius: _messageBubbleRadius(entry),
-          ),
+          decoration: bubbleDecoration,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
             child: Column(

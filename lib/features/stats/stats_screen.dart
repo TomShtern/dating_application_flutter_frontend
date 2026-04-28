@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,47 +24,45 @@ class StatsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Stats'),
+        title: Text(
+          'Stats',
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
         actions: [
-          IconButton(
-            tooltip: 'View achievements',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (context) =>
-                      AchievementsScreen(currentUser: currentUser),
-                ),
-              );
-            },
-            icon: const Icon(Icons.workspace_premium_outlined),
+          Tooltip(
+            message: 'View achievements',
+            child: IconButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) =>
+                        AchievementsScreen(currentUser: currentUser),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.workspace_premium_outlined),
+            ),
           ),
-          IconButton(
-            tooltip: 'Refresh stats',
-            onPressed: () => ref.invalidate(statsProvider),
-            icon: const Icon(Icons.refresh),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Tooltip(
+              message: 'Refresh stats',
+              child: IconButton(
+                onPressed: () => ref.invalidate(statsProvider),
+                icon: const Icon(Icons.refresh_rounded),
+              ),
+            ),
           ),
         ],
       ),
       body: SafeArea(
         child: statsState.when(
-          data: (stats) => ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: AppTheme.screenPadding(),
-            children: [
-              _StatsOverviewCard(currentUser: currentUser, stats: stats),
-              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-              if (stats.items.isEmpty)
-                const AppAsyncState.empty(
-                  message: 'No stats are available for this user yet.',
-                )
-              else ...[
-                for (var index = 0; index < stats.items.length; index++) ...[
-                  _StatSummaryCard(item: stats.items[index]),
-                  if (index != stats.items.length - 1)
-                    SizedBox(height: AppTheme.listSpacing()),
-                ],
-              ],
-            ],
+          data: (stats) => _StatsDashboard(
+            currentUser: currentUser,
+            stats: stats,
+            onRefresh: () => ref.invalidate(statsProvider),
           ),
           loading: () => Padding(
             padding: AppTheme.screenPadding(),
@@ -83,8 +83,223 @@ class StatsScreen extends ConsumerWidget {
   }
 }
 
-class _StatSummaryCard extends StatelessWidget {
-  const _StatSummaryCard({required this.item});
+class _StatsDashboard extends StatelessWidget {
+  const _StatsDashboard({
+    required this.currentUser,
+    required this.stats,
+    required this.onRefresh,
+  });
+
+  final UserSummary currentUser;
+  final UserStats stats;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final snapshotItems = stats.items.take(4).toList(growable: false);
+    final performanceItems = stats.items.skip(4).toList(growable: false);
+
+    return RefreshIndicator(
+      onRefresh: () async => onRefresh(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: AppTheme.screenPadding(),
+        children: [
+          _StatsOverviewCard(currentUser: currentUser, stats: stats),
+          SizedBox(height: AppTheme.sectionSpacing()),
+          if (stats.items.isEmpty)
+            const AppAsyncState.empty(
+              message: 'No stats are available for this user yet.',
+            )
+          else ...[
+            const _SectionLabel(title: 'Snapshot'),
+            const SizedBox(height: 10),
+            _SnapshotGrid(items: snapshotItems),
+            if (performanceItems.isNotEmpty) ...[
+              SizedBox(height: AppTheme.sectionSpacing()),
+              const _SectionLabel(title: 'Performance'),
+              const SizedBox(height: 10),
+              for (var index = 0; index < performanceItems.length; index++) ...[
+                _PerformanceStatCard(item: performanceItems[index]),
+                if (index != performanceItems.length - 1)
+                  SizedBox(height: AppTheme.listSpacing()),
+              ],
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: 3,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.85),
+              borderRadius: const BorderRadius.all(Radius.circular(999)),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                height: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SnapshotGrid extends StatelessWidget {
+  const _SnapshotGrid({required this.items});
+
+  final List<UserStatItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tileWidth = (constraints.maxWidth - AppTheme.cardGap) / 2;
+
+        return Wrap(
+          spacing: AppTheme.cardGap,
+          runSpacing: AppTheme.cardGap,
+          children: [
+            for (var index = 0; index < items.length; index++)
+              SizedBox(
+                width: tileWidth,
+                child: _SnapshotStatTile(item: items[index], index: index),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SnapshotStatTile extends StatelessWidget {
+  const _SnapshotStatTile({required this.item, required this.index});
+
+  final UserStatItem item;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spec = _StatVisualSpec.forLabel(item.label);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: AppTheme.panelRadius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => showStatDetailSheet(context: context, item: item),
+        child: Ink(
+          decoration: AppTheme.surfaceDecoration(
+            context,
+            color: theme.colorScheme.surface,
+            prominent: false,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(height: 4, color: spec.color.withValues(alpha: 0.70)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 11),
+                child: SizedBox(
+                  height: 100,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _StatIconChip(spec: spec, size: 32),
+                          const Spacer(),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: spec.color.withValues(alpha: 0.08),
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(999),
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(7, 5, 7, 5),
+                              child: _SparkBars(
+                                color: spec.color,
+                                seed: item.value,
+                                width: 34,
+                                height: 18,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _AnimatedStatValue(
+                            value: item.value,
+                            color: spec.color,
+                            duration: Duration(milliseconds: 500 + index * 80),
+                            dense: true,
+                          ),
+                          const SizedBox(height: 7),
+                          Text(
+                            item.label,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 1),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PerformanceStatCard extends StatelessWidget {
+  const _PerformanceStatCard({required this.item});
 
   final UserStatItem item;
 
@@ -92,6 +307,8 @@ class _StatSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final spec = _StatVisualSpec.forLabel(item.label);
+    final percent = _tryParsePercent(item.value);
 
     return Material(
       color: Colors.transparent,
@@ -101,42 +318,46 @@ class _StatSummaryCard extends StatelessWidget {
         child: Ink(
           decoration: AppTheme.surfaceDecoration(
             context,
-            color: colorScheme.surface.withValues(alpha: 0.9),
+            color: colorScheme.surface,
+            prominent: false,
           ),
           child: Padding(
-            padding: AppTheme.sectionPadding(),
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.secondaryContainer,
-                    borderRadius: const BorderRadius.all(Radius.circular(18)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(11),
-                    child: Icon(
-                      Icons.analytics_outlined,
-                      color: colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
+                _StatIconChip(spec: spec, size: 40),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(item.label, style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 6),
-                      Text(item.value, style: theme.textTheme.headlineSmall),
+                      Text(
+                        item.label,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      _AnimatedStatValue(
+                        value: item.value,
+                        color: spec.color,
+                        dense: true,
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 12),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                if (percent != null)
+                  _RadialMetric(value: percent, color: spec.color)
+                else
+                  _SparkBars(
+                    color: spec.color,
+                    seed: item.value,
+                    width: 52,
+                    height: 36,
+                  ),
               ],
             ),
           ),
@@ -145,6 +366,7 @@ class _StatSummaryCard extends StatelessWidget {
     );
   }
 }
+
 
 class _StatsOverviewCard extends StatelessWidget {
   const _StatsOverviewCard({required this.currentUser, required this.stats});
@@ -156,57 +378,130 @@ class _StatsOverviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final active = currentUser.state.toLowerCase() == 'active';
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        gradient: AppTheme.heroGradient(context),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFFF99C2).withValues(alpha: 0.97),
+            const Color(0xFFC8AEFF).withValues(alpha: 0.96),
+            const Color(0xFFADC8FF).withValues(alpha: 0.94),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         prominent: true,
       ),
       child: Padding(
-        padding: AppTheme.sectionPadding(compact: true),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface.withValues(alpha: 0.72),
-                    borderRadius: const BorderRadius.all(Radius.circular(18)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(
-                      Icons.query_stats_rounded,
-                      color: colorScheme.primary,
-                    ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Momentum for ${currentUser.name}',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.sync_rounded,
+                            size: 12,
+                            color: colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.6),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Latest stats snapshot',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          _AnimatedIntText(
+                            value: stats.items.length,
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF4C2F88),
+                              height: 0.95,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              stats.items.length == 1
+                                  ? 'highlight'
+                                  : 'highlights',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: const Color(0xFF4C2F88),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Momentum for ${currentUser.name}',
-                    style: theme.textTheme.titleLarge,
+                const SizedBox(width: 14),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    borderRadius: AppTheme.cardRadius,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Color(0xFFE35D4F),
+                      size: 30,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 _StatsSummaryPill(
-                  icon: Icons.bar_chart_rounded,
-                  label: stats.items.length == 1
-                      ? '1 highlight'
-                      : '${stats.items.length} highlights',
-                ),
-                _StatsSummaryPill(
-                  icon: Icons.verified_user_outlined,
+                  icon: active
+                      ? Icons.check_circle_rounded
+                      : Icons.info_outline_rounded,
                   label: '${formatDisplayLabel(currentUser.state)} profile',
+                  backgroundColor: active
+                      ? const Color(0xFFDDF8E7)
+                      : Colors.white.withValues(alpha: 0.7),
+                  foregroundColor: active
+                      ? const Color(0xFF167442)
+                      : colorScheme.onSurface,
                 ),
+                _AchievementsCta(currentUser: currentUser),
               ],
             ),
           ],
@@ -217,26 +512,407 @@ class _StatsOverviewCard extends StatelessWidget {
 }
 
 class _StatsSummaryPill extends StatelessWidget {
-  const _StatsSummaryPill({required this.icon, required this.label});
+  const _StatsSummaryPill({
+    required this.icon,
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    this.onTap,
+    this.tooltip,
+  });
 
   final IconData icon;
   final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback? onTap;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: foregroundColor.withValues(alpha: 0.12)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: AppTheme.chipRadius,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18, color: foregroundColor),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(color: foregroundColor),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (tooltip == null) {
+      return content;
+    }
+
+    return Tooltip(message: tooltip!, child: content);
+  }
+}
+
+class _AchievementsCta extends StatelessWidget {
+  const _AchievementsCta({required this.currentUser});
+
+  final UserSummary currentUser;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StatsSummaryPill(
+      icon: Icons.workspace_premium_rounded,
+      label: 'Achievements',
+      backgroundColor: const Color(0xFFFFE3C2),
+      foregroundColor: const Color(0xFF9A4B00),
+      tooltip: 'Open achievements from summary',
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => AchievementsScreen(currentUser: currentUser),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StatIconChip extends StatelessWidget {
+  const _StatIconChip({required this.spec, required this.size});
+
+  final _StatVisualSpec spec;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: AppTheme.glassDecoration(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18),
-            const SizedBox(width: 8),
-            Text(label, style: Theme.of(context).textTheme.labelLarge),
-          ],
-        ),
+      decoration: BoxDecoration(
+        color: spec.color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.all(Radius.circular(size * 0.42)),
+      ),
+      child: SizedBox.square(
+        dimension: size,
+        child: Icon(spec.icon, color: spec.color, size: size * 0.56),
       ),
     );
   }
+}
+
+class _AnimatedStatValue extends StatelessWidget {
+  const _AnimatedStatValue({
+    required this.value,
+    required this.color,
+    this.duration = const Duration(milliseconds: 620),
+    this.dense = false,
+  });
+
+  final String value;
+  final Color color;
+  final Duration duration;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final intValue = int.tryParse(value.replaceAll(RegExp(r'[^0-9]'), ''));
+
+    if (intValue == null || intValue == 0 && !value.contains('0')) {
+      return Text(
+        value,
+        style:
+            (dense
+                    ? theme.textTheme.headlineMedium
+                    : theme.textTheme.headlineSmall)
+                ?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                  height: dense ? 1.0 : null,
+                ),
+      );
+    }
+
+    return TweenAnimationBuilder<int>(
+      tween: IntTween(begin: 0, end: intValue),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedValue, child) {
+        final rendered = value.replaceFirst(
+          RegExp(r'\d+'),
+          animatedValue.toString(),
+        );
+
+        return Text(
+          rendered,
+          style:
+              (dense
+                      ? theme.textTheme.headlineMedium
+                      : theme.textTheme.headlineSmall)
+                  ?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                    height: dense ? 1.0 : null,
+                  ),
+        );
+      },
+    );
+  }
+}
+
+class _AnimatedIntText extends StatelessWidget {
+  const _AnimatedIntText({required this.value, required this.style});
+
+  final int value;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<int>(
+      tween: IntTween(begin: 0, end: value),
+      duration: const Duration(milliseconds: 620),
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedValue, child) {
+        return Text('$animatedValue', style: style);
+      },
+    );
+  }
+}
+
+class _RadialMetric extends StatelessWidget {
+  const _RadialMetric({required this.value, required this.color});
+
+  final double value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: value.clamp(0, 1)),
+      duration: const Duration(milliseconds: 760),
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedValue, child) {
+        return SizedBox.square(
+          dimension: 64,
+          child: CustomPaint(
+            painter: _RadialMetricPainter(value: animatedValue, color: color),
+            child: Center(
+              child: Text(
+                '${(animatedValue * 100).round()}%',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RadialMetricPainter extends CustomPainter {
+  const _RadialMetricPainter({required this.value, required this.color});
+
+  final double value;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeWidth = 6.0;
+    final rect = Offset.zero & size;
+    final trackPaint = Paint()
+      ..color = color.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    final valuePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      rect.deflate(strokeWidth / 2),
+      -math.pi / 2,
+      math.pi * 2,
+      false,
+      trackPaint,
+    );
+    canvas.drawArc(
+      rect.deflate(strokeWidth / 2),
+      -math.pi / 2,
+      math.pi * 2 * value,
+      false,
+      valuePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadialMetricPainter oldDelegate) {
+    return value != oldDelegate.value || color != oldDelegate.color;
+  }
+}
+
+class _SparkBars extends StatelessWidget {
+  const _SparkBars({
+    required this.color,
+    required this.seed,
+    this.width = 44,
+    this.height = 28,
+  });
+
+  final Color color;
+  final String seed;
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final values = _sparkValues(seed);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutCubic,
+      builder: (context, progress, child) {
+        return SizedBox(
+          width: width,
+          height: height,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var index = 0; index < values.length; index++) ...[
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: FractionallySizedBox(
+                      heightFactor: values[index] * progress,
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: color.withValues(
+                              alpha: index == values.length - 1 ? 0.92 : 0.58,
+                            ),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(999),
+                              bottom: Radius.circular(999),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (index != values.length - 1) const SizedBox(width: 3),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StatVisualSpec {
+  const _StatVisualSpec({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  static _StatVisualSpec forLabel(String label) {
+    final normalized = label.toLowerCase();
+
+    if (normalized.contains('sent')) {
+      return const _StatVisualSpec(
+        icon: Icons.send_rounded,
+        color: Color(0xFFFF7043),
+      );
+    }
+    if (normalized.contains('received') || normalized.contains('like')) {
+      return const _StatVisualSpec(
+        icon: Icons.favorite_rounded,
+        color: Color(0xFFE24A68),
+      );
+    }
+    if (normalized.contains('week') || normalized.contains('calendar')) {
+      return const _StatVisualSpec(
+        icon: Icons.calendar_today_rounded,
+        color: Color(0xFF5B6EE1),
+      );
+    }
+    if (normalized.contains('match')) {
+      return const _StatVisualSpec(
+        icon: Icons.bolt_rounded,
+        color: Color(0xFF7C4DFF),
+      );
+    }
+    if (normalized.contains('reply') || normalized.contains('rate')) {
+      return const _StatVisualSpec(
+        icon: Icons.reply_rounded,
+        color: Color(0xFF2E9D57),
+      );
+    }
+    if (normalized.contains('conversation') || normalized.contains('chat')) {
+      return const _StatVisualSpec(
+        icon: Icons.chat_bubble_outline_rounded,
+        color: Color(0xFF009688),
+      );
+    }
+    if (normalized.contains('time') || normalized.contains('response')) {
+      return const _StatVisualSpec(
+        icon: Icons.timer_outlined,
+        color: Color(0xFFD98914),
+      );
+    }
+    if (normalized.contains('view')) {
+      return const _StatVisualSpec(
+        icon: Icons.visibility_rounded,
+        color: Color(0xFF188DC8),
+      );
+    }
+
+    return const _StatVisualSpec(
+      icon: Icons.query_stats_rounded,
+      color: Color(0xFF596579),
+    );
+  }
+}
+
+double? _tryParsePercent(String value) {
+  final match = RegExp(r'(\d+(?:\.\d+)?)\s*%').firstMatch(value);
+  if (match == null) {
+    return null;
+  }
+
+  final parsed = double.tryParse(match.group(1)!);
+  if (parsed == null) {
+    return null;
+  }
+
+  return parsed / 100;
+}
+
+List<double> _sparkValues(String seed) {
+  final total = seed.codeUnits.fold<int>(0, (sum, unit) => sum + unit);
+  return List<double>.generate(5, (index) {
+    final value = 0.28 + ((total + index * 19) % 58) / 100;
+    return value.clamp(0.26, 0.86);
+  });
 }

@@ -11,6 +11,20 @@ The app is intentionally a **thin client**:
 
 If something feels like business logic, it probably belongs on the server. The app should render the product, not secretly become the product brain in a trench coat.
 
+## Design system and UI guidance
+
+The canonical visual-language reference is [`docs/design-language.md`](docs/design-language.md).
+
+Use it as the source of truth for:
+
+- `AppTheme` spacing, padding, radius, gradient, decoration, and shadow tokens
+- shared widget usage such as `ShellHero`, `SectionIntroCard`, `AppAsyncState`, and person/media display primitives
+- screen archetypes and which hero/header pattern belongs on which kind of screen
+- semantic colour assignments for stats and repeated data categories
+- interaction rules such as `Material` + `InkWell` for tappable cards and tiles
+
+If a UI change conflicts with older screenshots, comments, or habits, prefer the current code plus `docs/design-language.md`.
+
 ## Current scope
 
 The first useful milestone is the real core loop:
@@ -303,8 +317,21 @@ Recommended build order:
 5. matches and conversations
 6. chat
 
+## Testing philosophy
+
+This project is in active frontend development. During this phase:
+
+- **No new widget tests, regression tests, or integration tests should be created for frontend/UI/design changes unless explicitly requested.** The frontend is not finalized; writing tests against an actively changing UI is wasted effort.
+- Visual quality is checked through the screenshot workflow (`flutter test test/visual_inspection/screenshot_test.dart`), not through widget assertions.
+- Tests for non-frontend code (providers, models, API contracts, state logic) follow normal judgment.
+- When the frontend stabilizes and the user requests it, tests can be added at that point.
+
 ## Key docs
 
+- `docs/design-language.md` — canonical design-system and visual-language guidance for Flutter UI work
+- `docs/visual-review-workflow.md` — screenshot capture and review workflow
+- `CLAUDE.md` — concise agent reference for commands, architecture, shared widgets, and constraints
+- `AGENTS.md` — repo operating guide with verified environment facts and agent rules
 - `FLUTTER_PROJECT_HANDOFF.md` — source of truth for backend contract, routes, headers, and startup assumptions
 - `docs/superpowers/plans/2026-04-18-mobile-bootstrap-foundation.md` — bootstrap implementation plan for this repo
 - `docs/superpowers/plans/2026-04-18-health-browse-like-slice.md` — health, browse, like, and pass implementation plan

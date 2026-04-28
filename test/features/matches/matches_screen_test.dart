@@ -63,19 +63,21 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Your matches'), findsOneWidget);
+    expect(find.text('1 total'), findsOneWidget);
+    expect(find.text('All'), findsOneWidget);
+    expect(find.text('New'), findsOneWidget);
+    expect(find.text('Nearby'), findsOneWidget);
+    expect(find.text('Active now'), findsWidgets);
     expect(find.text('Matches ready for a first hello'), findsNothing);
     expect(find.text('Noa'), findsOneWidget);
-    expect(find.text('Active'), findsOneWidget);
+    expect(find.textContaining('Active now'), findsWidgets);
     expect(find.text('ACTIVE'), findsNothing);
     expect(find.text('For Dana'), findsNothing);
     expect(find.text('Ready to message'), findsNothing);
     expect(find.text('Message now'), findsOneWidget);
-    expect(find.widgetWithText(TextButton, 'View profile'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'View profile'), findsNothing);
 
-    final messageNowButton = find.widgetWithText(FilledButton, 'Message now');
-    await tester.scrollUntilVisible(messageNowButton, 200);
-    await tester.pumpAndSettle();
-    await tester.tap(messageNowButton);
+    await tester.tap(find.text('Message now').first);
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Noa'), findsOneWidget);
@@ -85,7 +87,7 @@ void main() {
     );
   });
 
-  testWidgets('opens the matched user profile from the profile action', (
+  testWidgets('opens the matched user profile from the tappable profile area', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -121,7 +123,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(TextButton, 'View profile'));
+    await tester.tap(find.byKey(ValueKey('match-profile-${match.matchId}')));
     await tester.pumpAndSettle();
 
     expect(find.text('Always up for a museum date.'), findsOneWidget);
@@ -228,7 +230,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Why we match'));
+    await tester.tap(find.text('Why we match'));
     await tester.pumpAndSettle();
 
     expect(find.text('Why we match'), findsWidgets);

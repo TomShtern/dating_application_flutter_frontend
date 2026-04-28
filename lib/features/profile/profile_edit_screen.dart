@@ -209,10 +209,11 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ),
-                        Text(
-                          '${_distanceSliderValue.round()} km',
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
+                        if (_maxDistanceKm != null)
+                          Text(
+                            '${_distanceSliderValue.round()} km',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
                       ],
                     ),
                     Slider(

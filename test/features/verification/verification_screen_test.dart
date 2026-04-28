@@ -94,7 +94,6 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'dana@example.com');
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).first, 'dana@example.com');
     await tester.tap(
       find.widgetWithText(FilledButton, 'Send verification code'),
     );

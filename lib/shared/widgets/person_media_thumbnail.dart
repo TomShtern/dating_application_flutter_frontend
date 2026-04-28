@@ -65,18 +65,14 @@ class _PhotoFallback extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final gradient = emphasizeMedia
         ? LinearGradient(
-            colors: [
-              colorScheme.primaryContainer,
-              colorScheme.tertiaryContainer,
-              colorScheme.secondaryContainer,
-            ],
+            colors: _emphasizedFallbackColors(colorScheme, name),
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           )
         : LinearGradient(
             colors: [
-              colorScheme.surfaceContainerHigh,
-              colorScheme.surfaceContainerLowest,
+              colorScheme.primaryContainer,
+              colorScheme.tertiaryContainer,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -88,9 +84,7 @@ class _PhotoFallback extends StatelessWidget {
         child: Text(
           _initials(name),
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: emphasizeMedia
-                ? colorScheme.onPrimaryContainer
-                : colorScheme.onSurfaceVariant,
+            color: emphasizeMedia ? Colors.white : colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,
           ),
@@ -98,6 +92,30 @@ class _PhotoFallback extends StatelessWidget {
       ),
     );
   }
+}
+
+List<Color> _emphasizedFallbackColors(ColorScheme colorScheme, String name) {
+  if (colorScheme.brightness == Brightness.dark) {
+    return const [Color(0xFF3F6F92), Color(0xFF5F6F7E), Color(0xFF9A7A49)];
+  }
+
+  final hash = name.trim().runes.fold<int>(0, (total, rune) => total + rune);
+  final hueOffset = (hash % 72) - 36;
+
+  Color shifted(Color source, {double saturationBoost = 0}) {
+    final hsl = HSLColor.fromColor(source);
+    return hsl
+        .withHue((hsl.hue + hueOffset) % 360)
+        .withSaturation((hsl.saturation + saturationBoost).clamp(0.42, 0.68))
+        .withLightness(hsl.lightness.clamp(0.42, 0.58))
+        .toColor();
+  }
+
+  return [
+    shifted(colorScheme.primaryContainer, saturationBoost: 0.05),
+    shifted(colorScheme.tertiaryContainer, saturationBoost: 0.03),
+    shifted(colorScheme.secondaryContainer),
+  ];
 }
 
 String _initials(String name) {

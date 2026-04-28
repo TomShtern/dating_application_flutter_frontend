@@ -26,6 +26,8 @@ import 'package:flutter_dating_application_1/theme/app_theme.dart';
 import 'fixtures/visual_scenarios.dart';
 import 'support/screenshot_capture.dart';
 
+final DateTime _notificationsReferenceNow = DateTime.utc(2026, 4, 23, 12);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -105,6 +107,29 @@ void main() {
       tester,
       scenarioName: 'signed-in shell matches tab',
       fileName: 'shell_matches.png',
+    );
+  });
+
+  testWidgets('captures the signed-in shell matches tab in dark theme', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.dark,
+    );
+
+    await _pumpSignedInShell(
+      tester,
+      preferences: preferences,
+      themeMode: ThemeMode.dark,
+    );
+
+    await tester.tap(find.text('Matches'));
+    await tester.pumpAndSettle();
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'signed-in shell matches tab dark',
+      fileName: 'shell_matches_dark.png',
     );
   });
 
@@ -393,13 +418,35 @@ void main() {
       tester,
       preferences: preferences,
       overrides: notificationsOverrides,
-      child: const NotificationsScreen(),
+      child: NotificationsScreen(now: _notificationsReferenceNow),
     );
 
     await _captureAndSave(
       tester,
       scenarioName: 'notifications screen',
       fileName: 'notifications.png',
+    );
+  });
+
+  testWidgets('captures the notifications screen in dark theme', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.dark,
+    );
+
+    await _pumpSignedInVisualScreen(
+      tester,
+      preferences: preferences,
+      overrides: notificationsOverrides,
+      themeMode: ThemeMode.dark,
+      child: NotificationsScreen(now: _notificationsReferenceNow),
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'notifications screen dark',
+      fileName: 'notifications_dark.png',
     );
   });
 }
@@ -452,6 +499,7 @@ Future<void> _pumpVisualHarness(
 Future<void> _pumpSignedInShell(
   WidgetTester tester, {
   required SharedPreferences preferences,
+  ThemeMode themeMode = ThemeMode.light,
 }) async {
   await _pumpVisualHarness(
     tester,
@@ -461,7 +509,7 @@ Future<void> _pumpSignedInShell(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.light,
+        themeMode: themeMode,
         home: SignedInShell(currentUser: currentUser),
       ),
     ),
@@ -473,6 +521,7 @@ Future<void> _pumpSignedInVisualScreen(
   required SharedPreferences preferences,
   required Widget child,
   List overrides = const [],
+  ThemeMode themeMode = ThemeMode.light,
 }) async {
   await _pumpVisualHarness(
     tester,
@@ -482,7 +531,7 @@ Future<void> _pumpSignedInVisualScreen(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.light,
+        themeMode: themeMode,
         home: child,
       ),
     ),

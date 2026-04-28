@@ -3,7 +3,26 @@ import 'package:flutter/material.dart';
 class AppTheme {
   const AppTheme._();
 
-  static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(16));
+  static const Color matchPink = Color(0xFFB85C78);
+  static const Color matchCoral = Color(0xFFC77768);
+  static const Color matchOrange = Color(0xFFD49A62);
+  static const Color activeGreen = Color(0xFF16A871);
+  static const Color matchBackground = Color(0xFFFFF8F8);
+  static const Color matchTint = Color(0xFFF9E8EE);
+  static const Color textPrimary = Color(0xFF1A1A2E);
+  static const Color textSecondary = Color(0xFF555B66);
+  static const Color textTertiary = Color(0xFF858B96);
+  static const Color _darkMatchBlue = Color(0xFF5F8FB8);
+  static const Color _darkMatchSlate = Color(0xFF64748B);
+  static const Color _darkMatchAmber = Color(0xFFC29A5B);
+  static const Color _darkActiveGreen = Color(0xFF35C98E);
+  static const Color _darkMatchBackground = Color(0xFF111820);
+  static const Color _darkMatchTint = Color(0xFF1D2A35);
+  static const Color _darkTextPrimary = Color(0xFFF6EDF4);
+  static const Color _darkTextSecondary = Color(0xFFCDD6D2);
+  static const Color _darkTextTertiary = Color(0xFF9AA4A6);
+
+  static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(20));
   static const BorderRadius panelRadius = BorderRadius.all(Radius.circular(20));
   static const BorderRadius chipRadius = BorderRadius.all(Radius.circular(999));
   static const double navBarHeight = 64;
@@ -25,17 +44,15 @@ class AppTheme {
   }
 
   static ThemeData _theme(Brightness brightness) {
-    const seedColor = Color(0xFF2D3A4F);
+    final isDark = brightness == Brightness.dark;
+    final seedColor = isDark ? _darkMatchBlue : matchPink;
     final colorScheme = ColorScheme.fromSeed(
       seedColor: seedColor,
       brightness: brightness,
     );
     final baseTheme = ThemeData(useMaterial3: true, brightness: brightness);
     final textTheme = _textTheme(baseTheme.textTheme, colorScheme);
-    final isDark = brightness == Brightness.dark;
-    final scaffoldColor = isDark
-        ? const Color(0xFF12131A)
-        : const Color(0xFFF5F5F7);
+    final scaffoldColor = isDark ? _darkMatchBackground : matchBackground;
     final cardColor = isDark
         ? colorScheme.surfaceContainerLow
         : colorScheme.surface;
@@ -81,24 +98,24 @@ class AppTheme {
         height: navBarHeight,
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: colorScheme.primaryContainer.withValues(alpha: 0.92),
+        indicatorColor: seedColor.withValues(alpha: isDark ? 0.22 : 0.13),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final isSelected = states.contains(WidgetState.selected);
           return textTheme.labelMedium?.copyWith(
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             color: isSelected
-                ? colorScheme.primary
-                : colorScheme.onSurfaceVariant,
+                ? seedColor
+                : (isDark ? const Color(0xFF8A9396) : const Color(0xFF9CA3AF)),
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final isSelected = states.contains(WidgetState.selected);
           return IconThemeData(
             color: isSelected
-                ? colorScheme.onPrimaryContainer
-                : colorScheme.onSurfaceVariant,
-            size: 24,
+                ? seedColor
+                : (isDark ? const Color(0xFF8A9396) : const Color(0xFF9CA3AF)),
+            size: isSelected ? 28 : 26,
           );
         }),
         indicatorShape: const RoundedRectangleBorder(
@@ -337,12 +354,56 @@ class AppTheme {
   }
 
   static LinearGradient accentGradient(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return LinearGradient(
-      colors: [colorScheme.primary, colorScheme.primaryContainer],
+      colors: isDark
+          ? [_darkMatchBlue, _darkMatchSlate, _darkMatchAmber]
+          : [matchPink, matchCoral, matchOrange],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
+  }
+
+  static Color matchAccent(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? _darkMatchBlue
+        : matchPink;
+  }
+
+  static Color matchAccentSecondary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? _darkMatchAmber
+        : matchCoral;
+  }
+
+  static Color matchTintColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? _darkMatchTint
+        : matchTint;
+  }
+
+  static Color activeColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? _darkActiveGreen
+        : activeGreen;
+  }
+
+  static Color matchTextPrimary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? _darkTextPrimary
+        : textPrimary;
+  }
+
+  static Color matchTextSecondary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? _darkTextSecondary
+        : textSecondary;
+  }
+
+  static Color matchTextTertiary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? _darkTextTertiary
+        : textTertiary;
   }
 
   static LinearGradient avatarGradient(BuildContext context) {
@@ -360,7 +421,7 @@ class AppTheme {
     return [
       BoxShadow(
         color: theme.colorScheme.shadow.withValues(alpha: opacity),
-        blurRadius: 12,
+        blurRadius: 16,
         offset: const Offset(0, 4),
       ),
     ];

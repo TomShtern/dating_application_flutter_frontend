@@ -28,6 +28,7 @@ Do not reimplement backend-owned product logic in Dart. If richer UI requires da
 Read the smallest relevant set before editing:
 
 - `README.md` - current repo overview, dependency inventory, setup, and backend highlights.
+- `docs/design-language.md` - canonical design-system and visual-language reference for spacing, surfaces, shared widgets, hero selection, and interaction rules.
 - `FLUTTER_PROJECT_HANDOFF.md` - backend/mobile contract details and original product constraints.
 - `FLUTTER_FRONTEND_AGENT_GUIDE.md` - broader agent guidance and API cheat sheet.
 - `CLAUDE.md` - concise architecture, commands, navigation, visual-review notes, and recent updates.
@@ -292,6 +293,8 @@ This list describes frontend surfaces present in the repo. It does not prove bac
 
 Material 3 is enabled through `uses-material-design: true` and `ThemeData(useMaterial3: true)`.
 
+`docs/design-language.md` is the canonical visual reference. Read it before changing screen composition, `AppTheme` usage, shared widgets, colours, typography emphasis, spacing, or interaction affordances.
+
 Shared UI primitives:
 
 - `ShellHero` - `lib/shared/widgets/shell_hero.dart`
@@ -309,6 +312,14 @@ Use these where they fit, but follow the active design brief when changing UI. T
 - compact, information-rich cards and lists
 - developer-only controls visually separated and labeled
 - no invented compatibility logic or reasons in Dart
+
+Additional implementation rules from the current design language:
+
+- Start screens with the correct hero pattern: `ShellHero` for navigation/social screens, `SectionIntroCard` for sparse utility screens, and data-summary hero cards only for data-rich surfaces such as stats/achievements.
+- Use `AppTheme` spacing, radius, gradient, decoration, and shadow tokens instead of inline magic numbers or ad hoc `BoxDecoration` values.
+- Keep semantic colour usage consistent across repeated metric categories instead of reassigning hues per screen.
+- Use `Material` plus `InkWell` for tappable surfaces; do not use raw `GestureDetector` for card-like interactions.
+- Prefer shared widgets in `lib/shared/widgets/` over feature-local clones of the same structure.
 
 For UI work, inspect the latest screenshots after running the visual suite. Do not judge UI quality from widget tests alone.
 
@@ -334,6 +345,7 @@ Fixture data is under:
 - `test/visual_inspection/fixtures/visual_scenarios.dart`
 
 After any UI change, run the relevant widget tests and the visual-review suite when feasible, then inspect the generated PNGs or HTML gallery.
+Use `docs/design-language.md` as the review rubric during that inspection, not just a loose inspiration source.
 
 ## Common Commands
 
@@ -359,11 +371,23 @@ If PATH lookup fails in this environment, run Flutter through:
 
 ## Testing Expectations
 
+### No new tests during active frontend/UI work
+
+**Do not create widget tests, regression tests, or integration tests when the task involves frontend UI, design, visual polish, layout, or screen-level changes.** The default for frontend work is: no new tests. Only create tests when the user explicitly requests them.
+
+Frontend tests are appropriate when the UI is finalized and the user explicitly asks. Active iteration on screens, components, themes, or visual features is — by definition — not a finalized state. During frontend work, use the visual-review screenshot workflow (`flutter test test/visual_inspection/screenshot_test.dart`) for quality assurance instead of writing widget assertions.
+
+If existing tests break because of a UI refactor, fix the broken tests to match the new structure — but do not add new test files or new test cases beyond what is needed to repair the breakage.
+
+Non-frontend code (providers, models, API contracts, state logic, guards, DTOs) follows normal testing judgment.
+
+### General testing rules
+
 - For Dart code changes, run `flutter analyze` and the relevant `flutter test` target.
 - For shared providers, models, API methods, or app shell changes, run broader tests because many screens share those layers.
-- For UI changes, run screen-specific widget tests and the visual screenshot workflow.
+- For UI changes, use the visual screenshot workflow to verify appearance. Only run existing screen-specific widget tests if they already exist; do not create new ones.
 - For API contract changes, add or update API client/model tests.
-- Keep regression tests lightweight and necessary. During active development, prefer tests that protect real contracts, state transitions, routing safety, payload preservation, and prior bug fixes. Do not let new work become mostly regression-test churn; avoid freezing temporary layout structure, exact copy, or intermediate UI details unless they are a real requirement. As a rule of thumb, regression-test additions should stay a small minority of the work, roughly 20% or less, and often less for UI iteration.
+- Keep regression tests lightweight and necessary. During active development, prefer tests that protect real contracts, state transitions, routing safety, payload preservation, and prior bug fixes. Do not let new work become mostly regression-test churn; avoid freezing temporary layout structure, exact copy, or intermediate UI details unless they are a real requirement.
 - Before adding a regression test, be able to name the concrete failure it prevents. If the risk is mainly visual polish, use the visual-review workflow and screenshot inspection instead of piling on brittle widget assertions.
 - Do not claim "fully fixed" or "end-to-end verified" unless you exercised the real path needed for that claim.
 - If a Flutter command hangs or cannot run in the sandbox, state that clearly and give the file-level verification you did perform.

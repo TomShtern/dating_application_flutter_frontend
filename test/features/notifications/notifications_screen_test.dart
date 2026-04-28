@@ -10,98 +10,31 @@ import 'package:flutter_dating_application_1/features/notifications/notification
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/notification_item.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
+import 'package:flutter_dating_application_1/shared/widgets/section_intro_card.dart';
+
+Finder notificationsScrollable() {
+  return find.descendant(
+    of: find.byType(NotificationsScreen),
+    matching: find.byType(Scrollable),
+  );
+}
+
+final DateTime _referenceNow = DateTime.utc(2026, 4, 23, 12);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Finder notificationsScrollable() {
-    return find.descendant(
-      of: find.byType(NotificationsScreen),
-      matching: find.byType(Scrollable),
-    );
-  }
-
-  testWidgets('renders a compact filter bar with consistent read states', (
-    WidgetTester tester,
-  ) async {
-    final now = DateTime.now();
-    final startOfToday = DateTime(now.year, now.month, now.day);
-    final notifications = [
-      NotificationItem(
-        id: 'notification-1',
-        type: 'MATCH',
-        title: 'It is a match',
-        message: 'Noa liked you back.',
-        createdAt: now.subtract(const Duration(minutes: 5)),
-        isRead: false,
-        data: const {},
-      ),
-      NotificationItem(
-        id: 'notification-2',
-        type: 'MESSAGE',
-        title: 'New message',
-        message: 'You have a fresh reply waiting.',
-        createdAt: startOfToday
-            .subtract(const Duration(days: 3))
-            .add(const Duration(hours: 9)),
-        isRead: true,
-        data: const {},
-      ),
-    ];
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          notificationsProvider.overrideWith((ref) async => notifications),
-        ],
-        child: const MaterialApp(home: NotificationsScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.widgetWithText(AppBar, 'Notifications'), findsOneWidget);
-    expect(
-      find.text('Catch up on matches, messages, and other updates.'),
-      findsNothing,
-    );
-    expect(find.text('2 notifications'), findsOneWidget);
-    expect(find.text('1 unread'), findsOneWidget);
-    expect(find.text('Read state and timing'), findsNothing);
-    expect(find.text('Showing all activity'), findsNothing);
-    expect(find.byType(FilterChip), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('Unread'),
-      250,
-      scrollable: notificationsScrollable(),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Unread'), findsOneWidget);
-    expect(find.text('Mark read'), findsOneWidget);
-    expect(find.textContaining('5m ago'), findsOneWidget);
-    expect(find.textContaining('3 days ago'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('Read'),
-      250,
-      scrollable: notificationsScrollable(),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Read'), findsOneWidget);
-  });
-
   testWidgets(
-    'shows safe route actions only for known types with required data',
+    'shows a notifications intro card summary and keeps refresh out of the app bar',
     (WidgetTester tester) async {
+      final now = _referenceNow.toLocal();
       final notifications = [
         NotificationItem(
           id: 'notification-1',
           type: 'MATCH_FOUND',
-          title: 'New match',
-          message: 'You have a new match.',
-          createdAt: DateTime.now(),
+          title: 'Unread match',
+          message: 'A new match just came in.',
+          createdAt: now.subtract(const Duration(minutes: 5)),
           isRead: false,
           data: const {
             'matchId': 'match-1',
@@ -112,20 +45,180 @@ void main() {
         NotificationItem(
           id: 'notification-2',
           type: 'NEW_MESSAGE',
+          title: 'Unread message',
+          message: 'A new message arrived.',
+          createdAt: now.subtract(const Duration(minutes: 20)),
+          isRead: false,
+          data: const {
+            'conversationId': 'conversation-1',
+            'senderId': 'user-2',
+            'messageId': 'message-1',
+          },
+        ),
+        NotificationItem(
+          id: 'notification-3',
+          type: 'SYSTEM',
+          title: 'Read reminder',
+          message: 'This one is already read.',
+          createdAt: now.subtract(const Duration(hours: 2)),
+          isRead: true,
+          data: const {},
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationsProvider.overrideWith((ref) async => notifications),
+          ],
+          child: MaterialApp(home: NotificationsScreen(now: _referenceNow)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SectionIntroCard), findsOneWidget);
+      expect(find.text('2 unread • 3 total'), findsOneWidget);
+      expect(find.text('Unread only'), findsOneWidget);
+      expect(find.text('Mark all read'), findsOneWidget);
+      expect(find.byTooltip('Refresh'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byTooltip('Refresh'),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'groups notifications by Today, Yesterday, and Earlier without inline status badges',
+    (WidgetTester tester) async {
+      final now = _referenceNow.toLocal();
+      final startOfToday = DateTime(now.year, now.month, now.day);
+      final notifications = [
+        NotificationItem(
+          id: 'notification-1',
+          type: 'MATCH',
+          title: 'Today update',
+          message: 'A fresh update from today.',
+          createdAt: now.subtract(const Duration(minutes: 5)),
+          isRead: false,
+          data: const {},
+        ),
+        NotificationItem(
+          id: 'notification-2',
+          type: 'MESSAGE',
+          title: 'Yesterday update',
+          message: 'Something arrived yesterday.',
+          createdAt: startOfToday.subtract(const Duration(hours: 2)),
+          isRead: true,
+          data: const {},
+        ),
+        NotificationItem(
+          id: 'notification-3',
+          type: 'MESSAGE',
+          title: 'Earlier update',
+          message: 'An older update for the earlier bucket.',
+          createdAt: startOfToday
+              .subtract(const Duration(days: 3))
+              .add(const Duration(hours: 9)),
+          isRead: true,
+          data: const {},
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            notificationsProvider.overrideWith((ref) async => notifications),
+          ],
+          child: MaterialApp(home: NotificationsScreen(now: _referenceNow)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(AppBar, 'Notifications'), findsOneWidget);
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('Yesterday'), findsWidgets);
+
+      await tester.scrollUntilVisible(
+        find.text('Earlier update'),
+        250,
+        scrollable: notificationsScrollable(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Earlier'), findsOneWidget);
+      expect(find.textContaining('5m ago'), findsOneWidget);
+      expect(find.textContaining('3 days ago'), findsOneWidget);
+      expect(find.text('Unread'), findsNothing);
+      expect(find.text('Read'), findsNothing);
+      expect(find.byTooltip('Mark read'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'opens routed notifications from the row and keeps incomplete or unknown items display only',
+    (WidgetTester tester) async {
+      final now = _referenceNow.toLocal();
+      final notifications = [
+        NotificationItem(
+          id: 'notification-1',
+          type: 'NEW_MESSAGE',
+          title: 'Chat row',
+          message: 'Tap the row, not a big button.',
+          createdAt: now.subtract(const Duration(minutes: 2)),
+          isRead: true,
+          data: const {
+            'conversationId': 'conversation-1',
+            'senderId': 'user-2',
+            'messageId': 'message-1',
+          },
+        ),
+        NotificationItem(
+          id: 'notification-2',
+          type: 'MATCH_FOUND',
+          title: 'Match row',
+          message: 'This row used to expose an Open chat button.',
+          createdAt: now.subtract(const Duration(minutes: 3)),
+          isRead: true,
+          data: const {
+            'matchId': 'match-1',
+            'conversationId': 'conversation-1',
+            'otherUserId': 'user-2',
+          },
+        ),
+        NotificationItem(
+          id: 'notification-3',
+          type: 'FRIEND_REQUEST',
+          title: 'Profile row',
+          message: 'This row used to expose a View profile button.',
+          createdAt: now.subtract(const Duration(minutes: 4)),
+          isRead: true,
+          data: const {
+            'requestId': 'request-1',
+            'fromUserId': 'user-3',
+            'matchId': 'match-2',
+          },
+        ),
+        NotificationItem(
+          id: 'notification-4',
+          type: 'NEW_MESSAGE',
           title: 'Missing sender',
           message: 'This should stay display-only.',
-          createdAt: DateTime.now(),
+          createdAt: now.subtract(const Duration(minutes: 5)),
           isRead: true,
           data: const {'conversationId': 'conversation-2'},
         ),
         NotificationItem(
-          id: 'notification-3',
+          id: 'notification-5',
           type: 'FUTURE_EVENT',
           title: 'Future event',
           message: 'Unknown types should stay display-only.',
-          createdAt: DateTime.now(),
+          createdAt: now.subtract(const Duration(minutes: 6)),
           isRead: true,
-          data: const {'conversationId': 'conversation-3'},
+          data: const {},
         ),
       ];
 
@@ -145,16 +238,38 @@ void main() {
               'conversation-1',
             ).overrideWith((ref) async => const <MessageDto>[]),
           ],
-          child: const MaterialApp(home: NotificationsScreen()),
+          child: MaterialApp(home: NotificationsScreen(now: _referenceNow)),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Open chat'), findsOneWidget);
+      expect(find.text('Open chat'), findsNothing);
       expect(find.text('Open thread'), findsNothing);
       expect(find.text('View profile'), findsNothing);
 
-      await tester.tap(find.text('Open chat'));
+      await tester.scrollUntilVisible(
+        find.text('Missing sender'),
+        250,
+        scrollable: notificationsScrollable(),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Missing sender'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ConversationThreadScreen), findsNothing);
+
+      await tester.tap(find.text('Future event'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ConversationThreadScreen), findsNothing);
+
+      await tester.scrollUntilVisible(
+        find.text('Chat row'),
+        -250,
+        scrollable: notificationsScrollable(),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Chat row'));
       await tester.pumpAndSettle();
 
       expect(find.byType(ConversationThreadScreen), findsOneWidget);

@@ -62,7 +62,8 @@ void main() {
 
     expect(find.widgetWithText(AppBar, 'Stats'), findsOneWidget);
     expect(find.text('Momentum for Dana'), findsOneWidget);
-    expect(find.text('2 highlights'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('highlights'), findsOneWidget);
     expect(find.text('Active profile'), findsOneWidget);
     expect(find.text('Why this snapshot matters'), findsNothing);
     expect(find.text("Dana's momentum at a glance"), findsNothing);
@@ -133,7 +134,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('1 highlight'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('highlight'), findsOneWidget);
     expect(find.text('1 highlights'), findsNothing);
   });
 }

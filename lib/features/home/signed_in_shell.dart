@@ -13,11 +13,13 @@ class _ShellDestination {
     required this.label,
     required this.icon,
     required this.selectedIcon,
+    this.showBadge = false,
   });
 
   final String label;
   final IconData icon;
   final IconData selectedIcon;
+  final bool showBadge;
 }
 
 const _destinations = [
@@ -30,6 +32,7 @@ const _destinations = [
     label: 'Matches',
     icon: Icons.favorite_border_rounded,
     selectedIcon: Icons.favorite_rounded,
+    showBadge: true,
   ),
   _ShellDestination(
     label: 'Chats',
@@ -115,8 +118,14 @@ class _SignedInShellState extends State<SignedInShell> {
                 destinations: _destinations
                     .map(
                       (destination) => NavigationDestination(
-                        icon: Icon(destination.icon),
-                        selectedIcon: Icon(destination.selectedIcon),
+                        icon: _NavIcon(
+                          icon: destination.icon,
+                          showBadge: destination.showBadge,
+                        ),
+                        selectedIcon: _NavIcon(
+                          icon: destination.selectedIcon,
+                          showBadge: destination.showBadge,
+                        ),
                         label: destination.label,
                       ),
                     )
@@ -126,6 +135,39 @@ class _SignedInShellState extends State<SignedInShell> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _NavIcon extends StatelessWidget {
+  const _NavIcon({required this.icon, required this.showBadge});
+
+  final IconData icon;
+  final bool showBadge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        if (showBadge)
+          Positioned(
+            right: -2,
+            top: -2,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppTheme.matchAccent(context),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 1.5,
+                ),
+              ),
+              child: const SizedBox(width: 9, height: 9),
+            ),
+          ),
+      ],
     );
   }
 }

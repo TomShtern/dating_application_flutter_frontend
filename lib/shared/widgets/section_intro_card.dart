@@ -10,6 +10,8 @@ class SectionIntroCard extends StatelessWidget {
     required this.description,
     this.trailing,
     this.badges = const <Widget>[],
+    this.iconBackgroundColor,
+    this.iconColor,
   });
 
   final IconData icon;
@@ -17,6 +19,8 @@ class SectionIntroCard extends StatelessWidget {
   final String description;
   final Widget? trailing;
   final List<Widget> badges;
+  final Color? iconBackgroundColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -41,12 +45,17 @@ class SectionIntroCard extends StatelessWidget {
               children: [
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
+                    color:
+                        iconBackgroundColor ??
+                        colorScheme.surfaceContainerHighest,
                     borderRadius: const BorderRadius.all(Radius.circular(12)),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Icon(icon, color: colorScheme.onSurfaceVariant),
+                    child: Icon(
+                      icon,
+                      color: iconColor ?? colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
