@@ -28,6 +28,85 @@ import 'support/screenshot_capture.dart';
 
 final DateTime _notificationsReferenceNow = DateTime.utc(2026, 4, 23, 12);
 
+const _expectedVisualReviewScenarios = [
+  ScreenshotScenarioDefinition(
+    fileName: 'app_home_startup.png',
+    scenarioName: 'app startup dev-user picker',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_discover.png',
+    scenarioName: 'signed-in shell discover tab',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_matches.png',
+    scenarioName: 'signed-in shell matches tab',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_matches_dark.png',
+    scenarioName: 'signed-in shell matches tab dark',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_chats.png',
+    scenarioName: 'signed-in shell chats tab',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_profile.png',
+    scenarioName: 'signed-in shell profile tab',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_settings.png',
+    scenarioName: 'signed-in shell settings tab',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'conversation_thread.png',
+    scenarioName: 'populated conversation thread',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'standouts.png',
+    scenarioName: 'standouts screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'pending_likers.png',
+    scenarioName: 'pending likers screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'profile_other_user.png',
+    scenarioName: 'other-user profile screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'profile_edit.png',
+    scenarioName: 'profile edit screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'location_completion.png',
+    scenarioName: 'location completion screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'stats.png',
+    scenarioName: 'stats screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'achievements.png',
+    scenarioName: 'achievements screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'verification.png',
+    scenarioName: 'verification screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'blocked_users.png',
+    scenarioName: 'blocked users screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'notifications.png',
+    scenarioName: 'notifications screen',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'notifications_dark.png',
+    scenarioName: 'notifications screen dark',
+  ),
+];
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -41,6 +120,7 @@ void main() {
         'screenshot_test.dart',
       ].join(Platform.pathSeparator),
     ),
+    expectedScenarios: _expectedVisualReviewScenarios,
   );
   goldenFileComparator = screenshotWriter;
   tearDownAll(() {

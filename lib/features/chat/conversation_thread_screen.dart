@@ -46,6 +46,9 @@ class _ConversationThreadScreenState
   bool? _lastAutoScrollUsesBottomExtent;
   AppLifecycleState _appLifecycleState = AppLifecycleState.resumed;
 
+  // TODO: Return backend-provided activity status once presence data exists.
+  bool get _showActivityIndicator => false;
+
   @override
   void initState() {
     super.initState();
@@ -117,29 +120,30 @@ class _ConversationThreadScreenState
                         style: theme.textTheme.titleMedium,
                       ),
                       const SizedBox(height: 2),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: AppTheme.activeColor(context),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Flexible(
-                            child: Text(
-                              'Active recently',
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
+                      if (_showActivityIndicator)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
                                 color: colorScheme.onSurfaceVariant,
+                                shape: BoxShape.circle,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                'Status unavailable',
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),

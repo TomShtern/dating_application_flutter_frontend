@@ -105,6 +105,10 @@ Only the visual layer changes.
      color: Colors.white.withValues(alpha: 0.18)
    with:
      decoration: AppTheme.glassDecoration(context)
+   If the current wrapper is a `ColoredBox` or another widget that only
+   accepts `color`, change that wrapper to `DecoratedBox` or `Container`
+   around the same child and remove the old `color` argument. Do not leave
+   both `color` and `decoration` on the same surface.
    This makes the badge consistent with ShellHeroPill and other floating
    glass surfaces in the app.
 

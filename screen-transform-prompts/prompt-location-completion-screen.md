@@ -271,8 +271,27 @@ Row(
 ```
 
 b) The error fallback "We can't load city suggestions right now." gets
-   the same treatment with `Icons.error_outline_rounded` and
-   `colorScheme.error` for the icon (text stays default colour).
+   this concrete row treatment with `Icons.error_outline_rounded` and
+   `colorScheme.error` for the icon. Leave the text colour default:
+
+```dart
+Row(
+  children: [
+    Icon(
+      Icons.error_outline_rounded,
+      size: 18,
+      color: Theme.of(context).colorScheme.error,
+    ),
+    const SizedBox(width: 8),
+    Expanded(
+      child: Text(
+        "We can't load city suggestions right now.",
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
+    ),
+  ],
+);
+```
 
 c) The loading branch stays as a centred `CircularProgressIndicator`
    inside vertical padding — fine.

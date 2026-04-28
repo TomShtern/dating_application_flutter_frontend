@@ -19,7 +19,7 @@
 - The design brief was re-read and validated against the live codebase on 2026-04-24.
 - The backend Stage A contract response was received in `docs/frontend-ui-overhaul-contract-response-2026-04-25.md` on 2026-04-25 and is now the contract checkpoint for execution.
 - Backend Stage B was reported implemented on 2026-04-26, with the response document updated to say the Stage B additions landed additively against the same JSON shapes.
-- Frontend reports Task 2, Task 3, the Task 1 live-contract subset, Task 1B Stage B contract integration, Task 6 profile-system redesign, Task 8 stats/achievements polish, and Task 9 utility polish are implemented and verified in the current branch/worktree.
+- Frontend reports the Task 1 live-contract subset, Task 1B Stage B contract integration, Task 6 profile-system redesign, Task 8 stats/achievements polish, and Task 9 utility polish are implemented and verified in the current branch/worktree. Task 2 and Task 3 are substantially implemented, but keep their remaining unchecked no-photo fallback or explicit test-run checklist items as deferred verification/follow-up work until they are resolved.
 - `matchId == conversationId` is confirmed by backend as live; the frontend may use `matchId` anywhere a conversation id is required.
 - `GET /api/users/{id}/match-quality/{matchId}` is confirmed live by backend and wired through the frontend API layer.
 - `GET /api/users/{id}/profile-edit-snapshot` is wired through the frontend API layer and profile edit prefill.

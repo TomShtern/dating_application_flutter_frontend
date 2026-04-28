@@ -5,8 +5,9 @@ import '../../api/api_error.dart';
 import '../../models/pending_liker.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/person_media_thumbnail.dart';
+import '../../shared/widgets/compact_context_strip.dart';
 import '../../shared/widgets/shell_hero.dart';
+import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
@@ -205,15 +206,13 @@ class _PendingLikerCard extends StatelessWidget {
           child: Padding(
             padding: AppTheme.sectionPadding(compact: true),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                PersonMediaThumbnail(
+                UserAvatar(
                   key: ValueKey('pending-liker-media-${liker.userId}'),
-                  name: liker.name,
+                  radius: 28,
                   photoUrl: photoUrl,
-                  width: 72,
-                  height: 72,
-                  borderRadius: AppTheme.chipRadius,
+                  name: liker.name,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -258,14 +257,14 @@ class _PendingLikerCard extends StatelessWidget {
                               runSpacing: 6,
                               children: [
                                 if (likedAtLabel != null)
-                                  _PendingLikerMetaText(
-                                    icon: Icons.schedule_rounded,
+                                  CompactContextStrip(
+                                    leadingIcon: Icons.schedule_rounded,
                                     label: likedAtLabel,
                                   ),
                                 if (liker.approximateLocation
                                     case final location?)
-                                  _PendingLikerMetaText(
-                                    icon: Icons.location_on_outlined,
+                                  CompactContextStrip(
+                                    leadingIcon: Icons.location_on_outlined,
                                     label: location,
                                   ),
                               ],
@@ -298,32 +297,6 @@ class _PendingLikerCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _PendingLikerMetaText extends StatelessWidget {
-  const _PendingLikerMetaText({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-        ),
-      ],
     );
   }
 }

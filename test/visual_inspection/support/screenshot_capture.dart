@@ -8,14 +8,33 @@ import 'package:flutter_test/flutter_test.dart';
 import 'png_text_metadata.dart';
 import 'visual_review_archive.dart';
 
+class ScreenshotScenarioDefinition {
+  const ScreenshotScenarioDefinition({
+    required this.fileName,
+    required this.scenarioName,
+  });
+
+  final String fileName;
+  final String scenarioName;
+
+  String get scenarioSlug => buildScenarioSlug(fileName);
+}
+
 class ScreenshotWriter extends LocalFileComparator {
   ScreenshotWriter(
     super.testFile, {
     Directory? outputRootDirectory,
     DateTime Function()? clock,
+    Iterable<ScreenshotScenarioDefinition> expectedScenarios = const [],
   }) : outputRootDirectory =
            outputRootDirectory ?? _defaultOutputRootDirectory(),
-       _clock = clock ?? DateTime.now {
+       _clock = clock ?? DateTime.now,
+       _expectedScenarios = List<ScreenshotScenarioDefinition>.unmodifiable(
+         expectedScenarios,
+       ) {
+    for (final scenario in _expectedScenarios) {
+      _scenarioNames.putIfAbsent(scenario.fileName, () => scenario.scenarioName);
+    }
     _archiveManager = VisualReviewArchiveManager(
       outputRootDirectory: this.outputRootDirectory,
       clock: _clock,
@@ -24,6 +43,7 @@ class ScreenshotWriter extends LocalFileComparator {
 
   final Directory outputRootDirectory;
   final DateTime Function() _clock;
+  final List<ScreenshotScenarioDefinition> _expectedScenarios;
   final Map<String, String> _scenarioNames = <String, String>{};
   final List<Map<String, Object?>> _screenshots = <Map<String, Object?>>[];
   late final VisualReviewArchiveManager _archiveManager;
@@ -208,6 +228,11 @@ class ScreenshotWriter extends LocalFileComparator {
 
   Future<void> _writeManifest() async {
     final RunIdentity runIdentity = _requireRunIdentity();
+    final missingScenarios = _buildMissingScenarios();
+    final capturedScreenshotCount = _screenshots.length;
+    final expectedScreenshotCount = _expectedScenarios.length;
+    final isPartialRun = expectedScreenshotCount > 0 &&
+        capturedScreenshotCount < expectedScreenshotCount;
     final Map<String, Object?> manifest = <String, Object?>{
       'generatedAtUtc': _clock().toUtc().toIso8601String(),
       'runId': runIdentity.runDirectoryName,
@@ -219,6 +244,10 @@ class ScreenshotWriter extends LocalFileComparator {
       'runDirectory': runDirectory.path,
       'runDirectoryName': runIdentity.runDirectoryName,
       'archiveStateFile': archiveStateFile.path,
+      'expectedScreenshotCount': expectedScreenshotCount,
+      'capturedScreenshotCount': capturedScreenshotCount,
+      'isPartialRun': isPartialRun,
+      'missingScenarios': missingScenarios,
       'screenshots': _screenshots,
     };
 
@@ -247,6 +276,32 @@ class ScreenshotWriter extends LocalFileComparator {
 
   String _buildGalleryHtml({required String imageFileNameKey}) {
     final HtmlEscape htmlEscape = const HtmlEscape();
+    final missingScenarios = _buildMissingScenarios();
+    final capturedScreenshotCount = _screenshots.length;
+    final expectedScreenshotCount = _expectedScenarios.length;
+    final isPartialRun = expectedScreenshotCount > 0 &&
+        capturedScreenshotCount < expectedScreenshotCount;
+    final coverageSummary = expectedScreenshotCount > 0
+        ? 'Captured $capturedScreenshotCount of $expectedScreenshotCount expected screenshots.'
+        : 'Captured $capturedScreenshotCount screenshot${capturedScreenshotCount == 1 ? '' : 's'} in this run.';
+    final runStatusTitle = isPartialRun
+        ? 'Partial visual review run'
+        : expectedScreenshotCount > 0
+        ? 'Complete visual review run'
+        : 'Visual review run';
+    final statusClass = isPartialRun ? 'status-card partial' : 'status-card complete';
+    final missingScenariosHtml = missingScenarios.isEmpty
+        ? ''
+        : '''<details class="missing-scenarios">
+      <summary>Missing ${missingScenarios.length} expected scenario${missingScenarios.length == 1 ? '' : 's'}</summary>
+      <ul>
+        ${missingScenarios.map((entry) {
+            final scenarioName = htmlEscape.convert(entry['scenarioName'] as String? ?? 'Scenario');
+            final sourceFileName = htmlEscape.convert(entry['sourceFileName'] as String? ?? '');
+            return '<li><strong>$scenarioName</strong>${sourceFileName.isEmpty ? '' : ' <span>($sourceFileName)</span>'}</li>';
+          }).join('\n')}
+      </ul>
+    </details>''';
     final String html =
         '''<!DOCTYPE html>
 <html lang="en">
@@ -265,6 +320,48 @@ class ScreenshotWriter extends LocalFileComparator {
       }
       h1 { margin-top: 0; }
       .meta { margin-bottom: 24px; color: #5a556c; }
+      .status-card {
+        margin-bottom: 20px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid rgba(90, 85, 108, 0.14);
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 10px 30px rgba(48, 37, 86, 0.08);
+      }
+      .status-card.partial {
+        background: rgba(255, 244, 232, 0.95);
+        border-color: rgba(191, 102, 0, 0.24);
+      }
+      .status-card.complete {
+        background: rgba(239, 251, 244, 0.95);
+        border-color: rgba(34, 139, 87, 0.18);
+      }
+      .status-title {
+        margin: 0 0 8px;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+      .status-summary {
+        margin: 0;
+        color: #3f3a4f;
+      }
+      .missing-scenarios {
+        margin-top: 12px;
+      }
+      .missing-scenarios summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .missing-scenarios ul {
+        margin: 10px 0 0;
+        padding-left: 20px;
+      }
+      .missing-scenarios li + li {
+        margin-top: 6px;
+      }
+      .missing-scenarios span {
+        color: #5a556c;
+      }
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -299,6 +396,11 @@ class ScreenshotWriter extends LocalFileComparator {
   <body>
     <h1>Visual review</h1>
     <div class="meta">Run ID: ${htmlEscape.convert(runId)} • Generated: ${htmlEscape.convert(_clock().toUtc().toIso8601String())}</div>
+    <section class="$statusClass">
+      <h2 class="status-title">${htmlEscape.convert(runStatusTitle)}</h2>
+      <p class="status-summary">${htmlEscape.convert(coverageSummary)}</p>
+      $missingScenariosHtml
+    </section>
     <div class="grid">
       ${_screenshots.map((entry) {
           final String scenarioName = htmlEscape.convert(entry['scenarioName'] as String? ?? 'Scenario');
@@ -342,6 +444,32 @@ class ScreenshotWriter extends LocalFileComparator {
       final String rightSlug = right['scenarioSlug'] as String? ?? '';
       return leftSlug.compareTo(rightSlug);
     });
+  }
+
+  List<Map<String, Object?>> _buildMissingScenarios() {
+    if (_expectedScenarios.isEmpty) {
+      return const [];
+    }
+
+    final capturedSlugs = _screenshots
+        .map((entry) => entry['scenarioSlug'] as String? ?? '')
+        .toSet();
+    final missing = _expectedScenarios
+        .where((scenario) => !capturedSlugs.contains(scenario.scenarioSlug))
+        .map(
+          (scenario) => <String, Object?>{
+            'scenarioName': scenario.scenarioName,
+            'scenarioSlug': scenario.scenarioSlug,
+            'sourceFileName': scenario.fileName,
+          },
+        )
+        .toList(growable: false);
+    missing.sort((left, right) {
+      final leftSlug = left['scenarioSlug'] as String? ?? '';
+      final rightSlug = right['scenarioSlug'] as String? ?? '';
+      return leftSlug.compareTo(rightSlug);
+    });
+    return missing;
   }
 
   static Directory _defaultOutputRootDirectory() {

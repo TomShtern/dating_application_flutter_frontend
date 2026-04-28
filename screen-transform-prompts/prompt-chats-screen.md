@@ -11,6 +11,11 @@ logic. Keep `_openConversation`, the `Navigator.push` to
 contract, and the underlying `ConversationSummary` model untouched.
 
 Constraints (read first):
+- Read `docs/design-language.md` first. It is the source of truth for
+  hero choice, screen archetypes, semantic colours, spacing/radius
+  tokens, surfaces, typography emphasis, and interaction patterns before
+  altering shared widgets, screen structure, colours, spacing, or
+  `AppTheme` helpers.
 - Browse/social archetype: a `ShellHero` is the visual anchor and lives
   OUTSIDE the scroll. Layout MUST be
   `Column → ShellHero → Expanded → RefreshIndicator → ListView`.

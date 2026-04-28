@@ -249,6 +249,71 @@ void main() {
     expect(screenshots.first['latestFileName'], 'alpha__run-0001.png');
     expect(screenshots.last['latestFileName'], 'beta__run-0001.png');
   });
+
+  test('flags partial runs in the manifest and gallery', () async {
+    final Directory tempDirectory = await Directory.systemTemp.createTemp(
+      'screenshot-capture-partial-',
+    );
+    addTearDown(() async {
+      if (tempDirectory.existsSync()) {
+        await tempDirectory.delete(recursive: true);
+      }
+    });
+
+    final Uri testFileUri = Uri.file(
+      '${tempDirectory.path}${Platform.pathSeparator}screenshot_test.dart',
+    );
+    final Directory outputRootDirectory = Directory(
+      '${tempDirectory.path}${Platform.pathSeparator}visual_review',
+    );
+
+    final ScreenshotWriter writer = ScreenshotWriter(
+      testFileUri,
+      outputRootDirectory: outputRootDirectory,
+      clock: () => DateTime.parse('2026-04-20T15:00:00Z'),
+      expectedScenarios: const [
+        ScreenshotScenarioDefinition(
+          fileName: 'alpha.png',
+          scenarioName: 'alpha screen',
+        ),
+        ScreenshotScenarioDefinition(
+          fileName: 'beta.png',
+          scenarioName: 'beta screen',
+        ),
+      ],
+    )..registerScenario(fileName: 'alpha.png', scenarioName: 'alpha screen');
+
+    await writer.compare(_pngBytes(), _uri('alpha.png'));
+
+    final Map<String, dynamic> manifest =
+        jsonDecode(await writer.latestManifestFile.readAsString())
+            as Map<String, dynamic>;
+
+    expect(manifest['expectedScreenshotCount'], 2);
+    expect(manifest['capturedScreenshotCount'], 1);
+    expect(manifest['isPartialRun'], isTrue);
+
+    final List<dynamic> missingScenarios =
+        manifest['missingScenarios'] as List<dynamic>;
+    expect(missingScenarios, hasLength(1));
+    expect(
+      missingScenarios.single,
+      containsPair('scenarioName', 'beta screen'),
+    );
+    expect(
+      missingScenarios.single,
+      containsPair('scenarioSlug', 'beta'),
+    );
+    expect(
+      missingScenarios.single,
+      containsPair('sourceFileName', 'beta.png'),
+    );
+
+    final String latestGallery = await writer.latestGalleryFile.readAsString();
+    expect(latestGallery, contains('Partial visual review run'));
+    expect(latestGallery, contains('Captured 1 of 2 expected screenshots.'));
+    expect(latestGallery, contains('beta screen'));
+  });
 }
 
 Uri _uri(String fileName) => Uri.parse('screenshots/$fileName');

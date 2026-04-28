@@ -15,13 +15,22 @@ import '../safety/safety_action_sheet.dart';
 import 'match_factors_sheet.dart';
 import 'matches_provider.dart';
 
-class MatchesScreen extends ConsumerWidget {
+enum _MatchFilter { all, newMatches, nearby, activeNow }
+
+class MatchesScreen extends ConsumerStatefulWidget {
   const MatchesScreen({super.key, required this.currentUser});
 
   final UserSummary currentUser;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MatchesScreen> createState() => _MatchesScreenState();
+}
+
+class _MatchesScreenState extends ConsumerState<MatchesScreen> {
+  _MatchFilter _selectedFilter = _MatchFilter.all;
+
+  @override
+  Widget build(BuildContext context) {
     final matchesState = ref.watch(matchesProvider);
 
     return Scaffold(
@@ -32,6 +41,7 @@ class MatchesScreen extends ConsumerWidget {
             data: (response) {
               final matches = response.matches;
               final newCount = matches.where(_isNewMatch).length;
+              final visibleMatches = _filteredMatches(matches, _selectedFilter);
               final totalCount = response.totalCount > 0
                   ? response.totalCount
                   : matches.length;
@@ -46,31 +56,42 @@ class MatchesScreen extends ConsumerWidget {
                         ref.read(matchesControllerProvider).refresh(),
                   ),
                   const SizedBox(height: 14),
-                  const _MatchFilterRow(),
+                  _MatchFilterRow(
+                    selectedFilter: _selectedFilter,
+                    onSelected: (filter) =>
+                        setState(() => _selectedFilter = filter),
+                  ),
                   const SizedBox(height: 16),
                   Expanded(
-                    child: matches.isEmpty
-                        ? AppAsyncState.empty(
-                            message:
-                                'No matches yet. Keep exploring to find mutual likes.',
-                            onRefresh: () =>
-                                ref.read(matchesControllerProvider).refresh(),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: () =>
-                                ref.read(matchesControllerProvider).refresh(),
-                            child: ListView.separated(
-                              itemCount: matches.length,
+                    child: RefreshIndicator(
+                      onRefresh: () =>
+                          ref.read(matchesControllerProvider).refresh(),
+                      child: visibleMatches.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                AppAsyncState.empty(
+                                  message: _emptyMatchesMessage(
+                                    _selectedFilter,
+                                  ),
+                                  onRefresh: () => ref
+                                      .read(matchesControllerProvider)
+                                      .refresh(),
+                                ),
+                              ],
+                            )
+                          : ListView.separated(
+                              itemCount: visibleMatches.length,
                               separatorBuilder: (context, index) =>
                                   const SizedBox(height: 16),
                               itemBuilder: (context, index) {
                                 return _MatchCard(
-                                  currentUser: currentUser,
-                                  match: matches[index],
+                                  currentUser: widget.currentUser,
+                                  match: visibleMatches[index],
                                 );
                               },
                             ),
-                          ),
+                    ),
                   ),
                 ],
               );
@@ -159,21 +180,43 @@ class _MatchesHeader extends StatelessWidget {
 }
 
 class _MatchFilterRow extends StatelessWidget {
-  const _MatchFilterRow();
+  const _MatchFilterRow({
+    required this.selectedFilter,
+    required this.onSelected,
+  });
+
+  final _MatchFilter selectedFilter;
+  final ValueChanged<_MatchFilter> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
+    return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _FilterChip(label: 'All', selected: true),
-          SizedBox(width: 8),
-          _FilterChip(label: 'New'),
-          SizedBox(width: 8),
-          _FilterChip(label: 'Nearby'),
-          SizedBox(width: 8),
-          _FilterChip(label: 'Active now'),
+          _FilterChip(
+            label: 'All',
+            selected: selectedFilter == _MatchFilter.all,
+            onTap: () => onSelected(_MatchFilter.all),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'New',
+            selected: selectedFilter == _MatchFilter.newMatches,
+            onTap: () => onSelected(_MatchFilter.newMatches),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Nearby',
+            selected: selectedFilter == _MatchFilter.nearby,
+            onTap: () => onSelected(_MatchFilter.nearby),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Active now',
+            selected: selectedFilter == _MatchFilter.activeNow,
+            onTap: () => onSelected(_MatchFilter.activeNow),
+          ),
         ],
       ),
     );
@@ -181,36 +224,48 @@ class _MatchFilterRow extends StatelessWidget {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, this.selected = false});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: selected
-            ? AppTheme.matchAccent(context).withValues(alpha: 0.12)
-            : Theme.of(context).colorScheme.surface,
+    return Material(
+      color: selected
+          ? AppTheme.matchAccent(context).withValues(alpha: 0.12)
+          : Theme.of(context).colorScheme.surface,
+      borderRadius: AppTheme.chipRadius,
+      child: InkWell(
         borderRadius: AppTheme.chipRadius,
-        border: Border.all(
-          color: selected
-              ? AppTheme.matchAccent(context).withValues(alpha: 0.36)
-              : Theme.of(
-                  context,
-                ).colorScheme.outlineVariant.withValues(alpha: 0.28),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: selected
-                ? AppTheme.matchAccent(context)
-                : AppTheme.matchTextSecondary(context),
-            fontWeight: FontWeight.w700,
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: AppTheme.chipRadius,
+            border: Border.all(
+              color: selected
+                  ? AppTheme.matchAccent(context).withValues(alpha: 0.36)
+                  : Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.28),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: selected
+                    ? AppTheme.matchAccent(context)
+                    : AppTheme.matchTextSecondary(context),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ),
       ),
@@ -763,6 +818,35 @@ String? _primaryPhotoUrl(String? primaryPhotoUrl, List<String> photoUrls) {
 }
 
 bool _isActive(String state) => state.trim().toUpperCase() == 'ACTIVE';
+
+List<MatchSummary> _filteredMatches(
+  List<MatchSummary> matches,
+  _MatchFilter filter,
+) {
+  return switch (filter) {
+    _MatchFilter.all => matches,
+    _MatchFilter.newMatches => matches.where(_isNewMatch).toList(),
+    _MatchFilter.nearby =>
+      matches
+          .where(
+            (match) =>
+                match.approximateLocation != null &&
+                match.approximateLocation!.trim().isNotEmpty,
+          )
+          .toList(),
+    _MatchFilter.activeNow =>
+      matches.where((match) => _isActive(match.state)).toList(),
+  };
+}
+
+String _emptyMatchesMessage(_MatchFilter filter) {
+  return switch (filter) {
+    _MatchFilter.all => 'No matches yet. Keep exploring to find mutual likes.',
+    _MatchFilter.newMatches => 'No new matches right now.',
+    _MatchFilter.nearby => 'No nearby matches are available right now.',
+    _MatchFilter.activeNow => 'No active matches are available right now.',
+  };
+}
 
 bool _isNewMatch(MatchSummary match) {
   final elapsed = DateTime.now().difference(match.createdAt.toLocal());

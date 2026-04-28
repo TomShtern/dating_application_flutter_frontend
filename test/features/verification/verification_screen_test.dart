@@ -71,7 +71,6 @@ void main() {
       findsNothing,
     );
     expect(find.text('Debug helpers stay separate'), findsNothing);
-    expect(find.text('How it works'), findsNothing);
     expect(find.textContaining('Resend'), findsNothing);
     expect(find.textContaining('cooldown'), findsNothing);
 
@@ -108,6 +107,7 @@ void main() {
 
     expect(apiClient.startedMethod, 'EMAIL');
     expect(apiClient.startedContact, 'dana@example.com');
+    expect(find.text('How it works'), findsOneWidget);
     expect(find.text('Developer only'), findsOneWidget);
     expect(find.text('Test code'), findsOneWidget);
     expect(find.widgetWithText(SelectableText, '246810'), findsOneWidget);
@@ -148,8 +148,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.byIcon(Icons.phone_outlined),
+      250,
+      scrollable: verificationScrollable(),
+    );
+    await tester.pumpAndSettle();
+
+    expect(apiClient.startedMethod, 'PHONE');
+    expect(apiClient.startedContact, '+1 555 555 5555');
+    expect(find.text('Enter the code'), findsOneWidget);
     expect(find.byIcon(Icons.phone_outlined), findsOneWidget);
-    expect(find.text('Phone'), findsWidgets);
   });
 }
 
