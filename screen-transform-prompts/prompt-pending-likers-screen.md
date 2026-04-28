@@ -1,188 +1,58 @@
-You are a Flutter frontend engineer. Your task is to fully redesign the
-PendingLikersScreen in lib/features/browse/pending_likers_screen.dart
-to match the app's design language. Do not change providers, models,
-navigation, or safety action logic. Only the visual/structural layer changes.
+Status: pending design-language refresh
 
-─── DESIGN LANGUAGE RULES (required reading) ────────────────────────────
-• Design doc: docs/design-language.md — read it fully before writing code.
-• Shared widgets: lib/shared/widgets/ — use them, never reinvent them.
-• Browse/social screen archetype (§14):
-    Scaffold → SafeArea → Column
-      ├── ShellHero(...)                  ← outside scroll, full width
-      └── Expanded → RefreshIndicator → ListView(padding: screenPadding)
-• UserAvatar: circular avatar with gradient ring + monogram fallback.
-  Use for person rows in lists (radius: 28 for standard list items).
-• CompactContextStrip: the canonical widget for icon + label metadata rows.
-  Never build a custom Row([Icon, SizedBox, Text]) for metadata.
-• AppTheme.listSpacing(compact: true) between list cards.
-• All spacing from AppTheme tokens. No magic numbers.
-• Every tappable: Material + InkWell (clip to panelRadius). No GestureDetector.
+Target file: `lib/features/browse/pending_likers_screen.dart`
 
-─── WHAT IS WRONG NOW ────────────────────────────────────────────────────
-1. STRUCTURAL BUG: The entire body is wrapped in
-   Padding(AppTheme.screenPadding()) and then the ShellHero is the first
-   child of the ListView inside that padding. This means:
-   (a) The ShellHero is inset by 18px on both sides — it does not span
-       the full screen width as the design language requires.
-   (b) There is empty space at the very top before the hero card renders.
-   Fix: The ShellHero must be outside the scroll area, at Column level.
+You are a Flutter frontend coding engineer. Redesign the Pending Likers screen
+to match `docs/design-language.md`, using the run-0070 reference screenshots
+as the taste target:
 
-2. PersonMediaThumbnail is used as a 72×72 circle (chipRadius = 999px
-   border radius) — this is wrong. The design language says
-   PersonMediaThumbnail is a rectangular thumbnail (96×128, radius 24).
-   For a person list row, the correct widget is UserAvatar (circular,
-   with ring and monogram fallback). Use UserAvatar(radius: 28) instead.
+- `design-reference/stats-run-0070-reference.png`
+- `design-reference/notifications-run-0070-reference.png`
+- `design-reference/notifications-dark-run-0070-reference.png`
 
-3. _PendingLikerMetaText is a custom widget that re-implements
-   CompactContextStrip exactly. Delete it and use CompactContextStrip.
+## Non-Negotiables
 
-4. The "Open profile" affordance at the bottom of each card is plain
-   text + chevron in a Row — no ripple, not a proper interactive element.
-   Replace with TextButton.icon.
+- Read `docs/design-language.md` before editing this screen.
+- This is a pushed secondary route from Discover/Settings context. Keep a
+  compact visible route title and back affordance through the AppBar.
+- Do not change providers, models, API calls, profile navigation, safety action
+  behavior, refresh behavior, or date formatting helpers.
+- Do not invent who-liked-you reasons, compatibility, ranking, or safety
+  metadata not present in the model/API.
+- Do not add new tests for this UI/design pass. You may run existing useful
+  tests, `flutter analyze`, and the visual-review suite.
 
-5. The summary strip (_PendingLikersSummaryStrip) shows the count as a
-   plain Text string — no animation. The count should animate in with a
-   count-up (TweenAnimationBuilder<int>) matching the animation system.
+## Design Direction
 
-6. The ShellHero has no count badge in the badges list — the user cannot
-   tell at a glance how many people liked them until they scroll.
+Pending Likers is a people/social screen with affinity energy. Use rose/coral
+for received likes, violet for match potential, and compact people signals.
+It should be colorful and warm, but not a one-color pink screen.
 
-─── REQUIRED CHANGES ─────────────────────────────────────────────────────
+## Required Outcome
 
-1. FIX THE SCREEN STRUCTURE.
-   Remove the outer Padding(AppTheme.screenPadding()) from the body.
-   Change the body to:
-     body: SafeArea(
-       child: Column(
-         crossAxisAlignment: CrossAxisAlignment.stretch,
-         children: [
-           // Hero — full width, NOT inside ListView
-           _buildHero(likers, controller),
-           // List — scrollable, with its own padding
-           Expanded(
-             child: RefreshIndicator(
-               onRefresh: controller.refresh,
-               child: ListView(
-                 padding: AppTheme.screenPadding(),
-                 children: [
-                   if (likers.isNotEmpty) ...[
-                     _PendingLikersSummaryStrip(waitingCount: likers.length),
-                     SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-                   ],
-                   if (likers.isEmpty)
-                     AppAsyncState.empty(...)
-                   else
-                     ...likers.map((liker) => Padding(
-                       padding: EdgeInsets.only(
-                         bottom: AppTheme.listSpacing(compact: true)),
-                       child: _PendingLikerCard(liker: liker),
-                     )),
-                 ],
-               ),
-             ),
-           ),
-         ],
-       ),
-     )
-   The loading and error states from likersState.when() still render inside
-   a Padding(screenPadding) as before, just without the ShellHero issue.
-   Keep the AppBar with the refresh IconButton as-is.
+- AppBar provides route context: back affordance, title such as `Likes you`, and
+  any existing refresh action in compact form.
+- First viewport should show a useful count/state quickly, then real liker rows.
+  Avoid putting a large ShellHero inside a padded scroll.
+- Use person/social card anatomy: real photo or polished avatar, name, location
+  when available, liked-at timing, safety/context action, and one clear profile
+  affordance.
+- Use soft tinted card surfaces with semantic rose/coral accents and decorated
+  icon chips.
+- Use functional compact metadata chips/strips; avoid custom duplicated rows
+  when shared widgets already fit.
+- Safety actions should remain quiet and deliberate, not louder than profile
+  exploration.
+- Empty state should be warm and clear without inventing interest.
 
-2. UPDATE ShellHero.
-   The ShellHero is now rendered at Column level (extracted to _buildHero).
-   Add a count badge when likers are loaded:
-     ShellHero(
-       compact: true,
-       eyebrowLabel: 'Pending likes',
-       eyebrowIcon: Icons.favorite_rounded,
-       title: 'People who liked you',
-       description: 'Open a profile for a closer look, or refresh to see
-                     new interest as it lands.',
-       badges: likers.isNotEmpty
-         ? [ShellHeroPill(
-             icon: Icons.people_outline_rounded,
-             label: '${likers.length} waiting',
-           )]
-         : const [],
-     )
+## Completion
 
-3. FIX _PendingLikerCard: replace PersonMediaThumbnail with UserAvatar.
-   Change:
-     PersonMediaThumbnail(
-       key: ValueKey('pending-liker-media-${liker.userId}'),
-       name: liker.name,
-       photoUrl: photoUrl,
-       width: 72,
-       height: 72,
-       borderRadius: AppTheme.chipRadius,
-     )
-   To:
-     UserAvatar(
-       name: liker.name,
-       photoUrl: photoUrl,
-       radius: 28,
-     )
-   Adjust crossAxisAlignment to CrossAxisAlignment.center on the outer Row
-   (since UserAvatar has a consistent height vs the variable thumbnail).
+Run `flutter analyze` and, when feasible, `flutter test
+test/visual_inspection/screenshot_test.dart`. Inspect the generated
+`pending_likers__run-*.png` against the run-0070 references and the visual
+checklist in `docs/design-language.md`.
 
-4. REPLACE _PendingLikerMetaText with CompactContextStrip.
-   Delete the entire _PendingLikerMetaText class.
-   In _PendingLikerCard, replace its usage:
-     // Instead of:
-     _PendingLikerMetaText(icon: Icons.schedule_rounded, label: likedAtLabel)
-     _PendingLikerMetaText(icon: Icons.location_on_outlined, label: location)
-     // Use:
-     CompactContextStrip(
-       leadingIcon: Icons.schedule_rounded,
-       label: likedAtLabel,
-     )
-     CompactContextStrip(
-       leadingIcon: Icons.location_on_outlined,
-       label: liker.approximateLocation!,
-     )
-   Keep the conditional guards (only show if non-null) exactly as before.
-   Keep the Wrap spacing for the metadata section.
+Only after this screen is fully implemented and visually checked, edit this
+prompt file and add this as the first line:
 
-5. REPLACE the "Open profile" link with TextButton.icon.
-   Change:
-     Row([
-       Text('Open profile', style: labelLarge primary),
-       SizedBox(width: 4),
-       Icon(Icons.chevron_right_rounded, color: onSurfaceVariant),
-     ])
-   To:
-     TextButton.icon(
-       onPressed: () => _openProfile(context),
-       icon: const Icon(Icons.open_in_new_rounded, size: 16),
-       label: const Text('Open profile'),
-       style: TextButton.styleFrom(
-         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-       ),
-     )
-   This is a proper interactive element with ripple.
-
-6. ADD count-up animation to _PendingLikersSummaryStrip.
-   Replace the plain countLabel Text with:
-     TweenAnimationBuilder<int>(
-       tween: IntTween(begin: 0, end: waitingCount),
-       duration: const Duration(milliseconds: 620),
-       curve: Curves.easeOutCubic,
-       builder: (context, value, _) {
-         final label = value == 1 ? '1 person waiting' : '$value people waiting';
-         return Text(label,
-           style: theme.textTheme.labelLarge?.copyWith(
-             color: colorScheme.primary));
-       },
-     )
-
-─── WHAT TO PRESERVE UNCHANGED ──────────────────────────────────────────
-• _openProfile() navigation logic
-• SafetyActionsButton placement and tooltip
-• _pendingLikerLikedAtLabel() and _primaryPhotoUrl() helpers
-• likedAt formatting via formatShortDate()
-• All providers and controller references
-• AppBar structure (empty AppBar with refresh IconButton)
-• _PendingLikersSummaryStrip gradient decoration and layout
-  (only the count Text → TweenAnimationBuilder changes)
-• All error and loading states via AppAsyncState
+`implemented`

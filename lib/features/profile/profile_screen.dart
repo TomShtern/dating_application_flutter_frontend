@@ -8,9 +8,10 @@ import '../../models/user_detail.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/media/media_url.dart';
 import '../../shared/widgets/highlight_tag_row.dart';
-import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../../theme/app_theme.dart';
 import '../location/location_completion_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'profile_edit_screen.dart';
@@ -39,102 +40,136 @@ class ProfileScreen extends ConsumerWidget {
         ? null
         : ref.watch(presentationContextProvider(userId!));
     final controller = ref.read(profileControllerProvider);
-    final title = _isCurrentUser
-        ? 'My profile'
-        : profileState.maybeWhen(
-            data: _displayName,
-            orElse: () => userName ?? 'Profile',
-          );
     final targetUserName = profileState.maybeWhen(
       data: _displayName,
       orElse: () => userName ?? 'this user',
     );
 
+    if (_isCurrentUser) {
+      return SafeArea(
+        top: false,
+        child: profileState.when(
+          data: (detail) {
+            final readinessLabel = _profileReadiness(detail).label;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ShellHero(
+                  compact: true,
+                  eyebrowLabel: 'Your profile',
+                  header: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        tooltip: 'Edit profile',
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => const ProfileEditScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.edit_outlined),
+                      ),
+                      IconButton(
+                        tooltip: 'Refresh profile',
+                        onPressed: controller.refreshCurrentUserProfile,
+                        icon: const Icon(Icons.refresh_rounded),
+                      ),
+                    ],
+                  ),
+                  title: _headline(detail),
+                  description: readinessLabel,
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: AppTheme.screenPadding(),
+                    child: _ProfileContent(
+                      detail: detail,
+                      isCurrentUser: true,
+                      onEditProfile: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (context) => const ProfileEditScreen(),
+                          ),
+                        );
+                      },
+                      onFixLocation: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (context) =>
+                                const LocationCompletionScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+          loading: () => Padding(
+            padding: AppTheme.screenPadding(),
+            child: const AppAsyncState.loading(message: 'Loading profile…'),
+          ),
+          error: (error, stackTrace) => Padding(
+            padding: AppTheme.screenPadding(),
+            child: AppAsyncState.error(
+              message: error is ApiError
+                  ? error.message
+                  : 'Unable to load profile right now.',
+              onRetry: controller.refreshCurrentUserProfile,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
-          if (_isCurrentUser)
-            profileState.maybeWhen(
-              data: (detail) => IconButton(
-                tooltip: 'Edit profile',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (context) => const ProfileEditScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.edit_outlined),
-              ),
-              orElse: SizedBox.shrink,
-            ),
-          if (!_isCurrentUser)
-            SafetyActionsButton(
-              targetUserId: userId!,
-              targetUserName: targetUserName,
-              onCompleted: (context, outcome) {
-                if (outcome.removesRelationship) {
-                  Navigator.of(context).maybePop();
-                }
-              },
-            ),
+          SafetyActionsButton(
+            targetUserId: userId!,
+            targetUserName: targetUserName,
+            onCompleted: (context, outcome) {
+              if (outcome.removesRelationship) {
+                Navigator.of(context).maybePop();
+              }
+            },
+          ),
           IconButton(
             tooltip: 'Refresh profile',
-            onPressed: () {
-              if (_isCurrentUser) {
-                controller.refreshCurrentUserProfile();
-                return;
-              }
-
-              controller.refreshOtherUserProfile(userId!);
-            },
-            icon: const Icon(Icons.refresh),
+            onPressed: () => controller.refreshOtherUserProfile(userId!),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: AppTheme.screenPadding(),
-          child: profileState.when(
-            data: (detail) => _ProfileContent(
+        child: profileState.when(
+          data: (detail) => SingleChildScrollView(
+            padding: AppTheme.screenPadding(),
+            child: _ProfileContent(
               detail: detail,
-              isCurrentUser: _isCurrentUser,
+              isCurrentUser: false,
               presentationContextState: presentationContextState,
-              onEditProfile: _isCurrentUser
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const ProfileEditScreen(),
-                        ),
-                      );
-                    }
-                  : null,
-              onFixLocation: _isCurrentUser
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              const LocationCompletionScreen(),
-                        ),
-                      );
-                    }
-                  : null,
             ),
-            loading: () =>
-                const AppAsyncState.loading(message: 'Loading profile…'),
-            error: (error, stackTrace) => AppAsyncState.error(
+          ),
+          loading: () => Padding(
+            padding: AppTheme.screenPadding(),
+            child: const AppAsyncState.loading(message: 'Loading profile…'),
+          ),
+          error: (error, stackTrace) => Padding(
+            padding: AppTheme.screenPadding(),
+            child: AppAsyncState.error(
               message: error is ApiError
                   ? error.message
                   : 'Unable to load profile right now.',
-              onRetry: () {
-                if (_isCurrentUser) {
-                  controller.refreshCurrentUserProfile();
-                  return;
-                }
-
-                controller.refreshOtherUserProfile(userId!);
-              },
+              onRetry: () => controller.refreshOtherUserProfile(userId!),
             ),
           ),
         ),
@@ -160,41 +195,39 @@ class _ProfileContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
-          if (!isCurrentUser) ...[
-            SizedBox(height: AppTheme.sectionSpacing()),
-            _PhotoSection(photoUrls: detail.photoUrls),
-          ],
-          if (!isCurrentUser && presentationContextState != null) ...[
-            SizedBox(height: AppTheme.sectionSpacing()),
-            _PresentationContextSection(state: presentationContextState!),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
+        if (!isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
-          _ProfileSection(
-            icon: Icons.notes_rounded,
-            title: _aboutTitle(detail),
-            value: _bio(detail),
-          ),
-          if (isCurrentUser) ...[
-            SizedBox(height: AppTheme.sectionSpacing()),
-            _ProfileCompletenessCard(
-              detail: detail,
-              onEditProfile: onEditProfile,
-              onFixLocation: onFixLocation,
-            ),
-          ],
-          SizedBox(height: AppTheme.sectionSpacing()),
-          _ProfileDetailsCard(detail: detail, isCurrentUser: isCurrentUser),
-          if (isCurrentUser) ...[
-            SizedBox(height: AppTheme.sectionSpacing()),
-            _PhotoSection(photoUrls: detail.photoUrls),
-          ],
+          _PhotoSection(photoUrls: detail.photoUrls),
         ],
-      ),
+        if (!isCurrentUser && presentationContextState != null) ...[
+          SizedBox(height: AppTheme.sectionSpacing()),
+          _PresentationContextSection(state: presentationContextState!),
+        ],
+        SizedBox(height: AppTheme.sectionSpacing()),
+        _ProfileSection(
+          icon: Icons.notes_rounded,
+          title: _aboutTitle(detail),
+          value: _bio(detail, isCurrentUser: isCurrentUser),
+        ),
+        if (isCurrentUser) ...[
+          SizedBox(height: AppTheme.sectionSpacing()),
+          _ProfileCompletenessCard(
+            detail: detail,
+            onEditProfile: onEditProfile,
+            onFixLocation: onFixLocation,
+          ),
+        ],
+        SizedBox(height: AppTheme.sectionSpacing()),
+        _ProfileDetailsCard(detail: detail, isCurrentUser: isCurrentUser),
+        if (isCurrentUser) ...[
+          SizedBox(height: AppTheme.sectionSpacing()),
+          _PhotoSection(photoUrls: detail.photoUrls),
+        ],
+      ],
     );
   }
 }
@@ -233,7 +266,7 @@ class _PresentationContextCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -282,9 +315,13 @@ class _PresentationContextCard extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(top: 3),
-                        child: Icon(Icons.check_circle_outline, size: 16),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Icon(
+                          Icons.check_circle_outline,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(child: Text(detail)),
@@ -332,22 +369,25 @@ class _ProfileHeroCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        isCurrentUser ? 'Your profile' : 'Profile snapshot',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: colorScheme.primary,
+                      if (!isCurrentUser) ...[
+                        Text(
+                          'Profile snapshot',
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(color: colorScheme.primary),
                         ),
-                      ),
-                      const SizedBox(height: 4),
+                        const SizedBox(height: 4),
+                      ],
                       Text(
                         _headline(detail),
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: isCurrentUser
+                            ? Theme.of(context).textTheme.titleLarge
+                            : Theme.of(context).textTheme.headlineSmall,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       Wrap(
-                        spacing: 8,
+                        spacing: AppTheme.cardGap,
                         runSpacing: 8,
                         children: [
                           _ProfileMetaPill(
@@ -378,11 +418,6 @@ class _ProfileHeroCard extends StatelessWidget {
                   minHeight: 8,
                   value: readiness.progress,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                readiness.label,
-                style: Theme.of(context).textTheme.bodySmall,
               ),
             ] else ...[
               SizedBox(height: AppTheme.sectionSpacing(compact: true)),
@@ -589,7 +624,7 @@ class _ProfileCompletenessCard extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -627,21 +662,8 @@ class _ProfileCompletenessCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: AppTheme.sectionSpacing()),
-            if (isComplete) ...[
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  _ProfileMetaPill(
-                    icon: Icons.check_circle_rounded,
-                    label: '$completedCount essentials complete',
-                  ),
-                  const _ProfileMetaPill(
-                    icon: Icons.explore_rounded,
-                    label: 'Ready for discovery',
-                  ),
-                ],
-              ),
+            if (isComplete)
+              ...[
             ] else ...[
               ClipRRect(
                 borderRadius: const BorderRadius.all(Radius.circular(999)),
@@ -682,10 +704,10 @@ class _ProfileCompletenessCard extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTheme.cardGap),
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
+              spacing: AppTheme.cardGap,
+              runSpacing: AppTheme.cardGap,
               children: [
                 FilledButton.tonalIcon(
                   onPressed: onEditProfile,
@@ -722,29 +744,34 @@ class _ProfileSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: AppTheme.listSpacing()),
-      child: Card(
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 10,
-          ),
-          leading: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: const BorderRadius.all(Radius.circular(16)),
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(AppTheme.cardPadding),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: const BorderRadius.all(Radius.circular(16)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Icon(icon, color: colorScheme.primary),
+              ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Icon(icon, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  Text(value, style: Theme.of(context).textTheme.bodyMedium),
+                ],
+              ),
             ),
-          ),
-          title: Text(title),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(value),
-          ),
+          ],
         ),
       ),
     );
@@ -768,7 +795,7 @@ class _PhotoSection extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -793,7 +820,7 @@ class _PhotoSection extends StatelessWidget {
                 Text('Photos', style: Theme.of(context).textTheme.titleMedium),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.cardGap),
             SizedBox(
               height: 126,
               child: ListView.separated(
@@ -938,10 +965,12 @@ String _headline(UserDetail detail) {
   return name;
 }
 
-String _bio(UserDetail detail) {
+String _bio(UserDetail detail, {required bool isCurrentUser}) {
   final bio = detail.bio.trim();
   if (bio.isEmpty) {
-    return 'No bio added yet.';
+    return isCurrentUser
+        ? 'Add a short bio so people get a feel for you.'
+        : 'No bio shared yet.';
   }
 
   return bio;

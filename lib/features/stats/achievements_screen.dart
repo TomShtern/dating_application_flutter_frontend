@@ -9,6 +9,34 @@ import '../../theme/app_theme.dart';
 import 'achievement_detail_sheet.dart';
 import 'stats_provider.dart';
 
+double? _parseAchievementProgressValue(String? progress) {
+  if (progress == null) {
+    return null;
+  }
+
+  final normalized = progress.trim();
+  final slashMatch = RegExp(
+    r'^(\d+(?:\.\d+)?)\s*/\s*(\d+(?:\.\d+)?)$',
+  ).firstMatch(normalized);
+  if (slashMatch != null) {
+    final numerator = double.tryParse(slashMatch.group(1) ?? '');
+    final denominator = double.tryParse(slashMatch.group(2) ?? '');
+    if (numerator != null && denominator != null && denominator > 0) {
+      return (numerator / denominator).clamp(0.0, 1.0).toDouble();
+    }
+  }
+
+  final percentMatch = RegExp(r'^(\d+(?:\.\d+)?)%$').firstMatch(normalized);
+  if (percentMatch != null) {
+    final percentage = double.tryParse(percentMatch.group(1) ?? '');
+    if (percentage != null) {
+      return (percentage / 100.0).clamp(0.0, 1.0).toDouble();
+    }
+  }
+
+  return null;
+}
+
 class AchievementsScreen extends ConsumerWidget {
   const AchievementsScreen({super.key, required this.currentUser});
 
@@ -38,6 +66,15 @@ class AchievementsScreen extends ConsumerWidget {
             final inProgressCount = achievements
                 .where((achievement) => achievement.isUnlocked == false)
                 .length;
+            final unknownCount = achievements
+                .where((achievement) => achievement.isUnlocked == null)
+                .length;
+            final unlocked = achievements
+                .where((achievement) => achievement.isUnlocked == true)
+                .toList();
+            final pending = achievements
+                .where((achievement) => achievement.isUnlocked != true)
+                .toList();
 
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -49,6 +86,7 @@ class AchievementsScreen extends ConsumerWidget {
                     unlockedCount: unlockedCount,
                     totalCount: achievements.length,
                     inProgressCount: inProgressCount,
+                    unknownCount: unknownCount,
                   ),
                   SizedBox(height: AppTheme.sectionSpacing(compact: true)),
                 ],
@@ -57,10 +95,25 @@ class AchievementsScreen extends ConsumerWidget {
                     message: 'No achievements are available for this user yet.',
                   )
                 else ...[
-                  for (var index = 0; index < achievements.length; index++) ...[
-                    _AchievementCard(achievement: achievements[index]),
-                    if (index != achievements.length - 1)
-                      SizedBox(height: AppTheme.listSpacing()),
+                  if (unlocked.isNotEmpty) ...[
+                    SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+                    const _AchievementSectionLabel(title: 'Unlocked'),
+                    SizedBox(height: AppTheme.listSpacing()),
+                    for (var index = 0; index < unlocked.length; index++) ...[
+                      _AchievementCard(achievement: unlocked[index]),
+                      if (index != unlocked.length - 1)
+                        SizedBox(height: AppTheme.listSpacing()),
+                    ],
+                  ],
+                  if (pending.isNotEmpty) ...[
+                    SizedBox(height: AppTheme.sectionSpacing()),
+                    const _AchievementSectionLabel(title: 'Still building'),
+                    SizedBox(height: AppTheme.listSpacing()),
+                    for (var index = 0; index < pending.length; index++) ...[
+                      _AchievementCard(achievement: pending[index]),
+                      if (index != pending.length - 1)
+                        SizedBox(height: AppTheme.listSpacing()),
+                    ],
                   ],
                 ],
               ],
@@ -93,12 +146,14 @@ class _AchievementsOverviewCard extends StatelessWidget {
     required this.unlockedCount,
     required this.totalCount,
     required this.inProgressCount,
+    required this.unknownCount,
   });
 
   final String currentUserName;
   final int unlockedCount;
   final int totalCount;
   final int inProgressCount;
+  final int unknownCount;
 
   @override
   Widget build(BuildContext context) {
@@ -140,9 +195,13 @@ class _AchievementsOverviewCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        inProgressCount == 0
+                        inProgressCount == 0 && unknownCount == 0
                             ? 'Everything here is unlocked.'
-                            : '$inProgressCount still building',
+                            : inProgressCount > 0 && unknownCount > 0
+                            ? '$inProgressCount still building · $unknownCount pending'
+                            : inProgressCount > 0
+                            ? '$inProgressCount still building'
+                            : '$unknownCount pending',
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],
@@ -186,10 +245,15 @@ class _AchievementsOverviewCard extends StatelessWidget {
               children: [
                 Text('Progress', style: theme.textTheme.labelLarge),
                 const Spacer(),
-                Text(
-                  '${(progress * 100).round()}% complete',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.primary,
+                TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: (progress * 100).round()),
+                  duration: const Duration(milliseconds: 620),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) => Text(
+                    '$value% complete',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colorScheme.primary,
+                    ),
                   ),
                 ),
               ],
@@ -295,6 +359,23 @@ class _AchievementCard extends StatelessWidget {
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
+                        if (!unlocked)
+                          if (_parseAchievementProgressValue(progress)
+                              case final progressValue?) ...[
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: AppTheme.chipRadius,
+                              child: LinearProgressIndicator(
+                                value: progressValue,
+                                minHeight: 6,
+                                backgroundColor:
+                                    colorScheme.surfaceContainerHighest,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ],
                       ],
                     ],
                   ),
@@ -331,12 +412,21 @@ class _AchievementStatusBadge extends StatelessWidget {
         borderRadius: AppTheme.chipRadius,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Text(
-          label,
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: unlocked ? colorScheme.onPrimary : colorScheme.onSurface,
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (unlocked) ...[
+              Icon(Icons.check_rounded, size: 14, color: colorScheme.onPrimary),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: unlocked ? colorScheme.onPrimary : colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -364,6 +454,53 @@ class _AchievementSummaryPill extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AchievementSectionLabel extends StatelessWidget {
+  const _AchievementSectionLabel({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 3,
+          height: 18,
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withValues(alpha: 0.85),
+            borderRadius: AppTheme.chipRadius,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.outlineVariant.withValues(alpha: 0.6),
+                  colorScheme.outlineVariant.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

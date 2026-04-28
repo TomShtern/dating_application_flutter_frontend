@@ -5,8 +5,9 @@ import '../../models/app_preferences.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
-import '../../theme/app_theme.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../../theme/app_theme.dart';
 import '../auth/selected_user_provider.dart';
 import '../notifications/notifications_screen.dart';
 import '../safety/blocked_users_screen.dart';
@@ -24,147 +25,158 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedThemeMode = ref.watch(currentThemeModePreferenceProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(
-            AppTheme.pagePadding,
-            AppTheme.pagePadding,
-            AppTheme.pagePadding,
-            28,
+    return SafeArea(
+      top: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const ShellHero(
+            compact: true,
+            eyebrowLabel: 'Account',
+            title: 'Settings',
+            description: 'Profile, appearance, and quick access.',
           ),
-          children: [
-            _SettingsSessionCard(
-              currentUser: currentUser,
-              onSwitchUser: () async {
-                await ref.read(selectUserControllerProvider).clearSelection();
-              },
+          Expanded(
+            child: ListView(
+              padding: AppTheme.screenPadding(),
+              children: [
+                _SettingsSessionCard(
+                  currentUser: currentUser,
+                  onSwitchUser: () async {
+                    await ref
+                        .read(selectUserControllerProvider)
+                        .clearSelection();
+                  },
+                ),
+                SizedBox(height: AppTheme.sectionSpacing()),
+                _SettingsSectionCard(
+                  icon: Icons.query_stats_rounded,
+                  title: 'Quick access',
+                  subtitle: 'Open the essentials faster.',
+                  child: Column(
+                    children: [
+                      _SettingsLinkTile(
+                        icon: Icons.query_stats_rounded,
+                        title: 'View stats',
+                        subtitle:
+                            'See matches, chats, and activity at a glance',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) =>
+                                  StatsScreen(currentUser: currentUser),
+                            ),
+                          );
+                        },
+                      ),
+                      _SettingsDivider(),
+                      _SettingsLinkTile(
+                        icon: Icons.notifications_none_rounded,
+                        title: 'Notifications',
+                        subtitle:
+                            'Review recent activity and catch anything unread',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => const NotificationsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _SettingsDivider(),
+                      _SettingsLinkTile(
+                        icon: Icons.verified_user_outlined,
+                        title: 'Verification',
+                        subtitle: 'Confirm your email or phone number',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => const VerificationScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _SettingsDivider(),
+                      _SettingsLinkTile(
+                        icon: Icons.block_outlined,
+                        title: 'Blocked users',
+                        subtitle:
+                            'Review blocked profiles and make changes anytime',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => const BlockedUsersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _SettingsDivider(),
+                      _SettingsLinkTile(
+                        icon: Icons.workspace_premium_outlined,
+                        title: 'View achievements',
+                        subtitle:
+                            'Celebrate the milestones you have already unlocked',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) =>
+                                  AchievementsScreen(currentUser: currentUser),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: AppTheme.sectionSpacing()),
+                _SettingsSectionCard(
+                  icon: Icons.palette_outlined,
+                  title: 'Appearance',
+                  subtitle: 'Choose how the app should look on this device.',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SegmentedButton<AppThemeModePreference>(
+                        segments: AppThemeModePreference.values
+                            .map(
+                              (themeMode) =>
+                                  ButtonSegment<AppThemeModePreference>(
+                                    value: themeMode,
+                                    label: Text(_label(themeMode)),
+                                  ),
+                            )
+                            .toList(growable: false),
+                        selected: {selectedThemeMode},
+                        onSelectionChanged: (selection) async {
+                          final value = selection.first;
+                          await ref
+                              .read(appPreferencesControllerProvider)
+                              .setThemeMode(value);
+                        },
+                        showSelectedIcon: false,
+                      ),
+                      const SizedBox(height: AppTheme.cardGap),
+                      DecoratedBox(
+                        decoration: AppTheme.surfaceDecoration(
+                          context,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surface.withValues(alpha: 0.84),
+                          borderRadius: AppTheme.panelRadius,
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(AppTheme.cardPadding),
+                          child: Text(_description(selectedThemeMode)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+              ],
             ),
-            SizedBox(height: AppTheme.sectionSpacing()),
-            _SettingsSectionCard(
-              icon: Icons.query_stats_rounded,
-              title: 'Quick access',
-              subtitle: 'Open the essentials faster.',
-              child: Column(
-                children: [
-                  _SettingsLinkTile(
-                    icon: Icons.query_stats_rounded,
-                    title: 'View stats',
-                    subtitle: 'See matches, chats, and activity at a glance',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              StatsScreen(currentUser: currentUser),
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(height: 1),
-                  _SettingsLinkTile(
-                    icon: Icons.notifications_none_rounded,
-                    title: 'Notifications',
-                    subtitle:
-                        'Review recent activity and catch anything unread',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const NotificationsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(height: 1),
-                  _SettingsLinkTile(
-                    icon: Icons.verified_user_outlined,
-                    title: 'Verification',
-                    subtitle: 'Confirm your email or phone number',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const VerificationScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(height: 1),
-                  _SettingsLinkTile(
-                    icon: Icons.block_outlined,
-                    title: 'Blocked users',
-                    subtitle:
-                        'Review blocked profiles and make changes anytime',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) => const BlockedUsersScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(height: 1),
-                  _SettingsLinkTile(
-                    icon: Icons.workspace_premium_outlined,
-                    title: 'View achievements',
-                    subtitle:
-                        'Celebrate the milestones you have already unlocked',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              AchievementsScreen(currentUser: currentUser),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: AppTheme.sectionSpacing()),
-            _SettingsSectionCard(
-              icon: Icons.palette_outlined,
-              title: 'Appearance',
-              subtitle: 'Choose how the app should look on this device.',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SegmentedButton<AppThemeModePreference>(
-                    segments: AppThemeModePreference.values
-                        .map(
-                          (themeMode) => ButtonSegment<AppThemeModePreference>(
-                            value: themeMode,
-                            label: Text(_label(themeMode)),
-                          ),
-                        )
-                        .toList(growable: false),
-                    selected: {selectedThemeMode},
-                    onSelectionChanged: (selection) async {
-                      final value = selection.first;
-                      await ref
-                          .read(appPreferencesControllerProvider)
-                          .setThemeMode(value);
-                    },
-                    showSelectedIcon: false,
-                  ),
-                  const SizedBox(height: 16),
-                  DecoratedBox(
-                    decoration: AppTheme.surfaceDecoration(
-                      context,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surface.withValues(alpha: 0.84),
-                      borderRadius: const BorderRadius.all(Radius.circular(24)),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(_description(selectedThemeMode)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -193,7 +205,7 @@ class _SettingsSessionCard extends StatelessWidget {
         ),
       ],
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           UserAvatar(name: currentUser.name, radius: 24),
           const SizedBox(width: 12),
@@ -204,6 +216,8 @@ class _SettingsSessionCard extends StatelessWidget {
                 Text(
                   currentUser.name,
                   style: Theme.of(context).textTheme.titleLarge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -242,7 +256,7 @@ class _SettingsSectionCard extends StatelessWidget {
         color: colorScheme.surface.withValues(alpha: 0.9),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -278,7 +292,7 @@ class _SettingsSectionCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.cardGap),
             child,
           ],
         ),
@@ -314,6 +328,7 @@ class _SettingsLinkTile extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 DecoratedBox(
                   decoration: BoxDecoration(
@@ -338,20 +353,41 @@ class _SettingsLinkTile extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         subtitle,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colorScheme.onSurfaceVariant,
+                SizedBox.square(
+                  dimension: 24,
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SettingsDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Divider(
+        height: 1,
+        thickness: 1,
+        color: Theme.of(
+          context,
+        ).colorScheme.outlineVariant.withValues(alpha: 0.4),
       ),
     );
   }

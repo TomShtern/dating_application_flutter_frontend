@@ -6,8 +6,9 @@ import '../../models/location_metadata.dart';
 import '../../models/profile_edit_snapshot.dart';
 import '../../models/profile_update_request.dart';
 import '../../models/user_detail.dart';
-import '../../shared/widgets/app_async_state.dart';
 import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../location/location_completion_screen.dart';
 import 'profile_provider.dart';
@@ -54,7 +55,12 @@ class _ProfileEditAppBar extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(title: const Text('Edit your profile'));
+    return AppBar(
+      title: const SizedBox.shrink(),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+    );
   }
 }
 
@@ -119,10 +125,44 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
     return Scaffold(
       appBar: const _ProfileEditAppBar(),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-        child: FilledButton(
-          onPressed: _isSaving ? null : _handleSave,
-          child: Text(_isSaving ? 'Saving…' : 'Save changes'),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppTheme.pagePadding,
+              AppTheme.cardGap,
+              AppTheme.pagePadding,
+              AppTheme.cardGap,
+            ),
+            child: SizedBox(
+              height: 48,
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isSaving ? null : _handleSave,
+                icon: _isSaving
+                    ? SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.check_rounded),
+                label: Text(_isSaving ? 'Saving…' : 'Save changes'),
+              ),
+            ),
+          ),
         ),
       ),
       body: SafeArea(
@@ -146,8 +186,8 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                     ),
                     const SizedBox(height: 8),
                     Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
+                      spacing: AppTheme.cardGap,
+                      runSpacing: AppTheme.cardGap,
                       children: _genderOptions
                           .map(
                             (option) => ChoiceChip(
@@ -162,15 +202,15 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                           )
                           .toList(growable: false),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: AppTheme.sectionGap),
                     Text(
                       'Interested in',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
                     Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
+                      spacing: AppTheme.cardGap,
+                      runSpacing: AppTheme.cardGap,
                       children: _genderOptions
                           .map(
                             (option) => FilterChip(
@@ -204,15 +244,21 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                         Expanded(
                           child: Text(
                             _maxDistanceKm == null
-                                ? 'Not set yet'
-                                : 'Up to $_maxDistanceKm km',
-                            style: Theme.of(context).textTheme.titleMedium,
+                                ? 'Distance not set yet'
+                                : 'Showing matches within',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ),
                         if (_maxDistanceKm != null)
                           Text(
                             '${_distanceSliderValue.round()} km',
-                            style: Theme.of(context).textTheme.labelLarge,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                       ],
                     ),
@@ -230,9 +276,11 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                     ),
                     Text(
                       _maxDistanceKm == null
-                          ? 'Move the slider when you want to set a distance.'
-                          : 'This value is sent as your maximum distance.',
-                      style: Theme.of(context).textTheme.bodySmall,
+                          ? 'Move the slider to set how far the app should look.'
+                          : 'Anyone further than this won\'t show up in discover.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -258,64 +306,57 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                 title: 'Location',
                 description:
                     'Keep your area current so nearby matches stay relevant.',
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: AppTheme.cardRadius,
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outlineVariant.withValues(alpha: 0.28),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: AppTheme.sectionPadding(compact: true),
-                    child: Column(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(Icons.location_on_outlined),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                _approximateLocation.trim().isEmpty
-                                    ? 'Add the area where you want to meet people.'
-                                    : 'Showing people near $_approximateLocation.',
-                              ),
-                            ),
-                          ],
+                        Icon(
+                          Icons.location_on_outlined,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: () async {
-                            final resolved = await Navigator.of(context)
-                                .push<ResolvedLocation>(
-                                  MaterialPageRoute<ResolvedLocation>(
-                                    builder: (context) =>
-                                        const LocationCompletionScreen(),
-                                  ),
-                                );
-                            if (!mounted || resolved == null) {
-                              return;
-                            }
-
-                            setState(() {
-                              _approximateLocation = resolved.label;
-                              _resolvedLocation = resolved;
-                            });
-                          },
-                          icon: const Icon(Icons.travel_explore_outlined),
-                          label: Text(
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
                             _approximateLocation.trim().isEmpty
-                                ? 'Choose location'
-                                : 'Update location',
+                                ? 'Add the area where you want to meet people.'
+                                : 'Showing people near $_approximateLocation.',
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: AppTheme.cardGap),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final resolved = await Navigator.of(context)
+                              .push<ResolvedLocation>(
+                                MaterialPageRoute<ResolvedLocation>(
+                                  builder: (context) =>
+                                      const LocationCompletionScreen(),
+                                ),
+                              );
+                          if (!mounted || resolved == null) {
+                            return;
+                          }
+
+                          setState(() {
+                            _approximateLocation = resolved.label;
+                            _resolvedLocation = resolved;
+                          });
+                        },
+                        icon: const Icon(Icons.travel_explore_outlined),
+                        label: Text(
+                          _approximateLocation.trim().isEmpty
+                              ? 'Choose location'
+                              : 'Update location',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(height: AppTheme.sectionSpacing()),
@@ -365,7 +406,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
             ],
           ),
         ),
@@ -566,6 +607,9 @@ class _ProfileEditHeader extends StatelessWidget {
       if (location != null && location.isNotEmpty) location,
       verificationText,
     ];
+    final photoUrl = readOnly.photoUrls.isEmpty
+        ? null
+        : readOnly.photoUrls.first;
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
@@ -578,22 +622,25 @@ class _ProfileEditHeader extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: const BorderRadius.all(Radius.circular(14)),
-              ),
-              child: Text(
-                _initialFor(readOnly.name),
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w800,
+            if (photoUrl != null)
+              UserAvatar(name: readOnly.name, photoUrl: photoUrl, radius: 24)
+            else
+              Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: const BorderRadius.all(Radius.circular(16)),
+                ),
+                child: Text(
+                  _initialFor(readOnly.name),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -615,7 +662,9 @@ class _ProfileEditHeader extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     'Edit the core details first. Optional filters stay lower on the page.',
-                    style: theme.textTheme.bodyMedium,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -648,11 +697,11 @@ class _ProfileEditSection extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            Text(title, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
             Text(
               description,
@@ -660,7 +709,7 @@ class _ProfileEditSection extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppTheme.cardGap),
             child,
           ],
         ),

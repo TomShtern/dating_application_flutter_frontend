@@ -24,12 +24,16 @@ class StatsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 48,
         title: Text(
           'Stats',
           style: Theme.of(
             context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           Tooltip(
             message: 'View achievements',
@@ -103,22 +107,28 @@ class _StatsDashboard extends StatelessWidget {
       onRefresh: () async => onRefresh(),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: AppTheme.screenPadding(),
+        padding: const EdgeInsets.fromLTRB(
+          AppTheme.pagePadding,
+          0,
+          AppTheme.pagePadding,
+          AppTheme.pagePadding,
+        ),
         children: [
           _StatsOverviewCard(currentUser: currentUser, stats: stats),
           SizedBox(height: AppTheme.sectionSpacing()),
           if (stats.items.isEmpty)
             const AppAsyncState.empty(
-              message: 'No stats are available for this user yet.',
+              message:
+                  'Stats start populating after a few likes, matches, and conversations. Check back once you\'ve been active.',
             )
           else ...[
             const _SectionLabel(title: 'Snapshot'),
-            const SizedBox(height: 10),
+            const SizedBox(height: AppTheme.cardGap),
             _SnapshotGrid(items: snapshotItems),
             if (performanceItems.isNotEmpty) ...[
               SizedBox(height: AppTheme.sectionSpacing()),
               const _SectionLabel(title: 'Performance'),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppTheme.cardGap),
               for (var index = 0; index < performanceItems.length; index++) ...[
                 _PerformanceStatCard(item: performanceItems[index]),
                 if (index != performanceItems.length - 1)
@@ -223,18 +233,33 @@ class _SnapshotStatTile extends StatelessWidget {
         child: Ink(
           decoration: AppTheme.surfaceDecoration(
             context,
-            color: theme.colorScheme.surface,
+            color: _statSurfaceColor(context, spec),
             prominent: false,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(height: 4, color: spec.color.withValues(alpha: 0.70)),
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+                child: Container(
+                  height: 4,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        spec.color.withValues(alpha: 0.85),
+                        spec.color.withValues(alpha: 0.55),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 11),
                 child: SizedBox(
-                  height: 100,
+                  height: 108,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -306,7 +331,6 @@ class _PerformanceStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final spec = _StatVisualSpec.forLabel(item.label);
     final percent = _tryParsePercent(item.value);
 
@@ -318,15 +342,33 @@ class _PerformanceStatCard extends StatelessWidget {
         child: Ink(
           decoration: AppTheme.surfaceDecoration(
             context,
-            color: colorScheme.surface,
+            color: _statSurfaceColor(context, spec),
             prominent: false,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            padding: EdgeInsets.fromLTRB(
+              AppTheme.cardPadding,
+              14,
+              AppTheme.cardPadding,
+              14,
+            ),
             child: Row(
               children: [
+                Container(
+                  width: 4,
+                  height: 56,
+                  margin: const EdgeInsets.only(
+                    left: 0,
+                    right: 12,
+                    top: 4,
+                    bottom: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: spec.color.withValues(alpha: 0.85),
+                    borderRadius: const BorderRadius.all(Radius.circular(999)),
+                  ),
+                ),
                 _StatIconChip(spec: spec, size: 40),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,13 +392,19 @@ class _PerformanceStatCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 if (percent != null)
-                  _RadialMetric(value: percent, color: spec.color)
+                  Tooltip(
+                    message: 'Tap for details',
+                    child: _RadialMetric(value: percent, color: spec.color),
+                  )
                 else
-                  _SparkBars(
-                    color: spec.color,
-                    seed: item.value,
-                    width: 52,
-                    height: 36,
+                  Tooltip(
+                    message: 'Tap for details',
+                    child: _SparkBars(
+                      color: spec.color,
+                      seed: item.value,
+                      width: 52,
+                      height: 36,
+                    ),
                   ),
               ],
             ),
@@ -366,7 +414,6 @@ class _PerformanceStatCard extends StatelessWidget {
     );
   }
 }
-
 
 class _StatsOverviewCard extends StatelessWidget {
   const _StatsOverviewCard({required this.currentUser, required this.stats});
@@ -395,7 +442,7 @@ class _StatsOverviewCard extends StatelessWidget {
         prominent: true,
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+        padding: const EdgeInsets.fromLTRB(15, 15, 15, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -418,20 +465,22 @@ class _StatsOverviewCard extends StatelessWidget {
                           Icon(
                             Icons.sync_rounded,
                             size: 12,
-                            color: colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.6),
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                           const SizedBox(width: 5),
                           Text(
                             'Latest stats snapshot',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.7),
+                              color: colorScheme.onSurfaceVariant.withValues(
+                                alpha: 0.7,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -462,17 +511,9 @@ class _StatsOverviewCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
                 DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    borderRadius: AppTheme.cardRadius,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+                  decoration: AppTheme.glassDecoration(
+                    context,
+                  ).copyWith(borderRadius: AppTheme.cardRadius),
                   child: const Padding(
                     padding: EdgeInsets.all(12),
                     child: Icon(
@@ -484,10 +525,8 @@ class _StatsOverviewCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            const SizedBox(height: 12),
+            Row(
               children: [
                 _StatsSummaryPill(
                   icon: active
@@ -501,7 +540,34 @@ class _StatsOverviewCard extends StatelessWidget {
                       ? const Color(0xFF167442)
                       : colorScheme.onSurface,
                 ),
-                _AchievementsCta(currentUser: currentUser),
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) =>
+                            AchievementsScreen(currentUser: currentUser),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.workspace_premium_rounded, size: 18),
+                  label: const Text('Achievements'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.92),
+                    foregroundColor: const Color(0xFF9A4B00),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(999)),
+                    ),
+                    textStyle: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
@@ -517,20 +583,16 @@ class _StatsSummaryPill extends StatelessWidget {
     required this.label,
     required this.backgroundColor,
     required this.foregroundColor,
-    this.onTap,
-    this.tooltip,
   });
 
   final IconData icon;
   final String label;
   final Color backgroundColor;
   final Color foregroundColor;
-  final VoidCallback? onTap;
-  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    final content = DecoratedBox(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: AppTheme.chipRadius,
@@ -538,57 +600,23 @@ class _StatsSummaryPill extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          borderRadius: AppTheme.chipRadius,
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 18, color: foregroundColor),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge?.copyWith(color: foregroundColor),
-                ),
-              ],
-            ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: foregroundColor),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(color: foregroundColor),
+              ),
+            ],
           ),
         ),
       ),
-    );
-
-    if (tooltip == null) {
-      return content;
-    }
-
-    return Tooltip(message: tooltip!, child: content);
-  }
-}
-
-class _AchievementsCta extends StatelessWidget {
-  const _AchievementsCta({required this.currentUser});
-
-  final UserSummary currentUser;
-
-  @override
-  Widget build(BuildContext context) {
-    return _StatsSummaryPill(
-      icon: Icons.workspace_premium_rounded,
-      label: 'Achievements',
-      backgroundColor: const Color(0xFFFFE3C2),
-      foregroundColor: const Color(0xFF9A4B00),
-      tooltip: 'Open achievements from summary',
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (context) => AchievementsScreen(currentUser: currentUser),
-          ),
-        );
-      },
     );
   }
 }
@@ -893,6 +921,16 @@ class _StatVisualSpec {
       color: Color(0xFF596579),
     );
   }
+}
+
+Color _statSurfaceColor(BuildContext context, _StatVisualSpec spec) {
+  final colorScheme = Theme.of(context).colorScheme;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  return Color.alphaBlend(
+    spec.color.withValues(alpha: isDark ? 0.08 : 0.035),
+    colorScheme.surfaceContainerLow,
+  );
 }
 
 double? _tryParsePercent(String value) {

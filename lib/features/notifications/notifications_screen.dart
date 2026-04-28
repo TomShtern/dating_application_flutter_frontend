@@ -8,7 +8,6 @@ import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/section_intro_card.dart';
 import '../../theme/app_theme.dart';
 import '../auth/selected_user_provider.dart';
 import '../chat/conversation_thread_screen.dart';
@@ -35,17 +34,23 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final unreadOnly = ref.watch(notificationsUnreadOnlyProvider);
     final notificationsState = ref.watch(notificationsProvider);
     final referenceTime = widget.now ?? DateTime.now();
-    final theme = Theme.of(context);
+    final canPop = Navigator.of(context).canPop();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Notifications',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+      appBar: canPop
+          ? AppBar(
+              toolbarHeight: 44,
+              title: Text(
+                'Notifications',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+            )
+          : null,
       body: SafeArea(
         child: notificationsState.when(
           data: (notifications) {
@@ -72,8 +77,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   if (notifications.isEmpty)
                     AppAsyncState.empty(
                       message: unreadOnly
-                          ? 'No unread notifications right now.'
-                          : 'No notifications yet.',
+                          ? 'You\'re all caught up — nothing unread.'
+                          : 'You\'ll see matches, replies, and friend activity here.',
                       onRefresh: controller.refresh,
                     )
                   else
@@ -389,12 +394,29 @@ class _NotificationTile extends StatelessWidget {
       color: colorScheme.onSurfaceVariant,
       height: 1.36,
     );
-    final surfaceColor = unread
-        ? Color.alphaBlend(
-            spec.color.withValues(alpha: 0.04),
-            colorScheme.surfaceContainerLow,
-          )
-        : colorScheme.surfaceContainerLow;
+    final surfaceColor = _notificationSurfaceColor(context, spec, unread);
+    Widget? buildTrailing() {
+      if (unread) {
+        return _MarkReadButton(
+          spec: spec,
+          isBusy: isBusy,
+          onPressed: onMarkRead,
+        );
+      }
+      if (route != null) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        );
+      }
+      return null;
+    }
+
+    final trailing = buildTrailing();
 
     return Material(
       color: Colors.transparent,
@@ -443,6 +465,7 @@ class _NotificationTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             DecoratedBox(
                               decoration: BoxDecoration(
@@ -455,12 +478,16 @@ class _NotificationTile extends StatelessWidget {
                                 ),
                               ),
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(7, 3, 7, 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
                                 child: Text(
                                   formatDisplayLabel(item.type),
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color: spec.color,
                                     fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.2,
                                   ),
                                 ),
                               ),
@@ -481,69 +508,7 @@ class _NotificationTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (route != null) ...[
-                    const SizedBox(width: 8),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  if (unread) ...[
-                    const SizedBox(width: 2),
-                    IconButton(
-                      tooltip: isBusy ? 'Marking read…' : 'Mark read',
-                      onPressed: isBusy ? null : onMarkRead,
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 32,
-                        height: 32,
-                      ),
-                      style: ButtonStyle(
-                        backgroundColor: const WidgetStatePropertyAll(
-                          Colors.transparent,
-                        ),
-                        foregroundColor: WidgetStateProperty.resolveWith((
-                          states,
-                        ) {
-                          if (states.contains(WidgetState.disabled)) {
-                            return spec.color.withValues(alpha: 0.38);
-                          }
-
-                          return spec.color;
-                        }),
-                        overlayColor: WidgetStateProperty.resolveWith((states) {
-                          if (states.contains(WidgetState.pressed) ||
-                              states.contains(WidgetState.hovered) ||
-                              states.contains(WidgetState.focused)) {
-                            return spec.color.withValues(alpha: 0.10);
-                          }
-
-                          return Colors.transparent;
-                        }),
-                        shape: const WidgetStatePropertyAll(CircleBorder()),
-                      ),
-                      icon: isBusy
-                          ? SizedBox.square(
-                              dimension: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  spec.color,
-                                ),
-                              ),
-                            )
-                          : Icon(
-                              Icons.done_rounded,
-                              size: 18,
-                              color: spec.color,
-                            ),
-                    ),
-                  ],
+                  if (trailing != null) ...[const SizedBox(width: 8), trailing],
                 ],
               ),
             ),
@@ -577,82 +542,151 @@ class _NotificationsIntroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final description = unreadCount == 0
-        ? 'All caught up'
-        : '$unreadCount unread • $totalCount total';
+    final description = switch (unreadCount) {
+      0 when totalCount == 0 => 'No notifications yet',
+      0 => 'All caught up — $totalCount in total',
+      1 => '1 unread of $totalCount',
+      _ => '$unreadCount unread of $totalCount',
+    };
     final buttonDisabled = unreadCount == 0 || markingAllRead;
 
-    return SectionIntroCard(
-      icon: Icons.mark_chat_unread_rounded,
-      title: 'Notifications',
-      description: description,
-      iconBackgroundColor: Color.alphaBlend(
-        colorScheme.primary.withValues(alpha: 0.12),
-        colorScheme.surfaceContainerHighest,
+    final introAccent = const Color(0xFF188DC8);
+    final messageAccent = const Color(0xFF009688);
+    final introSurface = Color.alphaBlend(
+      introAccent.withValues(
+        alpha: theme.brightness == Brightness.dark ? 0.10 : 0.045,
       ),
-      iconColor: colorScheme.primary,
-      trailing: IconButton(
-        tooltip: 'Refresh',
-        onPressed: onRefresh,
-        iconSize: 22,
-        style: IconButton.styleFrom(
-          foregroundColor: colorScheme.onSurfaceVariant,
-        ),
-        icon: Icon(
-          Icons.sync_rounded,
-          color: colorScheme.onSurfaceVariant,
-          size: 22,
-        ),
-      ),
-      badges: [
-        FilterChip(
-          selected: unreadOnly,
-          showCheckmark: false,
-          visualDensity: VisualDensity.compact,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.18)),
-          selectedColor: colorScheme.primaryContainer,
-          backgroundColor: colorScheme.surface,
-          shape: const StadiumBorder(),
-          labelStyle: theme.textTheme.labelLarge?.copyWith(
-            color: unreadOnly
-                ? colorScheme.onPrimaryContainer
-                : colorScheme.onSurface,
-          ),
-          onSelected: onUnreadOnlyChanged,
-          avatar: Icon(
-            unreadOnly ? Icons.mark_email_unread_rounded : Icons.drafts_rounded,
-            size: 18,
-            color: unreadOnly
-                ? colorScheme.onPrimaryContainer
-                : colorScheme.onSurfaceVariant,
-          ),
-          label: const Text('Unread only'),
-        ),
-        FilledButton.tonalIcon(
-          onPressed: buttonDisabled ? null : onMarkAllRead,
-          style: FilledButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            shape: const RoundedRectangleBorder(
-              borderRadius: AppTheme.chipRadius,
-            ),
-          ),
-          icon: markingAllRead
-              ? SizedBox.square(
-                  dimension: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      colorScheme.onSecondaryContainer,
+      colorScheme.surfaceContainerLow,
+    );
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(context, color: introSurface),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: introAccent.withValues(
+                      alpha: theme.brightness == Brightness.dark ? 0.24 : 0.15,
+                    ),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.mark_chat_unread_rounded,
+                      color: Color(0xFF188DC8),
                     ),
                   ),
-                )
-              : const Icon(Icons.done_all_rounded, size: 18),
-          label: const Text('Mark all read'),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Notifications', style: theme.textTheme.titleLarge),
+                      const SizedBox(height: 4),
+                      Text(description, style: theme.textTheme.bodyMedium),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  tooltip: 'Refresh',
+                  onPressed: onRefresh,
+                  iconSize: 22,
+                  style: IconButton.styleFrom(
+                    foregroundColor: colorScheme.onSurfaceVariant,
+                  ),
+                  icon: Icon(
+                    Icons.sync_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilterChip(
+                  selected: unreadOnly,
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  side: BorderSide(
+                    color: unreadOnly
+                        ? introAccent.withValues(alpha: 0.24)
+                        : colorScheme.outline.withValues(alpha: 0.18),
+                  ),
+                  selectedColor: introAccent.withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.28 : 0.14,
+                  ),
+                  backgroundColor: colorScheme.surface.withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.44 : 0.72,
+                  ),
+                  shape: const StadiumBorder(),
+                  labelStyle: theme.textTheme.labelLarge?.copyWith(
+                    color: unreadOnly ? introAccent : colorScheme.onSurface,
+                  ),
+                  onSelected: onUnreadOnlyChanged,
+                  avatar: Icon(
+                    unreadOnly
+                        ? Icons.mark_email_unread_rounded
+                        : Icons.drafts_rounded,
+                    size: 18,
+                    color: unreadOnly
+                        ? introAccent
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  label: const Text('Unread only'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: buttonDisabled ? null : onMarkAllRead,
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    backgroundColor: messageAccent.withValues(
+                      alpha: theme.brightness == Brightness.dark ? 0.22 : 0.12,
+                    ),
+                    foregroundColor: messageAccent,
+                    disabledBackgroundColor: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.70),
+                    disabledForegroundColor: colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.58),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppTheme.chipRadius,
+                    ),
+                  ),
+                  icon: markingAllRead
+                      ? SizedBox.square(
+                          dimension: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              messageAccent,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.done_all_rounded, size: 18),
+                  label: const Text('Mark all read'),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -673,7 +707,7 @@ class _NotificationIconChip extends StatelessWidget {
         DecoratedBox(
           decoration: BoxDecoration(
             color: spec.color.withValues(alpha: 0.16),
-            borderRadius: const BorderRadius.all(Radius.circular(16.8)),
+            borderRadius: const BorderRadius.all(Radius.circular(14)),
           ),
           child: const SizedBox.square(dimension: 40),
         ),
@@ -695,6 +729,58 @@ class _NotificationIconChip extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _MarkReadButton extends StatelessWidget {
+  const _MarkReadButton({
+    required this.spec,
+    required this.isBusy,
+    required this.onPressed,
+  });
+
+  final _NotificationSpec spec;
+  final bool isBusy;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: isBusy ? 'Marking read…' : 'Mark read',
+      onPressed: isBusy ? null : onPressed,
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+      style: ButtonStyle(
+        backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return spec.color.withValues(alpha: 0.38);
+          }
+
+          return spec.color;
+        }),
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed) ||
+              states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return spec.color.withValues(alpha: 0.10);
+          }
+
+          return Colors.transparent;
+        }),
+        shape: const WidgetStatePropertyAll(CircleBorder()),
+      ),
+      icon: isBusy
+          ? SizedBox.square(
+              dimension: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(spec.color),
+              ),
+            )
+          : Icon(Icons.done_rounded, size: 18, color: spec.color),
     );
   }
 }
@@ -739,6 +825,22 @@ class _NotificationSpec {
         );
     }
   }
+}
+
+Color _notificationSurfaceColor(
+  BuildContext context,
+  _NotificationSpec spec,
+  bool unread,
+) {
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
+  final isDark = theme.brightness == Brightness.dark;
+  final alpha = unread ? (isDark ? 0.16 : 0.085) : (isDark ? 0.055 : 0.035);
+
+  return Color.alphaBlend(
+    spec.color.withValues(alpha: alpha),
+    colorScheme.surfaceContainerLow,
+  );
 }
 
 String _routePersonName(NotificationItem item) {

@@ -79,7 +79,12 @@ class _LocationCompletionScreenState
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Choose your location')),
+      appBar: AppBar(
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
       body: SafeArea(
         child: Padding(
           padding: AppTheme.screenPadding(),
@@ -88,6 +93,8 @@ class _LocationCompletionScreenState
               final availableCountries = countries
                   .where((country) => country.available)
                   .toList(growable: false);
+              final theme = Theme.of(context);
+              final colorScheme = theme.colorScheme;
 
               return ListView(
                 children: [
@@ -98,15 +105,15 @@ class _LocationCompletionScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Your area',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
+                          Text('Your area', style: theme.textTheme.titleLarge),
                           const SizedBox(height: 6),
-                          const Text(
+                          Text(
                             'Choose the country and city you want us to use for nearby matches.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppTheme.cardGap),
                           DropdownButtonFormField<String>(
                             key: ValueKey<String?>(_countryCode),
                             initialValue: _countryCode,
@@ -142,7 +149,7 @@ class _LocationCompletionScreenState
                               });
                             },
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppTheme.cardGap),
                           TextField(
                             controller: _cityController,
                             decoration: const InputDecoration(
@@ -155,7 +162,7 @@ class _LocationCompletionScreenState
                               });
                             },
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppTheme.cardGap),
                           TextField(
                             controller: _zipController,
                             decoration: const InputDecoration(
@@ -178,31 +185,40 @@ class _LocationCompletionScreenState
                               });
                             },
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppTheme.sectionGap),
                           SizedBox(
                             width: double.infinity,
+                            height: 48,
                             child: FilledButton.icon(
                               onPressed: _saving
                                   ? null
                                   : () => _handleSave(context),
-                              icon: const Icon(Icons.location_on_outlined),
+                              icon: _saving
+                                  ? SizedBox.square(
+                                      dimension: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              colorScheme.onPrimary,
+                                            ),
+                                      ),
+                                    )
+                                  : const Icon(Icons.location_on_outlined),
                               label: Text(
                                 _saving ? 'Saving…' : 'Use this location',
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppTheme.cardGap),
                           Text(
                             'You can change this anytime.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           if (_selectedCityLabel != null) ...[
-                            const SizedBox(height: 10),
+                            const SizedBox(height: AppTheme.cardGap),
                             _SelectedCityCard(cityLabel: _selectedCityLabel!),
                           ],
                         ],
@@ -219,28 +235,40 @@ class _LocationCompletionScreenState
                         children: [
                           Text(
                             'Suggested cities',
-                            style: Theme.of(context).textTheme.titleMedium,
+                            style: theme.textTheme.titleMedium,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppTheme.cardGap),
                           citySuggestionsState.when(
                             data: (cities) {
                               if (cities.isEmpty) {
-                                return const Text(
-                                  'Type at least two letters for city suggestions.',
+                                return Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 18,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Type at least two letters for city suggestions.',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
                                 );
                               }
                               return Column(
-                                children: cities
-                                    .map(
-                                      (city) => ListTile(
-                                        contentPadding: EdgeInsets.zero,
-                                        title: Text(city.name),
-                                        subtitle: city.district.isEmpty
-                                            ? null
-                                            : Text(city.district),
-                                        trailing: const Icon(
-                                          Icons.chevron_right_rounded,
-                                        ),
+                                children: [
+                                  for (final city in cities)
+                                    Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: AppTheme.panelRadius,
                                         onTap: () {
                                           setState(() {
                                             _cityController.text = city.name;
@@ -248,17 +276,80 @@ class _LocationCompletionScreenState
                                                 _cityDisplayLabel(city);
                                           });
                                         },
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 10,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.place_outlined,
+                                                size: 18,
+                                                color: colorScheme.primary,
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      city.name,
+                                                      style: theme
+                                                          .textTheme
+                                                          .titleSmall,
+                                                    ),
+                                                    if (city
+                                                        .district
+                                                        .isNotEmpty) ...[
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        city.district,
+                                                        style: theme
+                                                            .textTheme
+                                                            .bodySmall
+                                                            ?.copyWith(
+                                                              color: colorScheme
+                                                                  .onSurfaceVariant,
+                                                            ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ),
+                                              Icon(
+                                                Icons.chevron_right_rounded,
+                                                size: 20,
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
-                                    )
-                                    .toList(growable: false),
+                                    ),
+                                ],
                               );
                             },
                             loading: () => const Padding(
                               padding: EdgeInsets.symmetric(vertical: 12),
                               child: Center(child: CircularProgressIndicator()),
                             ),
-                            error: (_, _) => const Text(
-                              "We can't load city suggestions right now.",
+                            error: (_, _) => Row(
+                              children: [
+                                Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 18,
+                                  color: colorScheme.error,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    "We can't load city suggestions right now.",
+                                    style: theme.textTheme.bodyMedium,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -364,7 +455,7 @@ class _CountryFlagIcon extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        borderRadius: const BorderRadius.all(Radius.circular(10)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -390,14 +481,15 @@ class _SelectedCityCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.55),
+        color: colorScheme.primaryContainer.withValues(alpha: 0.32),
         borderRadius: AppTheme.cardRadius,
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Row(
           children: [
-            Icon(Icons.check_circle_outline, color: colorScheme.primary),
+            Icon(Icons.check_circle_rounded, color: colorScheme.primary),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

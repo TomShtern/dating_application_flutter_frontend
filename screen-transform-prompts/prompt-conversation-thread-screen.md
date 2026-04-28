@@ -1,36 +1,60 @@
-# Conversation thread design refinement prompt
+Status: pending design-language refresh
 
 Target file: `lib/features/chat/conversation_thread_screen.dart`
 
-Visual baseline: `visual_review/runs/run-0051__2026-04-27__21-05-22/conversation_thread__run-0051__2026-04-27__21-05-22.png`
+You are a Flutter frontend coding engineer. Redesign the Conversation Thread
+screen to match `docs/design-language.md`, using the run-0070 reference
+screenshots as the taste target:
 
-The current populated-thread screenshot intentionally shows a mid-conversation position, so a clipped top message in that visual fixture is acceptable as a testing composition. However, the real app must never open a conversation with the first visible message clipped after the user enters the screen.
+- `design-reference/stats-run-0070-reference.png`
+- `design-reference/notifications-run-0070-reference.png`
+- `design-reference/notifications-dark-run-0070-reference.png`
 
-## Preserve
+## Non-Negotiables
 
-- Keep the current AppBar identity behavior even if the screenshot does not show a traditional large AppBar: avatar, name, `Active recently`, and the overflow menu.
-- Keep the warm outgoing and incoming message bubble treatments.
-- Keep the upward-arrow send button.
-- Keep the current long-thread density. Do not add extra match-context cards into a populated conversation.
-- Keep existing provider, timer, refresh, send, scroll, and conversation action logic unless a scroll/framing bug requires a minimal localized fix.
+- Read `docs/design-language.md` before editing this screen.
+- This is a pushed secondary route. Keep a compact visible route title and
+  back affordance through the AppBar.
+- Do not change providers, models, API calls, send-message behavior,
+  polling/refresh behavior, route parameters, or safety action behavior.
+- Do not invent read receipts, typing indicators, compatibility, or message
+  status not provided by the API.
+- Do not add new tests for this UI/design pass. You may run existing useful
+  tests, `flutter analyze`, and the visual-review suite.
 
-## Requested refinements
+## Design Direction
 
-1. Fix real-entry message framing.
+Messaging should be personal and calm. Use teal/cyan for conversation
+semantics, with soft pastel bubbles and clear sender/recipient distinction.
+The design should support reading and replying first; do not turn this into a
+dashboard.
 
-When a user opens a conversation in actual use, the first visible message after the automatic scroll/positioning must not be clipped. Keep the visual-test mid-thread composition if it is intentional, but make sure the live entry behavior lands cleanly on a message boundary or at the intended bottom position without cutting a bubble.
+## Required Outcome
 
-2. Add a sparse-thread visual-review state.
+- AppBar provides route context: back affordance, participant/conversation
+  title, and any existing safety/refresh actions in compact form.
+- Keep the first viewport focused on the conversation itself, not a large
+  intro panel.
+- Message groups should be readable and compact: date/status grouping,
+  sender/recipient distinction, friendly bubbles, and subtle semantic color.
+- The input area should feel anchored to the task: soft surface, clear send
+  button, useful disabled/busy state, and no competing decorative CTA.
+- Use small motion or state transitions only where already appropriate.
+- Empty thread state should invite starting the conversation without inventing
+  relationship context.
+- Loading and error states should preserve route context and provide retry when
+  the existing controller supports it.
+- Respect accessibility: text remains readable, tap targets stay practical,
+  and bubbles do not collapse on narrow width.
 
-The source contains a sparse-thread summary state, but the current visual suite only captures a populated conversation thread. Add a separate visual inspection screenshot for a sparse/new conversation thread with four or fewer messages so the sparse summary card can be reviewed directly.
+## Completion
 
-Use a distinct scenario name and filename, for example:
+Run `flutter analyze` and, when feasible, `flutter test
+test/visual_inspection/screenshot_test.dart`. Inspect the generated
+`conversation_thread__run-*.png` or matching visual scenario against the
+run-0070 references and the visual checklist in `docs/design-language.md`.
 
-- scenario: `sparse conversation thread`
-- file: `conversation_thread_sparse.png`
+Only after this screen is fully implemented and visually checked, edit this
+prompt file and add this as the first line:
 
-Base the fixture on existing visual-inspection fixture patterns. Do not replace the populated thread screenshot.
-
-3. Minor composer polish only if needed.
-
-If the composer still feels too visually heavy after the framing work, lightly reduce its visual weight through spacing or surface treatment. Keep the current hint text and upward-arrow action.
+`implemented`

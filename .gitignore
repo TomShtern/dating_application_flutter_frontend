@@ -49,3 +49,13 @@ app.*.map.json
 /android/app/release
 .vscode/settings.json
 .claude/settings.local.json
+design-reference/stats-run-0070-reference.png
+.gitignore
+.gitignore
+.gitignore
+.gitignore
+design-reference/notifications-dark-run-0065-reference.png
+design-reference/notifications-dark-run-0070-reference.png
+design-reference/notifications-run-0065-reference.png
+design-reference/stats-run-0065-reference.png
+design-reference/notifications-run-0070-reference.png

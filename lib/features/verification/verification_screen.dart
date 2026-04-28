@@ -78,39 +78,41 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: AppTheme.cardGap),
-            _VerificationProgressBar(value: progressValue),
-            SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+            const SizedBox(height: AppTheme.compactCardGap),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.compactCardPadding,
+              ),
+              child: _VerificationProgressBar(value: progressValue),
+            ),
+            const SizedBox(height: AppTheme.compactCardGap),
             _VerificationStepCard(
               stepLabel: 'Step 1',
               title: 'Start verification',
               description:
                   'Choose email or phone, then we\'ll send a code there.',
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment<String>(
-                          value: 'EMAIL',
-                          label: Text('Email'),
-                        ),
-                        ButtonSegment<String>(
-                          value: 'PHONE',
-                          label: Text('Phone'),
-                        ),
-                      ],
-                      selected: {_method},
-                      onSelectionChanged: (selection) {
-                        setState(() {
-                          _method = selection.first;
-                        });
-                      },
-                    ),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment<String>(
+                        value: 'EMAIL',
+                        label: Text('Email'),
+                      ),
+                      ButtonSegment<String>(
+                        value: 'PHONE',
+                        label: Text('Phone'),
+                      ),
+                    ],
+                    selected: {_method},
+                    onSelectionChanged: (selection) {
+                      setState(() {
+                        _method = selection.first;
+                      });
+                    },
                   ),
-                  const SizedBox(height: AppTheme.compactCardPadding),
+                  const SizedBox(height: AppTheme.cardGap),
                   TextField(
                     controller: _contactController,
                     decoration: InputDecoration(
@@ -120,31 +122,28 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                           : '+1 555 555 5555',
                     ),
                   ),
-                  const SizedBox(height: AppTheme.compactCardPadding),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _starting ? null : _handleStart,
-                      icon: const Icon(Icons.verified_outlined),
-                      label: Text(
-                        _starting ? 'Starting…' : 'Send verification code',
-                      ),
+                  const SizedBox(height: AppTheme.cardGap),
+                  FilledButton.icon(
+                    onPressed: _starting ? null : _handleStart,
+                    icon: const Icon(Icons.verified_outlined),
+                    label: Text(
+                      _starting ? 'Starting…' : 'Send verification code',
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+            const SizedBox(height: AppTheme.compactCardGap),
             const _VerificationTrustSection(),
             if (startResult != null) ...[
-              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+              const SizedBox(height: AppTheme.compactCardGap),
               _VerificationStepCard(
                 stepLabel: 'Step 2',
                 title: 'Enter the code',
                 description:
                     'Enter the code sent to ${startResult.contact} to finish verifying your ${formatDisplayLabel(startResult.method).toLowerCase()}.',
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Wrap(
                       spacing: AppTheme.cardGap,
@@ -164,26 +163,23 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                     ),
                     if (kDebugMode &&
                         startResult.devVerificationCode.trim().isNotEmpty) ...[
-                      const SizedBox(height: AppTheme.compactCardPadding),
+                      const SizedBox(height: AppTheme.cardGap),
                       _DevelopmentOnlyCodeCard(
                         code: startResult.devVerificationCode,
                       ),
                     ],
-                    const SizedBox(height: AppTheme.compactCardPadding),
+                    const SizedBox(height: AppTheme.cardGap),
                     TextField(
                       controller: _codeController,
                       decoration: const InputDecoration(
                         labelText: 'Verification code',
                       ),
                     ),
-                    const SizedBox(height: AppTheme.compactCardPadding),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _confirming ? null : _handleConfirm,
-                        child: Text(
-                          _confirming ? 'Confirming…' : 'Confirm verification',
-                        ),
+                    const SizedBox(height: AppTheme.cardGap),
+                    FilledButton(
+                      onPressed: _confirming ? null : _handleConfirm,
+                      child: Text(
+                        _confirming ? 'Confirming…' : 'Confirm verification',
                       ),
                     ),
                   ],
@@ -191,7 +187,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               ),
             ],
             if (confirmResult != null) ...[
-              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+              const SizedBox(height: AppTheme.compactCardGap),
               _VerificationOutcomeCard(result: confirmResult),
             ],
           ],
@@ -380,7 +376,7 @@ class _VerificationStepCard extends StatelessWidget {
             _SectionLabel(stepLabel),
             const SizedBox(height: AppTheme.cardGap),
             Text(title, style: theme.textTheme.titleLarge),
-            const SizedBox(height: AppTheme.cardGap),
+            const SizedBox(height: AppTheme.compactCardGap),
             Text(
               description,
               style: theme.textTheme.bodyMedium?.copyWith(

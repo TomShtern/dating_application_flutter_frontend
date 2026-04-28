@@ -12,9 +12,9 @@ import '../profile/profile_screen.dart';
 import 'standouts_provider.dart';
 
 enum _StandoutsViewMode { grid, list }
+
 enum _StandoutCardMode { grid, list }
 
-const double _standoutsSectionGap = 16;
 const double _standoutsCardGap = 16;
 const double _standoutsPhoneListBreakpoint = 520;
 
@@ -53,52 +53,59 @@ class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: AppTheme.screenPadding(),
-          child: standoutsState.when(
-            data: (snapshot) => LayoutBuilder(
-              builder: (context, constraints) {
-                final viewMode = _resolveViewMode(constraints.maxWidth);
+        child: standoutsState.when(
+          data: (snapshot) => LayoutBuilder(
+            builder: (context, constraints) {
+              final viewMode = _resolveViewMode(constraints.maxWidth);
 
-                return RefreshIndicator(
-                  onRefresh: controller.refresh,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      _StandoutsHero(
-                        snapshot: snapshot,
-                        viewMode: viewMode,
-                        onViewModeChanged: (_StandoutsViewMode nextMode) {
-                          setState(() {
-                            _viewModeOverride = nextMode;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: _standoutsSectionGap),
-                      if (snapshot.standouts.isEmpty)
-                        AppAsyncState.empty(
-                          message:
-                              'No standouts are ready right now. Check back soon for a fresh set of highlights.',
-                          onRefresh: controller.refresh,
-                        )
-                      else if (viewMode == _StandoutsViewMode.grid)
-                        _StandoutsGrid(standouts: snapshot.standouts)
-                      else
-                        _StandoutsList(standouts: snapshot.standouts),
-                      const SizedBox(height: 4),
-                    ],
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _StandoutsHero(
+                    snapshot: snapshot,
+                    viewMode: viewMode,
+                    onViewModeChanged: (_StandoutsViewMode nextMode) {
+                      setState(() {
+                        _viewModeOverride = nextMode;
+                      });
+                    },
                   ),
-                );
-              },
-            ),
-            loading: () =>
-                const AppAsyncState.loading(message: 'Loading standouts…'),
-            error: (error, _) => AppAsyncState.error(
-              message: error is ApiError
-                  ? error.message
-                  : 'Unable to load standouts right now.',
-              onRetry: controller.refresh,
-            ),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: controller.refresh,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: AppTheme.screenPadding(),
+                        children: [
+                          SizedBox(
+                            height: AppTheme.sectionSpacing(compact: true),
+                          ),
+                          if (snapshot.standouts.isEmpty)
+                            AppAsyncState.empty(
+                              message:
+                                  'No standouts are ready right now. Check back soon.',
+                              onRefresh: controller.refresh,
+                            )
+                          else if (viewMode == _StandoutsViewMode.grid)
+                            _StandoutsGrid(standouts: snapshot.standouts)
+                          else
+                            _StandoutsList(standouts: snapshot.standouts),
+                          const SizedBox(height: 4),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          loading: () =>
+              const AppAsyncState.loading(message: 'Loading standouts…'),
+          error: (error, _) => AppAsyncState.error(
+            message: error is ApiError
+                ? error.message
+                : 'Unable to load standouts right now.',
+            onRetry: controller.refresh,
           ),
         ),
       ),
@@ -127,24 +134,21 @@ class _StandoutsHero extends StatelessWidget {
 
     return ShellHero(
       key: const ValueKey('standouts-summary'),
+      eyebrowLabel: 'Browse',
+      eyebrowIcon: Icons.auto_awesome_rounded,
       title: 'Standouts',
       description: _humanizeStandoutsIntro(snapshot.message),
       compact: true,
       badges: [
-        Chip(
-          avatar: const Icon(Icons.auto_awesome_rounded, size: 18),
-          label: Text(
-            snapshot.totalCandidates == 1
-                ? '1 standout ready'
-                : '${snapshot.totalCandidates} standouts ready',
-          ),
+        ShellHeroPill(
+          icon: Icons.auto_awesome_rounded,
+          label: snapshot.totalCandidates == 1
+              ? '1 standout ready'
+              : '${snapshot.totalCandidates} standouts ready',
         ),
-        Chip(
-          avatar: Icon(
-            snapshot.fromCache ? Icons.cloud_outlined : Icons.bolt_rounded,
-            size: 18,
-          ),
-          label: Text(snapshot.fromCache ? 'Cached results' : 'Fresh picks'),
+        ShellHeroPill(
+          icon: snapshot.fromCache ? Icons.cloud_outlined : Icons.bolt_rounded,
+          label: snapshot.fromCache ? 'Cached results' : 'Fresh picks',
         ),
       ],
       footer: Column(
@@ -205,8 +209,8 @@ class _StandoutsGrid extends StatelessWidget {
             : constraints.maxWidth >= 360
             ? 2
             : 1;
-        final availableWidth = constraints.maxWidth -
-            (_standoutsCardGap * (crossAxisCount - 1));
+        final availableWidth =
+            constraints.maxWidth - (_standoutsCardGap * (crossAxisCount - 1));
         final tileWidth = availableWidth / crossAxisCount;
         final mainAxisExtent = tileWidth >= 220 ? 272.0 : 260.0;
 
@@ -276,24 +280,33 @@ class _StandoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
       key: ValueKey('standout-card-${standout.id}'),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _openProfile(context),
-        child: Padding(
-          padding: mode == _StandoutCardMode.grid
-              ? const EdgeInsets.all(12)
-              : const EdgeInsets.all(16),
-          child: mode == _StandoutCardMode.grid
-              ? _StandoutGridContent(
-                  standout: standout,
-                  onOpenProfile: () => _openProfile(context),
-                )
-              : _StandoutListContent(
-                  standout: standout,
-                  onOpenProfile: () => _openProfile(context),
-                ),
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: colorScheme.surface.withValues(alpha: 0.94),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: AppTheme.panelRadius,
+          onTap: () => _openProfile(context),
+          child: Padding(
+            padding: mode == _StandoutCardMode.grid
+                ? const EdgeInsets.all(12)
+                : AppTheme.sectionPadding(compact: true),
+            child: mode == _StandoutCardMode.grid
+                ? _StandoutGridContent(
+                    standout: standout,
+                    onOpenProfile: () => _openProfile(context),
+                  )
+                : _StandoutListContent(
+                    standout: standout,
+                    onOpenProfile: () => _openProfile(context),
+                  ),
+          ),
         ),
       ),
     );
@@ -328,9 +341,9 @@ class _StandoutListContent extends StatelessWidget {
                 standout.primaryPhotoUrl,
                 standout.photoUrls,
               ),
-              width: 64,
-              height: 64,
-              borderRadius: const BorderRadius.all(Radius.circular(32)),
+              width: 80,
+              height: 104,
+              borderRadius: AppTheme.cardRadius,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -380,7 +393,9 @@ class _StandoutListContent extends StatelessWidget {
           _humanizeStandoutReason(standout),
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
         if (metadata != null) ...[
           const SizedBox(height: 8),
@@ -389,7 +404,7 @@ class _StandoutListContent extends StatelessWidget {
         const SizedBox(height: 14),
         FilledButton.tonalIcon(
           onPressed: onOpenProfile,
-          icon: const Icon(Icons.open_in_new_rounded),
+          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
           label: const Text('Open profile'),
         ),
       ],
@@ -428,9 +443,9 @@ class _StandoutGridContent extends StatelessWidget {
               standout.primaryPhotoUrl,
               standout.photoUrls,
             ),
-            width: 56,
-            height: 56,
-            borderRadius: const BorderRadius.all(Radius.circular(28)),
+            width: 80,
+            height: 100,
+            borderRadius: AppTheme.cardRadius,
           ),
         ),
         const SizedBox(height: 8),
@@ -439,7 +454,9 @@ class _StandoutGridContent extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -495,7 +512,8 @@ class _StandoutRankBadge extends StatelessWidget {
     return DecoratedBox(
       key: ValueKey('standout-rank-${standout.id}'),
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
+        gradient: standout.rank == 1 ? AppTheme.accentGradient(context) : null,
+        color: standout.rank == 1 ? null : colorScheme.primaryContainer,
         borderRadius: AppTheme.chipRadius,
       ),
       child: Padding(
@@ -509,13 +527,17 @@ class _StandoutRankBadge extends StatelessWidget {
             Icon(
               Icons.auto_awesome_rounded,
               size: compact ? 14 : 16,
-              color: colorScheme.onPrimaryContainer,
+              color: standout.rank == 1
+                  ? colorScheme.onPrimary
+                  : colorScheme.onPrimaryContainer,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onPrimaryContainer,
+                color: standout.rank == 1
+                    ? colorScheme.onPrimary
+                    : colorScheme.onPrimaryContainer,
               ),
             ),
           ],

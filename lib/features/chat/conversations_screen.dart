@@ -5,9 +5,10 @@ import '../../api/api_error.dart';
 import '../../models/conversation_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
-import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../../theme/app_theme.dart';
 import 'conversation_thread_screen.dart';
 import 'conversations_provider.dart';
 
@@ -19,67 +20,90 @@ class ConversationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final conversationsState = ref.watch(conversationsProvider);
+    final controller = ref.read(conversationsControllerProvider);
+    final heroDescription = switch (conversationsState) {
+      AsyncData(:final value) when value.isEmpty =>
+        'Start a conversation when you match.',
+      AsyncData(:final value) =>
+        '${value.length} ongoing ${value.length == 1 ? 'chat' : 'chats'}',
+      _ => 'Your conversations',
+    };
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Conversations'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh conversations',
-            onPressed: () =>
-                ref.read(conversationsControllerProvider).refresh(),
-            icon: const Icon(Icons.refresh),
+    return SafeArea(
+      top: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ShellHero(
+            compact: true,
+            eyebrowLabel: 'Messages',
+            header: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  tooltip: 'Refresh conversations',
+                  onPressed: controller.refresh,
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
+            title: 'Chats',
+            description: heroDescription,
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: AppTheme.screenPadding(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: conversationsState.when(
-                  data: (conversations) {
-                    if (conversations.isEmpty) {
-                      return AppAsyncState.empty(
-                        message:
-                            'No conversations yet. Once you match and message, they will show up here.',
-                        onRefresh: () =>
-                            ref.read(conversationsControllerProvider).refresh(),
-                      );
-                    }
-
-                    return RefreshIndicator(
-                      onRefresh: () =>
-                          ref.read(conversationsControllerProvider).refresh(),
-                      child: ListView.separated(
-                        itemCount: conversations.length,
-                        separatorBuilder: (context, index) =>
-                            SizedBox(height: AppTheme.listSpacing()),
-                        itemBuilder: (context, index) {
-                          return _ConversationCard(
-                            currentUser: currentUser,
-                            summary: conversations[index],
-                          );
-                        },
-                      ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: controller.refresh,
+              child: conversationsState.when(
+                data: (conversations) {
+                  if (conversations.isEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: AppTheme.screenPadding(),
+                      children: [
+                        AppAsyncState.empty(
+                          message:
+                              'No conversations yet — once you match and message someone, they\'ll show up here.',
+                          onRefresh: controller.refresh,
+                        ),
+                      ],
                     );
-                  },
-                  loading: () => const AppAsyncState.loading(
-                    message: 'Loading conversations…',
-                  ),
-                  error: (error, stackTrace) => AppAsyncState.error(
-                    message: error is ApiError
-                        ? error.message
-                        : 'Unable to load conversations right now.',
-                    onRetry: () => ref.invalidate(conversationsProvider),
-                  ),
+                  }
+
+                  return ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: AppTheme.screenPadding(),
+                    itemCount: conversations.length,
+                    separatorBuilder: (_, _) =>
+                        SizedBox(height: AppTheme.listSpacing()),
+                    itemBuilder: (context, index) => _ConversationCard(
+                      currentUser: currentUser,
+                      summary: conversations[index],
+                    ),
+                  );
+                },
+                loading: () => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: AppTheme.screenPadding(),
+                  children: const [
+                    AppAsyncState.loading(message: 'Loading conversations…'),
+                  ],
+                ),
+                error: (error, stackTrace) => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: AppTheme.screenPadding(),
+                  children: [
+                    AppAsyncState.error(
+                      message: error is ApiError
+                          ? error.message
+                          : 'Unable to load conversations right now.',
+                      onRetry: () => ref.invalidate(conversationsProvider),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -104,6 +128,7 @@ class _ConversationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final preview = _conversationPreview(summary);
     final messageSummary = switch (summary.messageCount) {
@@ -112,102 +137,80 @@ class _ConversationCard extends StatelessWidget {
       final count => '$count messages so far',
     };
 
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        gradient: LinearGradient(
-          colors: [colorScheme.surface, colorScheme.surfaceContainerLow],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: AppTheme.panelRadius,
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: AppTheme.surfaceDecoration(context),
         child: InkWell(
-          borderRadius: AppTheme.cardRadius,
+          borderRadius: AppTheme.panelRadius,
           onTap: () => _openConversation(context),
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: EdgeInsets.all(AppTheme.cardPadding),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    UserAvatar(name: summary.otherUserName, radius: 28),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
+                UserAvatar(name: summary.otherUserName, radius: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  summary.otherUserName,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                formatShortDate(summary.lastMessageAt),
-                                style: Theme.of(context).textTheme.labelLarge
-                                    ?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                              ),
-                            ],
+                          Expanded(
+                            child: Text(
+                              summary.otherUserName,
+                              style: theme.textTheme.titleLarge,
+                            ),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(width: 12),
                           Text(
-                            preview,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.mail_outline_rounded,
-                                size: 18,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  messageSummary,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                ),
-                              ),
-                            ],
+                            formatShortDate(summary.lastMessageAt),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Text(
-                      'Tap anywhere to open',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                      const SizedBox(height: 6),
+                      Text(
+                        preview,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    FilledButton.icon(
-                      onPressed: () => _openConversation(context),
-                      icon: const Icon(Icons.chat_bubble_outline_rounded),
-                      label: const Text('Open chat'),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.mail_outline_rounded,
+                            size: 18,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              messageSummary,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 20,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -220,9 +223,9 @@ class _ConversationCard extends StatelessWidget {
 
 String _conversationPreview(ConversationSummary summary) {
   return switch (summary.messageCount) {
-    0 => 'New match - send the first message when you are ready.',
-    1 => 'The chat has started and is easy to pick back up.',
-    2 || 3 || 4 => 'A short back-and-forth is already underway.',
-    _ => 'An active conversation is waiting for your next reply.',
+    0 => 'No messages yet — say hi when you\'re ready.',
+    1 => 'One message so far. Pick the chat back up.',
+    2 || 3 || 4 => 'A few messages exchanged — keep it going.',
+    _ => 'An ongoing conversation.',
   };
 }

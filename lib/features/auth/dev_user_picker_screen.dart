@@ -22,7 +22,12 @@ class DevUserPickerScreen extends ConsumerWidget {
     final selectedUserId = selectedUser.asData?.value?.id;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Choose a dev user')),
+      appBar: AppBar(
+        title: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
       body: SafeArea(
         child: Padding(
           padding: AppTheme.screenPadding(),
@@ -34,22 +39,23 @@ class DevUserPickerScreen extends ConsumerWidget {
                 description:
                     'Pick a seeded profile to preview the app with. This device remembers the active dev profile between launches until you switch it again.',
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppTheme.cardGap),
               const BackendHealthBanner(),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppTheme.cardGap),
               selectedUser.when(
                 data: (user) => _CurrentUserCard(user: user),
                 loading: () => const LinearProgressIndicator(minHeight: 2),
                 error: (error, stackTrace) =>
                     const _CurrentUserCard(user: null),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
               Expanded(
                 child: availableUsers.when(
                   data: (users) {
                     if (users.isEmpty) {
                       return const AppAsyncState.empty(
-                        message: 'No dev users are available yet.',
+                        message:
+                            'No seeded dev users came back from the backend. Confirm the seed task ran or check the backend health banner above.',
                       );
                     }
 
@@ -116,6 +122,8 @@ class _CurrentUserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final title = user == null
         ? 'Current user: none selected'
         : 'Current profile';
@@ -123,14 +131,14 @@ class _CurrentUserCard extends StatelessWidget {
         ? 'Choose one below to jump straight into the app. Your selection stays saved on this device.'
         : '${user!.name} • Age ${user!.age} • ${formatDisplayLabel(user!.state)} profile';
     final supportingCopy = user == null
-        ? 'You can switch profiles again anytime from Settings.'
+        ? null
         : 'You can switch profiles again anytime from Settings.';
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (user != null) ...[
               UserAvatar(name: user!.name, radius: 24),
@@ -140,14 +148,23 @@ class _CurrentUserCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(summary),
+                  Text(title, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 4),
                   Text(
-                    supportingCopy,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    summary,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
                   ),
+                  if (supportingCopy != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      supportingCopy,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -183,7 +200,7 @@ class _UserCard extends StatelessWidget {
         side: BorderSide(
           color: isSelected
               ? colorScheme.primary.withValues(alpha: 0.34)
-              : colorScheme.outlineVariant.withValues(alpha: 0.55),
+              : colorScheme.outlineVariant.withValues(alpha: 0.32),
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -191,9 +208,9 @@ class _UserCard extends StatelessWidget {
         onTap: onSelect,
         borderRadius: AppTheme.cardRadius,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(AppTheme.cardPadding),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               UserAvatar(name: user.name, radius: 24),
               const SizedBox(width: 14),
@@ -210,9 +227,12 @@ class _UserCard extends StatelessWidget {
                           ),
                         ),
                         if (isSelected)
-                          const ShellHeroPill(
-                            icon: Icons.check_circle_rounded,
-                            label: 'Current',
+                          const Padding(
+                            padding: EdgeInsets.only(left: 8),
+                            child: ShellHeroPill(
+                              icon: Icons.check_circle_rounded,
+                              label: 'Current',
+                            ),
                           ),
                       ],
                     ),
@@ -223,13 +243,11 @@ class _UserCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       isSelected
-                          ? 'Saved on this device right now.'
-                          : 'Tap to switch to this profile.',
-                      style: isSelected
-                          ? theme.textTheme.bodySmall
-                          : theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                          ? 'Saved on this device.'
+                          : 'Available dev profile',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),

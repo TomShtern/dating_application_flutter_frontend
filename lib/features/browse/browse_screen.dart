@@ -15,7 +15,6 @@ import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/shell_hero.dart';
-import '../../shared/widgets/user_avatar.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../home/backend_health_banner.dart';
 import '../location/location_completion_screen.dart';
@@ -71,7 +70,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                 children: [
                   ShellHero(
                     compact: true,
-                    title: '',
+                    title: 'Discover',
                     description:
                         'Swipe on a profile or open it for more detail.',
                     badges: [
@@ -365,6 +364,9 @@ class _BrowseContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     if (browse.candidates.isEmpty) {
       return RefreshIndicator(
         onRefresh: onRefresh,
@@ -439,10 +441,34 @@ class _BrowseContent extends StatelessWidget {
                   onOpenStandouts: onOpenStandouts,
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  '${browse.candidates.length} candidate(s) ready',
-                  style: Theme.of(context).textTheme.bodySmall,
-                  textAlign: TextAlign.center,
+                Align(
+                  alignment: Alignment.center,
+                  child: DecoratedBox(
+                    decoration: AppTheme.glassDecoration(context),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.people_outline_rounded,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${browse.candidates.length} ready to explore',
+                            style: textTheme.labelMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
                 if (browse.locationMissing) ...[
                   SizedBox(height: AppTheme.listSpacing()),
@@ -481,7 +507,8 @@ class _DiscoveryShortcutRow extends StatelessWidget {
       children: [
         Expanded(
           child: _DiscoveryShortcutCard(
-            icon: Icons.favorite_border_rounded,
+            icon: Icons.favorite_rounded,
+            accentColor: AppTheme.matchPink,
             title: 'Likes you',
             subtitle: 'See who is already interested',
             onTap: onOpenPendingLikers,
@@ -491,6 +518,7 @@ class _DiscoveryShortcutRow extends StatelessWidget {
         Expanded(
           child: _DiscoveryShortcutCard(
             icon: Icons.auto_awesome_rounded,
+            accentColor: const Color(0xFFD98914),
             title: 'Standouts',
             subtitle: 'Jump to the strongest signals',
             onTap: onOpenStandouts,
@@ -504,20 +532,20 @@ class _DiscoveryShortcutRow extends StatelessWidget {
 class _DiscoveryShortcutCard extends StatelessWidget {
   const _DiscoveryShortcutCard({
     required this.icon,
+    required this.accentColor,
     required this.title,
     required this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
+  final Color accentColor;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(context),
       child: Material(
@@ -532,12 +560,12 @@ class _DiscoveryShortcutCard extends StatelessWidget {
               children: [
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
+                    color: accentColor.withValues(alpha: 0.14),
                     borderRadius: const BorderRadius.all(Radius.circular(16)),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Icon(icon, color: colorScheme.primary),
+                    child: Icon(icon, color: accentColor),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -679,13 +707,16 @@ class _DailyPickCard extends ConsumerWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(
+                PersonMediaThumbnail(
+                  key: ValueKey('daily-pick-media-${dailyPick.userId}'),
                   name: dailyPick.userName,
                   photoUrl: _primaryPhotoUrl(
                     dailyPick.primaryPhotoUrl,
                     dailyPick.photoUrls,
                   ),
-                  radius: 22,
+                  width: 72,
+                  height: 88,
+                  borderRadius: AppTheme.cardRadius,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -767,10 +798,7 @@ class _CandidateCard extends ConsumerWidget {
                   top: 14,
                   left: 14,
                   child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: AppTheme.chipRadius,
-                    ),
+                    decoration: AppTheme.glassDecoration(context),
                     child: const Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: 12,
@@ -917,10 +945,7 @@ class _BrowsePresentationContextContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Why this profile is shown',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
+            const _BrowseSectionLabel(title: 'Why this profile is shown'),
             const SizedBox(height: 6),
             Text(contextData.summary),
             if (contextData.reasonTags.isNotEmpty) ...[
@@ -965,14 +990,55 @@ class _BrowseWhyPlaceholder extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Why this profile is shown',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
+            const _BrowseSectionLabel(title: 'Why this profile is shown'),
             const SizedBox(height: 6),
             Text(message),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _BrowseSectionLabel extends StatelessWidget {
+  const _BrowseSectionLabel({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: 3,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.85),
+              borderRadius: AppTheme.chipRadius,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                height: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -16,66 +16,90 @@ import 'pending_likers_provider.dart';
 class PendingLikersScreen extends ConsumerWidget {
   const PendingLikersScreen({super.key});
 
+  Widget _buildHero(List<PendingLiker> likers) {
+    return ShellHero(
+      compact: true,
+      eyebrowLabel: 'Pending likes',
+      eyebrowIcon: Icons.favorite_rounded,
+      title: 'People who liked you',
+      description:
+          'Open a profile for a closer look, or refresh to see new interest as it lands.',
+      badges: likers.isNotEmpty
+          ? [
+              ShellHeroPill(
+                icon: Icons.people_outline_rounded,
+                label: '${likers.length} waiting',
+              ),
+            ]
+          : const <Widget>[],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final likersState = ref.watch(pendingLikersProvider);
     final controller = ref.read(pendingLikersControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: const SizedBox.shrink(),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh people who liked you',
+            onPressed: controller.refresh,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: AppTheme.screenPadding(),
-          child: likersState.when(
-            data: (likers) => RefreshIndicator(
-              onRefresh: controller.refresh,
-              child: ListView(
-                children: [
-                  ShellHero(
-                    compact: true,
-                    eyebrowLabel: 'Pending likes',
-                    eyebrowIcon: Icons.favorite_rounded,
-                    header: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          tooltip: 'Refresh people who liked you',
-                          onPressed: controller.refresh,
-                          icon: const Icon(Icons.refresh),
+        child: likersState.when(
+          data: (likers) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHero(likers),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: controller.refresh,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: AppTheme.screenPadding(),
+                    children: [
+                      if (likers.isNotEmpty) ...[
+                        _PendingLikersSummaryStrip(waitingCount: likers.length),
+                        SizedBox(
+                          height: AppTheme.sectionSpacing(compact: true),
                         ),
                       ],
-                    ),
-                    title: 'People who liked you',
-                    description:
-                        'Open a profile for a closer look, or refresh to see new interest as it lands.',
-                  ),
-                  SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-                  if (likers.isNotEmpty) ...[
-                    _PendingLikersSummaryStrip(waitingCount: likers.length),
-                    SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-                  ],
-                  if (likers.isEmpty)
-                    AppAsyncState.empty(
-                      message:
-                          'No likes are waiting right now. New interest will show up here.',
-                      onRefresh: controller.refresh,
-                    )
-                  else
-                    ...likers.map(
-                      (liker) => Padding(
-                        padding: EdgeInsets.only(
-                          bottom: AppTheme.listSpacing(compact: true),
+                      if (likers.isEmpty)
+                        AppAsyncState.empty(
+                          message:
+                              'No likes are waiting right now. New interest will show up here.',
+                          onRefresh: controller.refresh,
+                        )
+                      else
+                        ...likers.map(
+                          (liker) => Padding(
+                            padding: EdgeInsets.only(
+                              bottom: AppTheme.listSpacing(compact: true),
+                            ),
+                            child: _PendingLikerCard(liker: liker),
+                          ),
                         ),
-                        child: _PendingLikerCard(liker: liker),
-                      ),
-                    ),
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-            loading: () => const AppAsyncState.loading(
+            ],
+          ),
+          loading: () => Padding(
+            padding: AppTheme.screenPadding(),
+            child: const AppAsyncState.loading(
               message: 'Loading people who liked you…',
             ),
-            error: (error, _) => AppAsyncState.error(
+          ),
+          error: (error, _) => Padding(
+            padding: AppTheme.screenPadding(),
+            child: AppAsyncState.error(
               message: error is ApiError
                   ? error.message
                   : 'Unable to load pending likes right now.',
@@ -97,9 +121,6 @@ class _PendingLikersSummaryStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final countLabel = waitingCount == 1
-        ? '1 person waiting'
-        : '$waitingCount people waiting';
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -147,11 +168,21 @@ class _PendingLikersSummaryStrip extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        countLabel,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: colorScheme.primary,
-                        ),
+                      TweenAnimationBuilder<int>(
+                        tween: IntTween(begin: 0, end: waitingCount),
+                        duration: const Duration(milliseconds: 620),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, _) {
+                          final label = value == 1
+                              ? '1 person waiting'
+                              : '$value people waiting';
+                          return Text(
+                            label,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: colorScheme.primary,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -271,21 +302,20 @@ class _PendingLikerCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Open profile',
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: colorScheme.primary,
-                                ),
+                          TextButton.icon(
+                            onPressed: () => _openProfile(context),
+                            icon: const Icon(
+                              Icons.open_in_new_rounded,
+                              size: 16,
+                            ),
+                            label: const Text('Open profile'),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
                               ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ],
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                           ),
                         ],
                       ),

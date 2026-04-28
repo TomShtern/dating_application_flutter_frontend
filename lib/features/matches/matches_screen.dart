@@ -7,15 +7,15 @@ import '../../models/match_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/person_media_thumbnail.dart';
+import '../../shared/widgets/shell_hero.dart';
+import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
-import 'match_factors_sheet.dart';
 import 'matches_provider.dart';
 
-enum _MatchFilter { all, newMatches, nearby, activeNow }
+enum _MatchFilter { all, newMatches }
 
 class MatchesScreen extends ConsumerStatefulWidget {
   const MatchesScreen({super.key, required this.currentUser});
@@ -32,149 +32,99 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   @override
   Widget build(BuildContext context) {
     final matchesState = ref.watch(matchesProvider);
+    final controller = ref.read(matchesControllerProvider);
+    final heroDescription = switch (matchesState) {
+      AsyncData(:final value) when value.matches.isEmpty =>
+        'New mutual likes will appear here.',
+      AsyncData(:final value) =>
+        '${value.matches.length} ${value.matches.length == 1 ? 'match' : 'matches'} so far',
+      _ => 'Your matches',
+    };
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: AppTheme.screenPadding(),
-          child: matchesState.when(
-            data: (response) {
-              final matches = response.matches;
-              final newCount = matches.where(_isNewMatch).length;
-              final visibleMatches = _filteredMatches(matches, _selectedFilter);
-              final totalCount = response.totalCount > 0
-                  ? response.totalCount
-                  : matches.length;
+    return SafeArea(
+      top: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ShellHero(
+            compact: true,
+            eyebrowLabel: 'Connections',
+            header: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  tooltip: 'Refresh matches',
+                  onPressed: () => ref.invalidate(matchesProvider),
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
+            title: 'Your matches',
+            description: heroDescription,
+          ),
+          _MatchFilterRow(
+            selectedFilter: _selectedFilter,
+            onSelected: (filter) => setState(() => _selectedFilter = filter),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: controller.refresh,
+              child: matchesState.when(
+                data: (response) {
+                  final visibleMatches = _filteredMatches(
+                    response.matches,
+                    _selectedFilter,
+                  );
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _MatchesHeader(
-                    newCount: newCount,
-                    totalCount: totalCount,
-                    onRefresh: () =>
-                        ref.read(matchesControllerProvider).refresh(),
-                  ),
-                  const SizedBox(height: 14),
-                  _MatchFilterRow(
-                    selectedFilter: _selectedFilter,
-                    onSelected: (filter) =>
-                        setState(() => _selectedFilter = filter),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: () =>
-                          ref.read(matchesControllerProvider).refresh(),
-                      child: visibleMatches.isEmpty
-                          ? ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              children: [
-                                AppAsyncState.empty(
-                                  message: _emptyMatchesMessage(
-                                    _selectedFilter,
-                                  ),
-                                  onRefresh: () => ref
-                                      .read(matchesControllerProvider)
-                                      .refresh(),
-                                ),
-                              ],
-                            )
-                          : ListView.separated(
-                              itemCount: visibleMatches.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 16),
-                              itemBuilder: (context, index) {
-                                return _MatchCard(
-                                  currentUser: widget.currentUser,
-                                  match: visibleMatches[index],
-                                );
-                              },
-                            ),
+                  if (visibleMatches.isEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: AppTheme.screenPadding(),
+                      children: [
+                        AppAsyncState.empty(
+                          message: _emptyMatchesMessage(_selectedFilter),
+                          onRefresh: controller.refresh,
+                        ),
+                      ],
+                    );
+                  }
+
+                  return ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: AppTheme.screenPadding(),
+                    itemCount: visibleMatches.length,
+                    separatorBuilder: (_, _) =>
+                        SizedBox(height: AppTheme.cardGap),
+                    itemBuilder: (context, index) => _MatchCard(
+                      currentUser: widget.currentUser,
+                      match: visibleMatches[index],
                     ),
-                  ),
-                ],
-              );
-            },
-            loading: () =>
-                const AppAsyncState.loading(message: 'Loading matches...'),
-            error: (error, stackTrace) => AppAsyncState.error(
-              message: error is ApiError
-                  ? error.message
-                  : 'Unable to load matches right now.',
-              onRetry: () => ref.invalidate(matchesProvider),
+                  );
+                },
+                loading: () => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: AppTheme.screenPadding(),
+                  children: const [
+                    AppAsyncState.loading(message: 'Loading matches...'),
+                  ],
+                ),
+                error: (error, stackTrace) => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: AppTheme.screenPadding(),
+                  children: [
+                    AppAsyncState.error(
+                      message: error is ApiError
+                          ? error.message
+                          : 'Unable to load matches right now.',
+                      onRetry: () => ref.invalidate(matchesProvider),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
-    );
-  }
-}
-
-class _MatchesHeader extends StatelessWidget {
-  const _MatchesHeader({
-    required this.newCount,
-    required this.totalCount,
-    required this.onRefresh,
-  });
-
-  final int newCount;
-  final int totalCount;
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    final subtitle = newCount > 0
-        ? '$newCount new · $totalCount total'
-        : '$totalCount total';
-
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Your matches',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppTheme.matchTextPrimary(context),
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppTheme.matchTextTertiary(context),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox.square(
-          dimension: 40,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.matchAccent(context).withValues(alpha: 0.16),
-              ),
-              boxShadow: AppTheme.softShadow(context),
-            ),
-            child: IconButton(
-              tooltip: 'Refresh matches',
-              onPressed: onRefresh,
-              icon: const Icon(Icons.refresh_rounded),
-              iconSize: 22,
-              padding: EdgeInsets.zero,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -204,18 +154,6 @@ class _MatchFilterRow extends StatelessWidget {
             label: 'New',
             selected: selectedFilter == _MatchFilter.newMatches,
             onTap: () => onSelected(_MatchFilter.newMatches),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'Nearby',
-            selected: selectedFilter == _MatchFilter.nearby,
-            onTap: () => onSelected(_MatchFilter.nearby),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'Active now',
-            selected: selectedFilter == _MatchFilter.activeNow,
-            onTap: () => onSelected(_MatchFilter.activeNow),
           ),
         ],
       ),
@@ -274,6 +212,8 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _MatchCard extends StatelessWidget {
+  static const double _matchActionHeight = 44;
+
   const _MatchCard({required this.currentUser, required this.match});
 
   final UserSummary currentUser;
@@ -308,18 +248,8 @@ class _MatchCard extends StatelessWidget {
     );
   }
 
-  Future<void> _openMatchFactors(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (context) => MatchFactorsSheet(match: match),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final photoUrl = _primaryPhotoUrl(match.primaryPhotoUrl, match.photoUrls);
     final isActive = _isActive(match.state);
     final isNew = _isNewMatch(match);
@@ -327,14 +257,7 @@ class _MatchCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: AppTheme.cardRadius,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: AppTheme.cardRadius,
-          border: Border.all(
-            color: AppTheme.matchAccent(context).withValues(alpha: 0.10),
-          ),
-          boxShadow: AppTheme.softShadow(context),
-        ),
+        decoration: AppTheme.surfaceDecoration(context),
         child: Stack(
           children: [
             if (isNew)
@@ -350,7 +273,7 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(AppTheme.cardPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -402,20 +325,41 @@ class _MatchCard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        flex: 6,
                         child: _GradientActionButton(
+                          height: _matchActionHeight,
                           icon: Icons.forum_rounded,
-                          label: 'Message now',
+                          label: 'Message',
                           onTap: () => _openConversation(context),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: AppTheme.cardGap),
                       Expanded(
-                        flex: 5,
-                        child: _GhostActionButton(
-                          icon: Icons.auto_awesome_rounded,
-                          label: 'Why we match',
-                          onTap: () => _openMatchFactors(context),
+                        child: SizedBox(
+                          height: _matchActionHeight,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _openProfile(context),
+                            icon: const Icon(
+                              Icons.person_outline_rounded,
+                              size: 18,
+                            ),
+                            label: const Text('View profile'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.matchAccent(context),
+                              side: BorderSide(
+                                color: AppTheme.matchAccent(
+                                  context,
+                                ).withValues(alpha: 0.4),
+                              ),
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(999),
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -453,22 +397,10 @@ class _MatchAvatar extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.all(3),
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: PersonMediaThumbnail(
-                  key: ValueKey('match-media-${match.matchId}'),
-                  name: match.otherUserName,
-                  photoUrl: photoUrl,
-                  width: 96,
-                  height: 96,
-                  borderRadius: const BorderRadius.all(Radius.circular(48)),
-                ),
-              ),
+            child: UserAvatar(
+              name: match.otherUserName,
+              photoUrl: photoUrl,
+              radius: 45,
             ),
           ),
         ),
@@ -480,7 +412,10 @@ class _MatchAvatar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppTheme.activeColor(context),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 2,
+                ),
               ),
               child: const SizedBox(width: 12, height: 12),
             ),
@@ -510,7 +445,7 @@ class _MatchSummaryBlock extends StatelessWidget {
       children: [
         Row(
           children: [
-            Flexible(
+            Expanded(
               child: Text(
                 match.otherUserName,
                 maxLines: 1,
@@ -524,12 +459,6 @@ class _MatchSummaryBlock extends StatelessWidget {
               ),
             ),
             if (isNew) ...[const SizedBox(width: 8), const _NewBadge()],
-            const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: AppTheme.matchTextTertiary(context),
-              size: 20,
-            ),
           ],
         ),
         const SizedBox(height: 4),
@@ -697,11 +626,13 @@ class _InlineDot extends StatelessWidget {
 
 class _GradientActionButton extends StatelessWidget {
   const _GradientActionButton({
+    required this.height,
     required this.icon,
     required this.label,
     required this.onTap,
   });
 
+  final double height;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -726,7 +657,7 @@ class _GradientActionButton extends StatelessWidget {
           borderRadius: AppTheme.chipRadius,
           onTap: onTap,
           child: SizedBox(
-            height: 44,
+            height: height,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -739,62 +670,6 @@ class _GradientActionButton extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GhostActionButton extends StatelessWidget {
-  const _GhostActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppTheme.matchTintColor(context),
-        borderRadius: AppTheme.chipRadius,
-        border: Border.all(color: AppTheme.matchAccent(context), width: 1.5),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: AppTheme.chipRadius,
-          onTap: onTap,
-          child: SizedBox(
-            height: 44,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ShaderMask(
-                  shaderCallback: (bounds) =>
-                      AppTheme.accentGradient(context).createShader(bounds),
-                  child: Icon(icon, color: Colors.white, size: 18),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppTheme.matchAccent(context),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
                     ),
@@ -826,25 +701,14 @@ List<MatchSummary> _filteredMatches(
   return switch (filter) {
     _MatchFilter.all => matches,
     _MatchFilter.newMatches => matches.where(_isNewMatch).toList(),
-    _MatchFilter.nearby =>
-      matches
-          .where(
-            (match) =>
-                match.approximateLocation != null &&
-                match.approximateLocation!.trim().isNotEmpty,
-          )
-          .toList(),
-    _MatchFilter.activeNow =>
-      matches.where((match) => _isActive(match.state)).toList(),
   };
 }
 
 String _emptyMatchesMessage(_MatchFilter filter) {
   return switch (filter) {
-    _MatchFilter.all => 'No matches yet. Keep exploring to find mutual likes.',
+    _MatchFilter.all =>
+      'No matches yet — keep liking profiles you connect with.',
     _MatchFilter.newMatches => 'No new matches right now.',
-    _MatchFilter.nearby => 'No nearby matches are available right now.',
-    _MatchFilter.activeNow => 'No active matches are available right now.',
   };
 }
 

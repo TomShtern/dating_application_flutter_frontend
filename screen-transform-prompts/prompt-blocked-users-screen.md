@@ -1,39 +1,59 @@
-# Blocked users design refinement prompt
+Status: pending design-language refresh
 
 Target file: `lib/features/safety/blocked_users_screen.dart`
 
-Visual baseline: `visual_review/runs/run-0056__2026-04-28__08-04-08/blocked_users__run-0056__2026-04-28__08-04-08.png`
+You are a Flutter frontend coding engineer. Redesign the Blocked Users screen
+to match `docs/design-language.md`, using the run-0070 reference screenshots
+as the taste target:
 
-The current screen is already much closer to the desired direction than the old run-0049 prompt assumed. Do not revert it to the older instructions.
+- `design-reference/stats-run-0070-reference.png`
+- `design-reference/notifications-run-0070-reference.png`
+- `design-reference/notifications-dark-run-0070-reference.png`
 
-## Preserve
+## Non-Negotiables
 
-- Keep the AppBar title `Blocked users`.
-- Keep the row overflow/kebab menu for unblock. Do not replace every row action with a visible `Unblock` button; unblock should remain a deliberate action behind the menu and confirmation dialog.
-- Keep the current compact safety-row structure, generic `Blocked profile` row label, safety tint, and confirmation flow.
-- Keep backend boundaries: do not invent block reasons, block dates, moderation labels, or extra safety metadata unless the existing model/API already provides them.
+- Read `docs/design-language.md` before editing this screen.
+- This is a pushed secondary route. Keep a compact visible route title and
+  back affordance through the AppBar.
+- Do not change providers, models, API calls, unblock confirmation behavior,
+  snackbar behavior, or safety action logic.
+- Do not invent block reasons, dates, moderation labels, risk levels, or
+  backend-owned safety metadata.
+- Do not add new tests for this UI/design pass. You may run existing useful
+  tests, `flutter analyze`, and the visual-review suite.
 
-## Requested refinements
+## Design Direction
 
-1. Polish the intro card title/layout.
+This is a safety/moderation screen. It should feel serious, clear, and soft:
+not harsh red-heavy, not playful, and not sterile. Use muted rose/coral/slate
+with small trust-green only for safe/confirmed outcomes.
 
-In run 56, `Safety stays on` wraps awkwardly into two lines. Either adjust the intro card spacing so the title fits cleanly, or use a shorter title such as `Safety controls` if that reads better in the current layout.
+## Required Outcome
 
-Keep the count pill (`4 blocked profiles`) and the existing description direction.
+- Top chrome is useful: compact AppBar with back affordance and title
+  `Blocked users`.
+- Intro area is compact and practical, with a clear count/state. Avoid a large
+  empty header.
+- Use a section label above the list, such as `Blocked profiles`, so the list
+  does not feel dropped onto the page.
+- Blocked rows use semantic list-tile anatomy: soft tinted card, serious icon
+  chip, title, short supporting text, and quiet trailing overflow action.
+- Keep unblock behind the row overflow/menu and confirmation dialog unless the
+  existing UX already makes it clearly deliberate.
+- Make overflow tooltips specific, for example `Blocked user options` or
+  `Manage block`.
+- Empty state should explain that blocked profiles will appear here and should
+  include a decorated safety icon.
+- Avoid generic undecorated icons and plain white unfinished rows.
 
-2. Add a clearer transition into the list.
+## Completion
 
-Add a small section label above the blocked-user rows, such as `Blocked profiles`, so the screen reads as:
+Run `flutter analyze` and, when feasible, `flutter test
+test/visual_inspection/screenshot_test.dart`. Inspect the generated
+`blocked_users__run-*.png` against the run-0070 references and the visual
+checklist in `docs/design-language.md`.
 
-- AppBar identity
-- safety intro card
-- list section label
-- blocked-user rows
+Only after this screen is fully implemented and visually checked, edit this
+prompt file and add this as the first line:
 
-Use the existing design-language section-label treatment if one already exists in this file or shared widgets. Keep the spacing compact.
-
-3. Make the row menu feel intentional.
-
-If the row menu currently feels like a generic kebab, adjust tooltip/copy to read more specifically as block management, for example `Manage block` or `Blocked user options`.
-
-Do not change the underlying unblock confirmation behavior.
+`implemented`

@@ -56,6 +56,8 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
                     onRefresh: controller.refresh,
                   )
                 else ...[
+                  const _BlockedUsersSectionLabel(title: 'Blocked profiles'),
+                  SizedBox(height: AppTheme.listSpacing(compact: true)),
                   for (var index = 0; index < users.length; index++) ...[
                     _BlockedUserTile(
                       user: users[index],
@@ -179,7 +181,7 @@ class _BlockedUsersIntroCard extends StatelessWidget {
 
     return SectionIntroCard(
       icon: Icons.shield_outlined,
-      title: 'Safety stays on',
+      title: 'Safety controls',
       description:
           'Hidden from discovery, matches, and chat until you unblock them.',
       iconBackgroundColor: colorScheme.errorContainer,
@@ -368,7 +370,7 @@ class _BlockedUserTile extends StatelessWidget {
                       icon: const Icon(Icons.more_vert),
                     )
                   : AppOverflowMenuButton<_BlockedUserMenuAction>(
-                      tooltip: 'Blocked user options',
+                      tooltip: 'Manage block',
                       items: const [
                         PopupMenuItem<_BlockedUserMenuAction>(
                           value: _BlockedUserMenuAction.unblock,
