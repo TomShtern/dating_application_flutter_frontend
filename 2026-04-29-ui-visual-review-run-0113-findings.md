@@ -4,6 +4,8 @@
 
 Partial implementation completed and visually checked in `run-0116__2026-04-29__12-19-19`.
 
+Follow-up implementation completed and visually checked in `run-0119` on 2026-04-29.
+
 Items marked with ✅ were implemented and verified in the latest visual-review screenshots. Unmarked items still need follow-up in a later session.
 
 Review date: 2026-04-29
@@ -46,7 +48,7 @@ Fix these before deeper visual polish:
 6. ✅ `shell_matches__run-0113.png`, `shell_matches_dark__run-0113.png`, and `shell_chats__run-0113.png` show list content partially obscured by the bottom navigation. This reads as insufficient bottom inset even if the live screen can scroll.
 7. ✅ `shell_matches_dark__run-0113.png` makes the "View profile" secondary button too dark. It reads close to disabled instead of a normal secondary action.
 8. ✅ `profile_other_user__run-0113.png` does not show a back affordance in the capture. If this is a pushed route in real use, it needs visible route context and navigation.
-9. `conversation_thread__run-0113.png` has a thin teal divider under the header that feels detached from the rest of the screen. It reads like a leftover boundary rather than intentional route chrome.
+9. ✅ `conversation_thread__run-0113.png` has a thin teal divider under the header that feels detached from the rest of the screen. It reads like a leftover boundary rather than intentional route chrome.
 
 ## Cross-Screen Issues
 
@@ -80,6 +82,8 @@ Recommendation: make reason chips wrap cleanly, reduce chip padding, cap label l
 
 ### Pink And Mauve Sameness
 
+Status: ✅ Implemented for the remaining affected surfaces in the current pass: Verification button disabled states now use state-aware muted colors, Pending Likers and Blocked Users received more semantic sky/slate/coral variety, Other-User Profile photo areas moved away from generic mauve failure tiles, Profile readiness was compacted, and Settings quick access/header color was shifted away from rose as the default.
+
 Several screens still lean too heavily on one pink/mauve family:
 
 - Verification
@@ -93,6 +97,8 @@ The design language says pink is a semantic hue, not the base of the app. These 
 
 ### Oversized Cards For Low Information
 
+Status: ✅ Implemented in the current pass for the listed card families: Pending Likers, Matches, Profile readiness, Standouts, Chats, and Blocked Users were tightened or simplified.
+
 Some cards consume a lot of vertical space without enough useful state:
 
 - Pending liker cards
@@ -105,6 +111,8 @@ Recommendation: tighten row anatomy, reduce repeated copy, use compact status ch
 
 ### Placeholder Media Treatment
 
+Status: ✅ Implemented in the current pass. Shared person media and avatar fallbacks now use intentional pastel identity states instead of plain placeholder treatment, and profile photo failure tiles now show a compact initials/photo-pending state.
+
 Several media areas still feel like placeholders rather than polished product fallbacks:
 
 - Discover candidate media block
@@ -114,6 +122,8 @@ Several media areas still feel like placeholders rather than polished product fa
 Recommendation: improve fallback media styling with more intentional pastel avatar/photo states, semantic chips, and less generic "unable to load photo" presentation.
 
 ### Route Context
+
+Status: ✅ Reviewed in the current pass. Pushed routes already expose app-bar route context/back behavior, and Conversation Thread header/composer chrome was adjusted so the header area reads as intentional route chrome rather than a stray divider.
 
 Secondary screens vary in how connected they feel to the app.
 
@@ -202,7 +212,7 @@ Recommendations:
 
 ### Discover
 
-Status: ✅ Clipped/crowded reason panel fixed in `run-0116`; fallback media polish remains open.
+Status: ✅ Clipped/crowded reason panel fixed in `run-0116`; fallback media polish implemented in the current pass.
 
 Screenshot: `shell_discover__run-0113.png`
 
@@ -233,7 +243,7 @@ Recommendations:
 
 ### Matches
 
-Status: ✅ Bottom inset and dark secondary button issue fixed in `run-0116`; density was improved but can still be refined later.
+Status: ✅ Bottom inset and dark secondary button issue fixed in `run-0116`; density refined again in the current pass.
 
 Screenshots:
 
@@ -267,7 +277,7 @@ Recommendations:
 
 ### Chats
 
-Status: ✅ Bottom inset, heavy date pills, and avatar badge noise addressed in `run-0116`.
+Status: ✅ Bottom inset, heavy date pills, avatar badge noise, and row density addressed through `run-0116` plus the current pass.
 
 Screenshot: `shell_chats__run-0113.png`
 
@@ -297,7 +307,7 @@ Recommendations:
 
 ### Conversation Thread
 
-Status: ✅ Bad replacement glyph fixed in `run-0116`; remaining header/scroll polish can be revisited later.
+Status: ✅ Bad replacement glyph fixed in `run-0116`; header/composer chrome polished in the current pass.
 
 Screenshot: `conversation_thread__run-0113.png`
 
@@ -314,7 +324,7 @@ Issues:
 
 - Bad replacement glyph appears at the end of the final visible message.
 - Header feels cramped at the very top of the capture.
-- The thin teal divider below the header feels misplaced or accidental.
+- ✅ The thin teal divider below the header feels misplaced or accidental.
 - The overflow menu is visible, but the route context could be stronger if this is a pushed screen.
 - Composer is very large and pale compared with the bubbles; it reads more like a card than an input.
 - Send button is disabled-looking even though it may be empty-state behavior.
@@ -328,7 +338,7 @@ Recommendations:
 
 ### Profile
 
-Status: ✅ Profile details are visible above bottom chrome and readiness progress is labeled in `run-0116`.
+Status: ✅ Profile details are visible above bottom chrome and readiness progress is labeled in `run-0116`; readiness card density refined in the current pass.
 
 Screenshot: `shell_profile__run-0113.png`
 
@@ -358,7 +368,7 @@ Recommendations:
 
 ### Other-User Profile
 
-Status: ✅ Back affordance and reason-chip wrapping fixed in `run-0116`; photo fallback polish remains open.
+Status: ✅ Back affordance and reason-chip wrapping fixed in `run-0116`; photo fallback polish implemented in the current pass.
 
 Screenshot: `profile_other_user__run-0113.png`
 
@@ -420,7 +430,7 @@ Recommendations:
 
 Screenshot: `shell_settings__run-0113.png`
 
-Status: good utility screen direction.
+Status: ✅ Good utility screen direction; remaining color-sameness concern addressed in the current pass.
 
 What works:
 
@@ -505,7 +515,7 @@ Recommendations:
 
 Screenshot: `pending_likers__run-0113.png`
 
-Status: readable, but too sparse and too pink.
+Status: ✅ Readable; sparse-card and pink-sameness concerns addressed in the current pass.
 
 What works:
 
@@ -530,7 +540,7 @@ Recommendations:
 
 ### Standouts
 
-Status: ✅ Intro repetition and profile action wording reduced in `run-0116`; card/media polish remains open.
+Status: ✅ Intro repetition and profile action wording reduced in `run-0116`; card/media polish implemented in the current pass.
 
 Screenshot: `standouts__run-0113.png`
 
@@ -560,7 +570,7 @@ Recommendations:
 
 ### Blocked Users
 
-Status: ✅ Primary unblock task is clearer in `run-0116`; broader same-color safety palette refinement remains open.
+Status: ✅ Primary unblock task is clearer in `run-0116`; broader same-color safety palette refinement implemented in the current pass.
 
 Screenshot: `blocked_users__run-0113.png`
 
@@ -621,8 +631,8 @@ These were found or sharpened during the second pass after the initial review:
 - ✅ `app_home_startup__run-0113.png`: backend-online status is oversized for its information value.
 - ✅ `app_home_startup__run-0113.png`: "No selection" chip placement could become fragile if the label changes or localization expands.
 - ✅ `shell_discover__run-0113.png`: the reason panel is not only clipped; it is also crowded against the fixed action row, making the bottom of the candidate card feel cramped.
-- `shell_discover__run-0113.png`: the yellow/orange media gradient competes with identity content and does not yet feel like a polished person fallback.
-- `profile_other_user__run-0113.png`: photo failure state consumes too much space and looks unfinished.
+- ✅ `shell_discover__run-0113.png`: the yellow/orange media gradient competes with identity content and does not yet feel like a polished person fallback.
+- ✅ `profile_other_user__run-0113.png`: photo failure state consumes too much space and looks unfinished.
 - ✅ `shell_profile__run-0113.png`: the profile progress bar is prominent but not self-explanatory in the screenshot.
 - ✅ `shell_chats__run-0113.png`: date pills are visually heavy relative to conversation summaries.
 - ✅ `shell_chats__run-0113.png`: the per-row chat badge attached to avatars creates visual noise.
@@ -630,13 +640,14 @@ These were found or sharpened during the second pass after the initial review:
 - ✅ `location_completion__run-0113.png`: country label placement is slightly cramped against the field border.
 - ✅ `standouts__run-0113.png`: intro repeats the screen title and spends space on instructions that could be reduced.
 - ✅ `blocked_users__run-0113.png`: the primary user task may be unclear because row actions are hidden behind overflow.
+- ✅ `lib/features/verification/verification_screen.dart`: start/confirm buttons used fixed explicit colors that prevented disabled states from reading as disabled.
 
 ## Suggested Work Order
 
 1. ✅ Fix hard layout defects: clipped chips, bad glyph, sticky save overlap, bottom nav insets.
 2. ✅ Normalize shell scroll padding so bottom navigation never hides content.
-3. Reduce one-color pink/mauve sameness on Verification, Pending Likers, Blocked Users, and Other-User Profile.
-4. Tighten people-card density on Matches, Pending Likers, Standouts, and Chats.
-5. Improve fallback media/photo states.
-6. Review route context and back affordances for pushed screens.
-7. Re-run the visual-review workflow and compare against the run-0070 reference set.
+3. ✅ Reduce one-color pink/mauve sameness on Verification, Pending Likers, Blocked Users, and Other-User Profile.
+4. ✅ Tighten people-card density on Matches, Pending Likers, Standouts, and Chats.
+5. ✅ Improve fallback media/photo states.
+6. ✅ Review route context and back affordances for pushed screens.
+7. ✅ Re-run the visual-review workflow and compare against the run-0070 reference set.

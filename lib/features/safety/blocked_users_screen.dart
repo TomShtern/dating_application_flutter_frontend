@@ -4,11 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/blocked_user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../../theme/app_theme.dart';
 import 'blocked_users_provider.dart';
-
-enum _BlockedUserMenuAction { unblock }
 
 const _blockedRose = Color(0xFFB86A78);
 const _blockedCoral = Color(0xFFCB816A);
@@ -193,8 +190,8 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
         ? 'blocked profile'
         : 'blocked profiles';
     final summaryText = blockedCount == 0
-        ? 'Blocked profiles will appear here if you hide someone from discovery, matches, or chat.'
-        : 'Blocked profiles stay hidden from discovery, matches, and chat until you deliberately unblock them.';
+        ? 'People you block will appear here.'
+        : 'Blocked profiles stay hidden until you deliberately unblock them.';
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
@@ -209,7 +206,7 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
         prominent: true,
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(15, 15, 15, 14),
+        padding: const EdgeInsets.fromLTRB(15, 14, 15, 13),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -231,7 +228,7 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
                       color: subtitleColor,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 9),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -263,7 +260,7 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             DecoratedBox(
               decoration: AppTheme.glassDecoration(
                 context,
@@ -483,12 +480,16 @@ class _BlockedStatusPill extends StatelessWidget {
           children: [
             Icon(icon, size: 14, color: foregroundColor),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: foregroundColor,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.2,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: foregroundColor,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0,
+                ),
               ),
             ),
           ],
@@ -516,23 +517,21 @@ class _BlockedUserTile extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final accentColor = _blockedAccentFor(user.statusLabel);
     final surfaceColor = Color.alphaBlend(
-      _blockedSlate.withValues(alpha: isDark ? 0.08 : 0.02),
+      _blockedSlate.withValues(alpha: isDark ? 0.08 : 0.025),
       Color.alphaBlend(
-        _blockedCoral.withValues(alpha: isDark ? 0.14 : 0.05),
+        accentColor.withValues(alpha: isDark ? 0.13 : 0.045),
         colorScheme.surfaceContainerLow,
       ),
     );
-    final accentColor = isDark
-        ? const Color(0xFFE2AAB2)
-        : const Color(0xFFB86A78);
-    final iconColor = isDark ? const Color(0xFFF0C6BE) : _blockedCoral;
-    final statusBackgroundColor = _blockedRose.withValues(
-      alpha: isDark ? 0.20 : 0.10,
+    final iconColor = isDark ? const Color(0xFFF0C6BE) : accentColor;
+    final statusBackgroundColor = accentColor.withValues(
+      alpha: isDark ? 0.19 : 0.09,
     );
     final statusForegroundColor = isDark
-        ? const Color(0xFFF2C4CC)
-        : _blockedRose;
+        ? Color.alphaBlend(Colors.white.withValues(alpha: 0.18), accentColor)
+        : accentColor;
 
     return Material(
       color: Colors.transparent,
@@ -541,7 +540,7 @@ class _BlockedUserTile extends StatelessWidget {
       child: Ink(
         decoration: AppTheme.surfaceDecoration(context, color: surfaceColor),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+          padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -575,7 +574,7 @@ class _BlockedUserTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        'Hidden from discovery, matches, and chat while blocked.',
+                        'Hidden from discovery, matches, and chat.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           height: 1.35,
                         ),
@@ -593,7 +592,7 @@ class _BlockedUserTile extends StatelessWidget {
                           ),
                           _BlockedStatusPill(
                             icon: Icons.lock_open_rounded,
-                            label: 'Unblock available',
+                            label: 'Can unblock',
                             backgroundColor: _blockedSlate.withValues(
                               alpha: isDark ? 0.16 : 0.07,
                             ),
@@ -615,25 +614,14 @@ class _BlockedUserTile extends StatelessWidget {
                           ),
                         ),
                       )
-                    : actionsLocked
-                    ? IconButton(
-                        onPressed: null,
-                        tooltip: 'Blocked user options unavailable',
-                        icon: const Icon(Icons.more_vert),
-                      )
-                    : AppOverflowMenuButton<_BlockedUserMenuAction>(
-                        tooltip: 'Blocked user options',
-                        items: const [
-                          PopupMenuItem<_BlockedUserMenuAction>(
-                            value: _BlockedUserMenuAction.unblock,
-                            child: Text('Unblock'),
-                          ),
-                        ],
-                        onSelected: (value) {
-                          if (value == _BlockedUserMenuAction.unblock) {
-                            onUnblock();
-                          }
-                        },
+                    : TextButton.icon(
+                        onPressed: actionsLocked ? null : onUnblock,
+                        style: TextButton.styleFrom(
+                          foregroundColor: statusForegroundColor,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        icon: const Icon(Icons.lock_open_rounded, size: 16),
+                        label: const Text('Unblock'),
                       ),
               ],
             ),
@@ -642,4 +630,16 @@ class _BlockedUserTile extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _blockedAccentFor(String label) {
+  final normalized = label.toLowerCase();
+  if (normalized.contains('spam')) {
+    return _blockedCoral;
+  }
+  if (normalized.contains('harass') || normalized.contains('safety')) {
+    return _blockedSlate;
+  }
+
+  return _blockedRose;
 }

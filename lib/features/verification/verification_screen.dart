@@ -145,10 +145,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                   const SizedBox(height: AppTheme.cardGap),
                   FilledButton.icon(
                     onPressed: _starting ? null : _handleStart,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _verificationTrust,
-                      foregroundColor: Colors.white,
-                    ),
+                    style: _verificationButtonStyle(context),
                     icon: const Icon(Icons.verified_outlined),
                     label: Text(
                       _starting ? 'Starting…' : 'Send verification code',
@@ -202,10 +199,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                     const SizedBox(height: AppTheme.cardGap),
                     FilledButton(
                       onPressed: _confirming ? null : _handleConfirm,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _verificationTrust,
-                        foregroundColor: Colors.white,
-                      ),
+                      style: _verificationButtonStyle(context),
                       child: Text(
                         _confirming ? 'Confirming…' : 'Confirm verification',
                       ),
@@ -327,6 +321,27 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       }
     }
   }
+}
+
+ButtonStyle _verificationButtonStyle(BuildContext context) {
+  final colorScheme = Theme.of(context).colorScheme;
+
+  return ButtonStyle(
+    backgroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.disabled)) {
+        return colorScheme.surfaceContainerHighest;
+      }
+
+      return _verificationTrust;
+    }),
+    foregroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.disabled)) {
+        return colorScheme.onSurface.withValues(alpha: 0.42);
+      }
+
+      return Colors.white;
+    }),
+  );
 }
 
 class _VerificationStepPill extends StatelessWidget {

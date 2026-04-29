@@ -276,7 +276,11 @@ class _ProfileContent extends StatelessWidget {
         _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
         if (!isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
-          _PhotoSection(photoUrls: detail.photoUrls, isCurrentUser: false),
+          _PhotoSection(
+            photoUrls: detail.photoUrls,
+            isCurrentUser: false,
+            displayName: _displayName(detail),
+          ),
         ],
         if (!isCurrentUser && presentationContextState != null) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
@@ -301,7 +305,11 @@ class _ProfileContent extends StatelessWidget {
         ],
         if (isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
-          _PhotoSection(photoUrls: detail.photoUrls, isCurrentUser: true),
+          _PhotoSection(
+            photoUrls: detail.photoUrls,
+            isCurrentUser: true,
+            displayName: _displayName(detail),
+          ),
         ],
       ],
     );
@@ -774,7 +782,7 @@ class _ProfileCompletenessCard extends StatelessWidget {
         color: _profileSurfaceColor(context, accent),
       ),
       child: Padding(
-        padding: EdgeInsets.all(AppTheme.cardPadding),
+        padding: AppTheme.sectionPadding(compact: true),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -794,7 +802,7 @@ class _ProfileCompletenessCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         isComplete
-                            ? 'All of the essentials are in place. Refresh it whenever you want to keep things feeling current.'
+                            ? 'All essentials are in place.'
                             : '$completedCount of ${checklist.length} essentials are filled in.',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
@@ -858,7 +866,7 @@ class _ProfileCompletenessCard extends StatelessWidget {
                   ),
                   onPressed: onEditProfile,
                   icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Review details'),
+                  label: Text(isComplete ? 'Edit profile' : 'Review details'),
                 ),
                 if (missingLocation)
                   FilledButton.tonalIcon(
@@ -924,10 +932,15 @@ class _ProfileSection extends StatelessWidget {
 }
 
 class _PhotoSection extends StatelessWidget {
-  const _PhotoSection({required this.photoUrls, required this.isCurrentUser});
+  const _PhotoSection({
+    required this.photoUrls,
+    required this.isCurrentUser,
+    required this.displayName,
+  });
 
   final List<String> photoUrls;
   final bool isCurrentUser;
+  final String displayName;
 
   @override
   Widget build(BuildContext context) {
@@ -942,10 +955,16 @@ class _PhotoSection extends StatelessWidget {
       );
     }
 
+    final photoHeight = isCurrentUser ? 126.0 : 108.0;
+    final photoWidth = isCurrentUser ? 156.0 : 132.0;
+
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: _profileSurfaceColor(context, _profileViolet),
+        color: _profileSurfaceColor(
+          context,
+          isCurrentUser ? _profileViolet : _profileSky,
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
@@ -956,7 +975,7 @@ class _PhotoSection extends StatelessWidget {
               children: [
                 const _ProfileIconChip(
                   icon: Icons.photo_library_outlined,
-                  color: _profileViolet,
+                  color: _profileSky,
                 ),
                 const SizedBox(width: 12),
                 Text('Photos', style: Theme.of(context).textTheme.titleMedium),
@@ -988,7 +1007,7 @@ class _PhotoSection extends StatelessWidget {
             ),
             const SizedBox(height: AppTheme.cardGap),
             SizedBox(
-              height: 126,
+              height: photoHeight,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: photoUrls.length,
@@ -997,8 +1016,9 @@ class _PhotoSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   child: UserAvatarPhoto(
                     photoUrl: photoUrls[index],
-                    height: 126,
-                    width: 156,
+                    displayName: displayName,
+                    height: photoHeight,
+                    width: photoWidth,
                   ),
                 ),
               ),
@@ -1013,11 +1033,13 @@ class _PhotoSection extends StatelessWidget {
 class _PhotoPlaceholder extends StatelessWidget {
   const _PhotoPlaceholder({
     required this.message,
+    required this.displayName,
     this.height = 220,
     this.width = double.infinity,
   });
 
   final String message;
+  final String displayName;
   final double height;
   final double width;
 
@@ -1057,6 +1079,15 @@ class _PhotoPlaceholder extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+          Text(
+            _initials(displayName),
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
@@ -1108,11 +1139,13 @@ class UserAvatarPhoto extends ConsumerWidget {
   const UserAvatarPhoto({
     super.key,
     required this.photoUrl,
+    required this.displayName,
     this.height = 200,
     this.width = double.infinity,
   });
 
   final String photoUrl;
+  final String displayName;
   final double height;
   final double width;
 
@@ -1125,7 +1158,8 @@ class UserAvatarPhoto extends ConsumerWidget {
 
     if (resolvedPhotoUrl == null) {
       return _PhotoPlaceholder(
-        message: 'Unable to load photo',
+        message: 'Photo pending',
+        displayName: displayName,
         height: height,
         width: width,
       );
@@ -1143,19 +1177,38 @@ class UserAvatarPhoto extends ConsumerWidget {
 
         return _PhotoPlaceholder(
           message: 'Loading photo…',
+          displayName: displayName,
           height: height,
           width: width,
         );
       },
       errorBuilder: (context, error, stackTrace) {
         return _PhotoPlaceholder(
-          message: 'Unable to load photo',
+          message: 'Photo pending',
+          displayName: displayName,
           height: height,
           width: width,
         );
       },
     );
   }
+}
+
+String _initials(String name) {
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList(growable: false);
+  if (parts.isEmpty) {
+    return '•';
+  }
+
+  final first = String.fromCharCodes(parts.first.runes.take(1));
+  final second = parts.length > 1
+      ? String.fromCharCodes(parts.last.runes.take(1))
+      : '';
+  return '$first$second'.toUpperCase();
 }
 
 Color _profileSurfaceColor(

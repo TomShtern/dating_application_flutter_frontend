@@ -247,7 +247,7 @@ class _StandoutsGrid extends StatelessWidget {
         final availableWidth =
             constraints.maxWidth - (_standoutsCardGap * (crossAxisCount - 1));
         final tileWidth = availableWidth / crossAxisCount;
-        final mainAxisExtent = tileWidth >= 220 ? 272.0 : 260.0;
+        final mainAxisExtent = tileWidth >= 220 ? 252.0 : 242.0;
 
         return GridView.builder(
           key: const ValueKey('standouts-grid'),
@@ -335,7 +335,7 @@ class _StandoutCard extends StatelessWidget {
           onTap: () => _openProfile(context),
           child: Padding(
             padding: mode == _StandoutCardMode.grid
-                ? const EdgeInsets.all(12)
+                ? const EdgeInsets.all(10)
                 : AppTheme.sectionPadding(compact: true),
             child: mode == _StandoutCardMode.grid
                 ? _StandoutGridContent(
@@ -381,8 +381,8 @@ class _StandoutListContent extends StatelessWidget {
                 standout.primaryPhotoUrl,
                 standout.photoUrls,
               ),
-              width: 80,
-              height: 104,
+              width: 72,
+              height: 92,
               borderRadius: AppTheme.cardRadius,
             ),
             const SizedBox(width: 12),
@@ -440,7 +440,7 @@ class _StandoutListContent extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Text(
           _humanizeStandoutReason(standout),
           maxLines: 3,
@@ -449,15 +449,14 @@ class _StandoutListContent extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 8),
-        TextButton.icon(
-          onPressed: onOpenProfile,
-          style: TextButton.styleFrom(
-            foregroundColor: _standoutRose,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+        const SizedBox(height: 6),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Icon(
+            Icons.chevron_right_rounded,
+            color: _standoutAmber.withValues(alpha: 0.84),
+            size: 22,
           ),
-          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-          label: const Text('Profile'),
         ),
       ],
     );
@@ -496,7 +495,7 @@ class _StandoutGridContent extends StatelessWidget {
             standout.photoUrls,
           ),
           width: double.infinity,
-          height: 116,
+          height: 96,
           borderRadius: AppTheme.cardRadius,
         ),
         const SizedBox(height: 8),
@@ -527,7 +526,7 @@ class _StandoutGridContent extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Expanded(
           child: Text(
             _humanizeStandoutReason(standout),
@@ -538,17 +537,21 @@ class _StandoutGridContent extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton(
+          child: IconButton(
             onPressed: onOpenProfile,
-            style: TextButton.styleFrom(
-              minimumSize: const Size(0, 40),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              foregroundColor: _standoutRose,
+            tooltip: 'Open profile',
+            style: IconButton.styleFrom(
+              foregroundColor: _standoutAmber,
+              backgroundColor: _standoutAmber.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.18
+                    : 0.10,
+              ),
             ),
-            child: const Text('Profile'),
+            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
           ),
         ),
       ],

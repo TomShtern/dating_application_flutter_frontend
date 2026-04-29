@@ -430,7 +430,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _MatchCard extends StatelessWidget {
-  static const double _matchActionHeight = 42;
+  static const double _matchActionHeight = 38;
 
   const _MatchCard({required this.currentUser, required this.match});
 
@@ -504,7 +504,7 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
             Padding(
-              padding: EdgeInsets.all(AppTheme.compactCardPadding),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -528,7 +528,7 @@ class _MatchCard extends StatelessWidget {
                                     photoUrl: photoUrl,
                                     isActive: isActive,
                                   ),
-                                  const SizedBox(width: 14),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: _MatchSummaryBlock(
                                       match: match,
@@ -564,7 +564,7 @@ class _MatchCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
@@ -607,7 +607,7 @@ class _MatchCard extends StatelessWidget {
                                 ),
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                                horizontal: 12,
                               ),
                             ),
                           ),
@@ -651,7 +651,7 @@ class _MatchAvatar extends StatelessWidget {
             child: UserAvatar(
               name: match.otherUserName,
               photoUrl: photoUrl,
-              radius: 36,
+              radius: 30,
             ),
           ),
         ),
@@ -668,7 +668,7 @@ class _MatchAvatar extends StatelessWidget {
                   width: 2,
                 ),
               ),
-              child: const SizedBox(width: 12, height: 12),
+              child: const SizedBox(width: 10, height: 10),
             ),
           ),
       ],
@@ -716,15 +716,15 @@ class _MatchSummaryBlock extends StatelessWidget {
                 ),
               ),
             ),
-            if (isNew) ...[const SizedBox(width: 8), const _NewBadge()],
+            if (isNew) ...[const SizedBox(width: 6), const _NewBadge()],
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         _FadedBio(text: fallbackSummary),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          runSpacing: 8,
+          runSpacing: 6,
           children: [
             _MatchSignalPill(
               icon: Icons.favorite_rounded,

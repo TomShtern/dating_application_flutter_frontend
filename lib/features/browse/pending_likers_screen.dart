@@ -164,7 +164,7 @@ class _PendingLikersIntroCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Open a profile for a closer look or refresh to catch new likes as they land.',
+                        'Review who is waiting and open the profile when a signal looks promising.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -174,13 +174,24 @@ class _PendingLikersIntroCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            _PendingInfoPill(
-              icon: Icons.people_outline_rounded,
-              label: waitingCount == 1
-                  ? '1 waiting now'
-                  : '$waitingCount waiting now',
-              color: _pendingCoral,
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _PendingInfoPill(
+                  icon: Icons.favorite_border_rounded,
+                  label: waitingCount == 1
+                      ? '1 waiting'
+                      : '$waitingCount waiting',
+                  color: _pendingRose,
+                ),
+                const _PendingInfoPill(
+                  icon: Icons.person_search_rounded,
+                  label: 'Profile first',
+                  color: _pendingSky,
+                ),
+              ],
             ),
           ],
         ),
@@ -345,8 +356,11 @@ class _PendingLikerCard extends StatelessWidget {
     final photoUrl = _primaryPhotoUrl(liker.primaryPhotoUrl, liker.photoUrls);
     final isDark = theme.brightness == Brightness.dark;
     final surfaceColor = Color.alphaBlend(
-      _pendingRose.withValues(alpha: isDark ? 0.14 : 0.05),
-      colorScheme.surface,
+      _pendingSky.withValues(alpha: isDark ? 0.08 : 0.025),
+      Color.alphaBlend(
+        _pendingRose.withValues(alpha: isDark ? 0.10 : 0.035),
+        colorScheme.surface,
+      ),
     );
     final summary =
         liker.summaryLine ?? 'Open ${liker.name}’s profile for a closer look.';
@@ -359,7 +373,7 @@ class _PendingLikerCard extends StatelessWidget {
           borderRadius: AppTheme.panelRadius,
           onTap: () => _openProfile(context),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -384,7 +398,7 @@ class _PendingLikerCard extends StatelessWidget {
                               key: ValueKey(
                                 'pending-liker-media-${liker.userId}',
                               ),
-                              radius: 26,
+                              radius: 24,
                               photoUrl: photoUrl,
                               name: liker.name,
                             ),
@@ -407,7 +421,7 @@ class _PendingLikerCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,10 +468,10 @@ class _PendingLikerCard extends StatelessWidget {
                               height: 1.35,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 7),
                           Wrap(
                             spacing: 8,
-                            runSpacing: 8,
+                            runSpacing: 6,
                             children: [
                               if (likedAtLabel != null)
                                 _PendingInfoPill(
@@ -479,17 +493,13 @@ class _PendingLikerCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => _openProfile(context),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                    label: const Text('Profile'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: _pendingRose,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                    ),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    color: _pendingSky.withValues(alpha: 0.82),
+                    size: 22,
                   ),
                 ),
               ],

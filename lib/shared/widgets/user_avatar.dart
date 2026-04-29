@@ -73,25 +73,55 @@ class _AvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final colors = _avatarFallbackColors(colorScheme, name);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: colorScheme.surfaceContainerHighest,
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Center(
         child: Text(
           _initials(name),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: colorScheme.onPrimaryContainer,
+            color: isDark ? const Color(0xFFF8FBFF) : Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: radius * 0.72,
-            letterSpacing: -0.5,
+            letterSpacing: 0,
           ),
         ),
       ),
     );
   }
+}
+
+List<Color> _avatarFallbackColors(ColorScheme colorScheme, String name) {
+  if (colorScheme.brightness == Brightness.dark) {
+    return const [Color(0xFF164E63), Color(0xFF355F7E), Color(0xFF705C95)];
+  }
+
+  final hash = name.trim().runes.fold<int>(0, (total, rune) => total + rune);
+  final hueOffset = (hash % 84) - 42;
+
+  Color shifted(Color source, {double saturationBoost = 0}) {
+    final hsl = HSLColor.fromColor(source);
+    return hsl
+        .withHue((hsl.hue + hueOffset) % 360)
+        .withSaturation((hsl.saturation + saturationBoost).clamp(0.46, 0.70))
+        .withLightness(hsl.lightness.clamp(0.46, 0.60))
+        .toColor();
+  }
+
+  return [
+    shifted(colorScheme.primaryContainer, saturationBoost: 0.08),
+    shifted(colorScheme.tertiaryContainer, saturationBoost: 0.04),
+    shifted(colorScheme.secondaryContainer),
+  ];
 }
 
 String _initials(String name) {

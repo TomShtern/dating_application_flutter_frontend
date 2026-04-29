@@ -57,7 +57,7 @@ class SettingsScreen extends ConsumerWidget {
                 SizedBox(height: AppTheme.sectionSpacing()),
                 _SettingsSectionCard(
                   icon: Icons.query_stats_rounded,
-                  accentColor: _settingsRose,
+                  accentColor: _settingsSky,
                   title: 'Quick access',
                   subtitle: 'Open the essentials faster.',
                   child: Column(
@@ -218,7 +218,14 @@ class _SettingsIntroCard extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: _settingsSurfaceColor(context, _settingsRose, prominent: true),
+        color: Color.alphaBlend(
+          _settingsMint.withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark
+                ? 0.08
+                : 0.025,
+          ),
+          _settingsSurfaceColor(context, _settingsSky, prominent: true),
+        ),
         prominent: true,
       ),
       child: Padding(
@@ -316,15 +323,6 @@ class _SettingsSessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DeveloperOnlyCalloutCard(
       title: 'Current dev session',
-      description:
-          'This quick switcher is temporary internal tooling for previewing the app with seeded profiles on this device.',
-      actions: [
-        OutlinedButton.icon(
-          onPressed: onSwitchUser,
-          icon: const Icon(Icons.switch_account_outlined),
-          label: const Text('Switch profile'),
-        ),
-      ],
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -346,6 +344,16 @@ class _SettingsSessionCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton.icon(
+            onPressed: onSwitchUser,
+            icon: const Icon(Icons.switch_account_outlined, size: 18),
+            label: const Text('Switch'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
           ),
         ],
@@ -459,6 +467,8 @@ class _SettingsLinkTile extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),

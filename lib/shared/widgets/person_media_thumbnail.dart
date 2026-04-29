@@ -80,15 +80,65 @@ class _PhotoFallback extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(gradient: gradient),
-      child: Center(
-        child: Text(
-          _initials(name),
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: emphasizeMedia ? Colors.white : colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Align(
+            alignment: Alignment.center,
+            child: Text(
+              _initials(name),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: emphasizeMedia
+                    ? Colors.white
+                    : colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0,
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            left: 10,
+            right: 10,
+            bottom: 10,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: colorScheme.surface.withValues(alpha: 0.72),
+                borderRadius: const BorderRadius.all(Radius.circular(999)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.person_rounded,
+                      size: 13,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        'Photo pending',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -96,7 +146,7 @@ class _PhotoFallback extends StatelessWidget {
 
 List<Color> _emphasizedFallbackColors(ColorScheme colorScheme, String name) {
   if (colorScheme.brightness == Brightness.dark) {
-    return const [Color(0xFF3F6F92), Color(0xFF5F6F7E), Color(0xFF9A7A49)];
+    return const [Color(0xFF164E63), Color(0xFF355F7E), Color(0xFF705C95)];
   }
 
   final hash = name.trim().runes.fold<int>(0, (total, rune) => total + rune);

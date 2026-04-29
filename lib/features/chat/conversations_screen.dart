@@ -52,7 +52,7 @@ class ConversationsScreen extends ConsumerWidget {
               onRefresh: controller.refresh,
             ),
           ),
-          SizedBox(height: AppTheme.sectionSpacing()),
+          SizedBox(height: AppTheme.sectionSpacing(compact: true)),
           Expanded(
             child: RefreshIndicator(
               onRefresh: controller.refresh,
@@ -466,7 +466,7 @@ class _ConversationCard extends StatelessWidget {
             color: _conversationSurfaceColor(context, spec),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -482,7 +482,7 @@ class _ConversationCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   _ConversationAvatarStack(summary: summary, spec: spec),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,7 +510,7 @@ class _ConversationCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 5),
                         Text(
                           preview,
                           maxLines: 2,
@@ -520,7 +520,7 @@ class _ConversationCard extends StatelessWidget {
                             height: 1.35,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Row(
                           children: [
                             _ConversationInfoPill(
@@ -565,13 +565,13 @@ class _ConversationAvatarStack extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SizedBox(
-      width: 52,
-      height: 52,
+      width: 46,
+      height: 46,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Positioned.fill(
-            child: UserAvatar(name: summary.otherUserName, radius: 25),
+            child: UserAvatar(name: summary.otherUserName, radius: 22),
           ),
           Positioned(
             right: 0,
@@ -583,8 +583,8 @@ class _ConversationAvatarStack extends StatelessWidget {
                 border: Border.all(color: spec.color.withValues(alpha: 0.32)),
               ),
               child: SizedBox.square(
-                dimension: 20,
-                child: Icon(spec.icon, color: spec.foregroundColor, size: 12),
+                dimension: 18,
+                child: Icon(spec.icon, color: spec.foregroundColor, size: 11),
               ),
             ),
           ),
@@ -618,7 +618,7 @@ class _ConversationInfoPill extends StatelessWidget {
         border: Border.all(color: foregroundColor.withValues(alpha: 0.12)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

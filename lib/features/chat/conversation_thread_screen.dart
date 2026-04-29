@@ -104,10 +104,11 @@ class _ConversationThreadScreenState
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 50,
+        toolbarHeight: 54,
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: InkWell(
           onTap: () => _handleConversationMenuAction(
             _ConversationMenuAction.viewProfile,
@@ -196,7 +197,7 @@ class _ConversationThreadScreenState
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -244,76 +245,82 @@ class _ConversationThreadScreenState
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              DecoratedBox(
-                decoration: AppTheme.surfaceDecoration(
-                  context,
-                  color: Color.alphaBlend(
-                    _threadSky.withValues(alpha: isDark ? 0.08 : 0.03),
-                    Color.alphaBlend(
-                      _threadTeal.withValues(alpha: isDark ? 0.12 : 0.05),
-                      colorScheme.surface.withValues(alpha: 0.98),
+              const SizedBox(height: 10),
+              Material(
+                color: Color.alphaBlend(
+                  _threadTeal.withValues(alpha: isDark ? 0.08 : 0.035),
+                  colorScheme.surfaceContainerLow,
+                ),
+                borderRadius: AppTheme.panelRadius,
+                clipBehavior: Clip.antiAlias,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: AppTheme.panelRadius,
+                    border: Border.all(
+                      color: _threadTeal.withValues(
+                        alpha: isDark ? 0.20 : 0.12,
+                      ),
                     ),
                   ),
-                  prominent: false,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _messageController,
-                          minLines: 1,
-                          maxLines: 3,
-                          textInputAction: TextInputAction.send,
-                          onChanged: (_) => setState(() {}),
-                          onSubmitted: (_) => _handleSend(),
-                          decoration: InputDecoration(
-                            hintText:
-                                'Message ${widget.conversation.otherUserName}',
-                            isDense: true,
-                            filled: false,
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 10,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _messageController,
+                            minLines: 1,
+                            maxLines: 3,
+                            textInputAction: TextInputAction.send,
+                            onChanged: (_) => setState(() {}),
+                            onSubmitted: (_) => _handleSend(),
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Message ${widget.conversation.otherUserName}',
+                              isDense: true,
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 8,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        tooltip: _isSending
-                            ? 'Sending message…'
-                            : 'Send message',
-                        onPressed: trimmedMessage.isEmpty || _isSending
-                            ? null
-                            : _handleSend,
-                        style: IconButton.styleFrom(
-                          backgroundColor: _threadTeal,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              colorScheme.surfaceContainerHighest,
-                          disabledForegroundColor: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.62),
-                        ),
-                        icon: _isSending
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          tooltip: _isSending
+                              ? 'Sending message…'
+                              : 'Send message',
+                          onPressed: trimmedMessage.isEmpty || _isSending
+                              ? null
+                              : _handleSend,
+                          style: IconButton.styleFrom(
+                            backgroundColor: _threadTeal,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                            disabledForegroundColor: colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.62),
+                          ),
+                          icon: _isSending
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
                                   ),
-                                ),
-                              )
-                            : const Icon(Icons.arrow_upward_rounded),
-                      ),
-                    ],
+                                )
+                              : const Icon(Icons.arrow_upward_rounded),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
