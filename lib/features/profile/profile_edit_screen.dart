@@ -167,12 +167,12 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
               AppTheme.pagePadding,
-              AppTheme.cardGap,
+              6,
               AppTheme.pagePadding,
-              AppTheme.cardGap,
+              6,
             ),
             child: SizedBox(
-              height: 48,
+              height: 44,
               width: double.infinity,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
@@ -205,11 +205,11 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
               AppTheme.pagePadding,
               8,
               AppTheme.pagePadding,
-              AppTheme.pagePadding,
+              AppTheme.navBarHeight + AppTheme.pagePadding,
             ),
             children: [
               _ProfileEditHeader(snapshot: widget.snapshot),
-              SizedBox(height: AppTheme.sectionSpacing()),
+              SizedBox(height: AppTheme.compactSectionGap),
               _ProfileEditSection(
                 icon: Icons.badge_outlined,
                 accentColor: _profileLavender,
@@ -317,7 +317,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                   ],
                 ),
               ),
-              SizedBox(height: AppTheme.sectionSpacing()),
+              SizedBox(height: AppTheme.compactSectionGap),
               _ProfileEditSection(
                 icon: Icons.tune_rounded,
                 accentColor: _profileRose,
@@ -385,7 +385,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                   ],
                 ),
               ),
-              SizedBox(height: AppTheme.sectionSpacing()),
+              SizedBox(height: AppTheme.compactSectionGap),
               _ProfileEditSection(
                 icon: Icons.edit_note_rounded,
                 accentColor: _profileSky,
@@ -403,7 +403,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                   ),
                 ),
               ),
-              SizedBox(height: AppTheme.sectionSpacing()),
+              SizedBox(height: AppTheme.compactSectionGap),
               _ProfileEditSection(
                 icon: Icons.location_on_outlined,
                 accentColor: _profileMint,
@@ -836,6 +836,15 @@ class _ProfileEditHeader extends StatelessWidget {
                               label: location,
                               color: _profileMint,
                             ),
+                          _ProfileStatusPill(
+                            icon: Icons.photo_library_outlined,
+                            label: readOnly.photoUrls.isEmpty
+                                ? 'No photos yet'
+                                : readOnly.photoUrls.length == 1
+                                ? '1 photo'
+                                : '${readOnly.photoUrls.length} photos',
+                            color: _profileLavender,
+                          ),
                           _ProfileStatusPill(
                             icon: readOnly.verified
                                 ? Icons.verified_rounded

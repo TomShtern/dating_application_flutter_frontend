@@ -14,6 +14,7 @@ import 'pending_likers_provider.dart';
 const _pendingRose = Color(0xFFD95F84);
 const _pendingCoral = Color(0xFFE28B6C);
 const _pendingViolet = Color(0xFF8E6DE8);
+const _pendingSky = Color(0xFF188DC8);
 
 class PendingLikersScreen extends ConsumerWidget {
   const PendingLikersScreen({super.key});
@@ -62,10 +63,7 @@ class PendingLikersScreen extends ConsumerWidget {
                     padding: AppTheme.screenPadding(),
                     children: [
                       if (likers.isEmpty)
-                        _PendingLikersEmptyState(
-                          waitingCount: likers.length,
-                          onRefresh: controller.refresh,
-                        )
+                        _PendingLikersEmptyState(onRefresh: controller.refresh)
                       else ...[
                         _PendingLikersSectionLabel(
                           title: likers.length == 1
@@ -124,7 +122,7 @@ class _PendingLikersIntroCard extends StatelessWidget {
       decoration: AppTheme.surfaceDecoration(
         context,
         color: Color.alphaBlend(
-          _pendingRose.withValues(alpha: isDark ? 0.16 : 0.06),
+          _pendingSky.withValues(alpha: isDark ? 0.14 : 0.05),
           colorScheme.surfaceContainerLow,
         ),
         prominent: true,
@@ -199,36 +197,45 @@ class _PendingLikersSectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 18,
-          decoration: BoxDecoration(
-            color: _pendingRose,
-            borderRadius: BorderRadius.circular(999),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: 4,
+            decoration: BoxDecoration(
+              color: _pendingRose,
+              borderRadius: BorderRadius.circular(999),
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                height: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _PendingLikersEmptyState extends StatelessWidget {
-  const _PendingLikersEmptyState({
-    required this.waitingCount,
-    required this.onRefresh,
-  });
+  const _PendingLikersEmptyState({required this.onRefresh});
 
-  final int waitingCount;
   final Future<void> Function() onRefresh;
 
   @override
@@ -261,7 +268,9 @@ class _PendingLikersEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             OutlinedButton.icon(
-              onPressed: onRefresh,
+              onPressed: () async {
+                await onRefresh();
+              },
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Refresh'),
             ),
@@ -350,7 +359,7 @@ class _PendingLikerCard extends StatelessWidget {
           borderRadius: AppTheme.panelRadius,
           onTap: () => _openProfile(context),
           child: Padding(
-            padding: AppTheme.sectionPadding(compact: true),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -375,7 +384,7 @@ class _PendingLikerCard extends StatelessWidget {
                               key: ValueKey(
                                 'pending-liker-media-${liker.userId}',
                               ),
-                              radius: 30,
+                              radius: 26,
                               photoUrl: photoUrl,
                               name: liker.name,
                             ),
@@ -445,7 +454,7 @@ class _PendingLikerCard extends StatelessWidget {
                               height: 1.35,
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
@@ -470,25 +479,16 @@ class _PendingLikerCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Align(
-                  alignment: Alignment.centerLeft,
-                  child: OutlinedButton.icon(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
                     onPressed: () => _openProfile(context),
                     icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                    label: const Text('Open profile'),
-                    style: OutlinedButton.styleFrom(
+                    label: const Text('Profile'),
+                    style: TextButton.styleFrom(
                       foregroundColor: _pendingRose,
-                      side: BorderSide(
-                        color: _pendingRose.withValues(alpha: 0.28),
-                      ),
-                      backgroundColor: colorScheme.surface.withValues(
-                        alpha: isDark ? 0.76 : 0.88,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                     ),
                   ),
                 ),

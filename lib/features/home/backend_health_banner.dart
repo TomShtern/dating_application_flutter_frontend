@@ -26,7 +26,7 @@ class BackendHealthBanner extends ConsumerWidget {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(12, 9, 10, 9),
           decoration: BoxDecoration(
             color: background,
             borderRadius: BorderRadius.circular(16),
@@ -38,8 +38,9 @@ class BackendHealthBanner extends ConsumerWidget {
                     ? Icons.cloud_done_outlined
                     : Icons.warning_amber_rounded,
                 color: foreground,
+                size: 20,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   label,
@@ -49,9 +50,10 @@ class BackendHealthBanner extends ConsumerWidget {
                   ),
                 ),
               ),
-              TextButton(
+              TextButton.icon(
                 onPressed: () => ref.invalidate(backendHealthProvider),
-                child: const Text('Refresh'),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Refresh'),
               ),
             ],
           ),

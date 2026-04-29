@@ -341,6 +341,12 @@ class _AchievementsOverviewCard extends StatelessWidget {
                   backgroundColor: progressPillBackground,
                   foregroundColor: progressPillForeground,
                 ),
+                _AchievementSummaryPill(
+                  icon: Icons.layers_outlined,
+                  label: totalCount == 1 ? '1 tracked' : '$totalCount tracked',
+                  backgroundColor: pendingPillBackground,
+                  foregroundColor: pendingPillForeground,
+                ),
                 if (unknownCount > 0)
                   _AchievementSummaryPill(
                     icon: Icons.info_outline_rounded,

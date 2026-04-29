@@ -271,7 +271,12 @@ List<Widget> _buildNotificationSections({
     if (widgets.isNotEmpty) {
       widgets.add(SizedBox(height: AppTheme.sectionSpacing(compact: true)));
     }
-    widgets.add(_NotificationSectionHeader(label: entry.key));
+    widgets.add(
+      _NotificationSectionHeader(
+        label: entry.key,
+        countText: '${entry.value.length}',
+      ),
+    );
     widgets.add(SizedBox(height: AppTheme.listSpacing(compact: true)));
 
     for (var index = 0; index < entry.value.length; index++) {
@@ -315,9 +320,10 @@ String _notificationGroupLabel(DateTime? createdAt, {required DateTime now}) {
 }
 
 class _NotificationSectionHeader extends StatelessWidget {
-  const _NotificationSectionHeader({required this.label});
+  const _NotificationSectionHeader({required this.label, this.countText});
 
   final String label;
+  final String? countText;
 
   @override
   Widget build(BuildContext context) {
@@ -342,6 +348,31 @@ class _NotificationSectionHeader extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
+          if (countText != null) ...[
+            const SizedBox(width: 8),
+            Align(
+              alignment: Alignment.center,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.08),
+                  borderRadius: AppTheme.chipRadius,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  child: Text(
+                    countText!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(width: 12),
           Expanded(
             child: Align(
@@ -598,7 +629,9 @@ class _NotificationsIntroCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 IconButton(
                   tooltip: 'Refresh',
-                  onPressed: onRefresh,
+                  onPressed: () async {
+                    await onRefresh();
+                  },
                   iconSize: 22,
                   style: IconButton.styleFrom(
                     foregroundColor: colorScheme.onSurfaceVariant,

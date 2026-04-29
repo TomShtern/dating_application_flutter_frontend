@@ -104,7 +104,7 @@ class _ConversationThreadScreenState
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 46,
+        toolbarHeight: 50,
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -159,7 +159,7 @@ class _ConversationThreadScreenState
                         )
                       else
                         Text(
-                          'Conversation',
+                          'Tap name to view profile',
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
@@ -196,7 +196,7 @@ class _ConversationThreadScreenState
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -214,7 +214,7 @@ class _ConversationThreadScreenState
                       final useSparseLayout = messages.length <= 4;
                       _scheduleAutoScrollToLatest(
                         messages.length,
-                        alignToBottom: useSparseLayout,
+                        alignToBottom: true,
                       );
 
                       return useSparseLayout
@@ -255,10 +255,10 @@ class _ConversationThreadScreenState
                       colorScheme.surface.withValues(alpha: 0.98),
                     ),
                   ),
-                  prominent: true,
+                  prominent: false,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -280,7 +280,7 @@ class _ConversationThreadScreenState
                             focusedBorder: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 6,
-                              vertical: 12,
+                              vertical: 10,
                             ),
                           ),
                         ),
@@ -494,14 +494,16 @@ class _MessageList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = _buildConversationEntries(messages, currentUserId);
+    final entries = _buildChronologicalConversationEntries(
+      messages,
+      currentUserId,
+    );
 
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView.builder(
-        reverse: true,
         controller: scrollController,
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
         itemCount: entries.length,
         itemBuilder: (context, index) {
           final entry = entries[index];
@@ -630,7 +632,9 @@ class _ConversationThreadEmptyState extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   TextButton.icon(
-                    onPressed: onRefresh,
+                    onPressed: () async {
+                      await onRefresh();
+                    },
                     icon: const Icon(Icons.refresh_rounded),
                     label: const Text('Refresh'),
                   ),
@@ -776,26 +780,6 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
   }
-}
-
-List<_ConversationEntry> _buildConversationEntries(
-  List<MessageDto> messages,
-  String currentUserId,
-) {
-  final chronologicalEntries = _buildBaseConversationEntries(
-    messages,
-    currentUserId,
-  );
-  final displayEntries = chronologicalEntries.reversed.toList(growable: false);
-
-  return List<_ConversationEntry>.generate(displayEntries.length, (index) {
-    final current = displayEntries[index];
-    final older = index + 1 < displayEntries.length
-        ? displayEntries[index + 1]
-        : null;
-
-    return current.copyWith(topSpacing: _spacingAbove(current, older));
-  }, growable: false);
 }
 
 List<_ConversationEntry> _buildChronologicalConversationEntries(

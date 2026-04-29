@@ -44,7 +44,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           Expanded(
             child: ListView(
-              padding: AppTheme.screenPadding(),
+              padding: AppTheme.shellScrollPadding(),
               children: [
                 _SettingsSessionCard(
                   currentUser: currentUser,
@@ -233,9 +233,68 @@ class _SettingsIntroCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _SettingsIntroPill(
+                  icon: Icons.person_outline_rounded,
+                  label: currentUser.name,
+                  color: _settingsRose,
+                ),
+                _SettingsIntroPill(
+                  icon: Icons.verified_user_outlined,
+                  label: '${formatDisplayLabel(currentUser.state)} profile',
+                  color: _settingsMint,
+                ),
+                _SettingsIntroPill(
+                  icon: Icons.palette_outlined,
+                  label: _shortThemeLabel(selectedThemeMode),
+                  color: _settingsSky,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsIntroPill extends StatelessWidget {
+  const _SettingsIntroPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.18 : 0.10),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.16)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
             Text(
-              '${currentUser.name} · ${formatDisplayLabel(currentUser.state)} profile · ${_shortThemeLabel(selectedThemeMode)}',
-              style: theme.textTheme.bodyMedium,
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),

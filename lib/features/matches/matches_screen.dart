@@ -73,7 +73,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                   if (visibleMatches.isEmpty) {
                     return ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: AppTheme.screenPadding(),
+                      padding: AppTheme.shellScrollPadding(),
                       children: [
                         _MatchesEmptyState(
                           filter: _selectedFilter,
@@ -85,7 +85,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
 
                   return ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: AppTheme.screenPadding(),
+                    padding: AppTheme.shellScrollPadding(),
                     itemCount: visibleMatches.length,
                     separatorBuilder: (_, _) =>
                         SizedBox(height: AppTheme.cardGap),
@@ -97,14 +97,14 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 },
                 loading: () => ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: AppTheme.screenPadding(),
+                  padding: AppTheme.shellScrollPadding(),
                   children: const [
                     AppAsyncState.loading(message: 'Loading matches...'),
                   ],
                 ),
                 error: (error, stackTrace) => ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: AppTheme.screenPadding(),
+                  padding: AppTheme.shellScrollPadding(),
                   children: [
                     AppAsyncState.error(
                       message: error is ApiError
@@ -163,13 +163,28 @@ class _MatchesIntroCard extends StatelessWidget {
           prominent: true,
         ),
         child: Padding(
-          padding: AppTheme.sectionPadding(),
+          padding: AppTheme.sectionPadding(compact: true),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: _matchRose.withValues(alpha: isDark ? 0.18 : 0.10),
+                      borderRadius: const BorderRadius.all(Radius.circular(14)),
+                    ),
+                    child: SizedBox.square(
+                      dimension: 40,
+                      child: Icon(
+                        Icons.favorite_rounded,
+                        color: isDark ? const Color(0xFFF5C1CF) : _matchRose,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +325,9 @@ class _MatchesEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             OutlinedButton.icon(
-              onPressed: onRefresh,
+              onPressed: () async {
+                await onRefresh();
+              },
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Refresh matches'),
             ),
@@ -413,7 +430,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _MatchCard extends StatelessWidget {
-  static const double _matchActionHeight = 44;
+  static const double _matchActionHeight = 42;
 
   const _MatchCard({required this.currentUser, required this.match});
 
@@ -487,7 +504,7 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
             Padding(
-              padding: EdgeInsets.all(AppTheme.cardPadding),
+              padding: EdgeInsets.all(AppTheme.compactCardPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -547,7 +564,7 @@ class _MatchCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
@@ -570,12 +587,20 @@ class _MatchCard extends StatelessWidget {
                             ),
                             label: const Text('View profile'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: _matchSlate,
+                              foregroundColor: isDark
+                                  ? const Color(0xFFD6DEE5)
+                                  : _matchSlate,
                               side: BorderSide(
-                                color: _matchSlate.withValues(alpha: 0.22),
+                                color:
+                                    (isDark
+                                            ? const Color(0xFFD6DEE5)
+                                            : _matchSlate)
+                                        .withValues(
+                                          alpha: isDark ? 0.34 : 0.22,
+                                        ),
                               ),
                               backgroundColor: theme.colorScheme.surface
-                                  .withValues(alpha: isDark ? 0.76 : 0.88),
+                                  .withValues(alpha: isDark ? 0.92 : 0.88),
                               shape: const RoundedRectangleBorder(
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(999),
@@ -626,7 +651,7 @@ class _MatchAvatar extends StatelessWidget {
             child: UserAvatar(
               name: match.otherUserName,
               photoUrl: photoUrl,
-              radius: 43,
+              radius: 36,
             ),
           ),
         ),

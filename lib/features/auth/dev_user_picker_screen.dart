@@ -128,7 +128,7 @@ class _DeveloperIntroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedLabel = switch ((selectedUserLoading, selectedUser)) {
       (true, _) => 'Restoring saved profile',
-      (false, null) => 'No active profile',
+      (false, null) => 'Choose a profile below',
       (false, final user?) => 'Active: ${user.name}',
     };
 
@@ -439,17 +439,17 @@ class _CurrentUserCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(width: 8),
                       _SelectionPill(
                         label: hasUser
                             ? 'Current'

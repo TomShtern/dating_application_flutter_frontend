@@ -137,10 +137,6 @@ class _StandoutsHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final hintLabel = snapshot.totalCandidates <= 1
-        ? 'Tap the card to open the profile.'
-        : 'Scroll for all ${snapshot.totalCandidates} profiles and tap any card to open one.';
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppTheme.pagePadding,
@@ -164,19 +160,12 @@ class _StandoutsHero extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Standouts',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
                 _humanizeStandoutsIntro(snapshot.message),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
@@ -199,7 +188,7 @@ class _StandoutsHero extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 12,
@@ -233,8 +222,6 @@ class _StandoutsHero extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              Text(hintLabel, style: theme.textTheme.bodySmall),
             ],
           ),
         ),
@@ -453,7 +440,7 @@ class _StandoutListContent extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         Text(
           _humanizeStandoutReason(standout),
           maxLines: 3,
@@ -462,15 +449,15 @@ class _StandoutListContent extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 14),
-        FilledButton.tonalIcon(
+        const SizedBox(height: 8),
+        TextButton.icon(
           onPressed: onOpenProfile,
-          style: FilledButton.styleFrom(
-            backgroundColor: _standoutRose.withValues(alpha: 0.14),
+          style: TextButton.styleFrom(
             foregroundColor: _standoutRose,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
           ),
           icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-          label: const Text('Open profile'),
+          label: const Text('Profile'),
         ),
       ],
     );
@@ -552,15 +539,17 @@ class _StandoutGridContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        FilledButton.tonal(
-          onPressed: onOpenProfile,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(0, 40),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            backgroundColor: _standoutRose.withValues(alpha: 0.14),
-            foregroundColor: _standoutRose,
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: onOpenProfile,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              foregroundColor: _standoutRose,
+            ),
+            child: const Text('Profile'),
           ),
-          child: const Text('Open profile'),
         ),
       ],
     );

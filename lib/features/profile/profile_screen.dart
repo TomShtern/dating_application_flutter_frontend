@@ -75,7 +75,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: AppTheme.screenPadding(),
+                    padding: AppTheme.shellScrollPadding(),
                     child: _ProfileContent(
                       detail: detail,
                       isCurrentUser: true,
@@ -120,8 +120,13 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 44,
+        leading: IconButton(
+          tooltip: 'Back',
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
         title: Text(
-          'Profile',
+          userName == null ? 'Profile' : '$userName\'s profile',
           style: Theme.of(
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
@@ -149,7 +154,7 @@ class ProfileScreen extends ConsumerWidget {
       body: SafeArea(
         child: profileState.when(
           data: (detail) => SingleChildScrollView(
-            padding: AppTheme.screenPadding(),
+            padding: AppTheme.screenPadding().copyWith(bottom: 40),
             child: _ProfileContent(
               detail: detail,
               isCurrentUser: false,
@@ -284,6 +289,8 @@ class _ProfileContent extends StatelessWidget {
           title: _aboutTitle(detail),
           value: _bio(detail, isCurrentUser: isCurrentUser),
         ),
+        SizedBox(height: AppTheme.sectionSpacing()),
+        _ProfileDetailsCard(detail: detail, isCurrentUser: isCurrentUser),
         if (isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
           _ProfileCompletenessCard(
@@ -292,8 +299,6 @@ class _ProfileContent extends StatelessWidget {
             onFixLocation: onFixLocation,
           ),
         ],
-        SizedBox(height: AppTheme.sectionSpacing()),
-        _ProfileDetailsCard(detail: detail, isCurrentUser: isCurrentUser),
         if (isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
           _PhotoSection(photoUrls: detail.photoUrls, isCurrentUser: true),
@@ -520,6 +525,14 @@ class _ProfileHeroCard extends StatelessWidget {
                   color: _profileSky,
                   backgroundColor: _profileSky.withValues(alpha: 0.14),
                   value: readiness.progress,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                readiness.label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ] else ...[
@@ -775,7 +788,8 @@ class _ProfileCompletenessCard extends StatelessWidget {
                     children: [
                       Text(
                         isComplete ? 'Profile ready' : 'Profile completeness',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -789,10 +803,8 @@ class _ProfileCompletenessCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: AppTheme.sectionSpacing()),
-            if (isComplete)
-              ...[
-            ] else ...[
+            if (!isComplete) ...[
+              SizedBox(height: AppTheme.sectionSpacing()),
               ClipRRect(
                 borderRadius: const BorderRadius.all(Radius.circular(999)),
                 child: LinearProgressIndicator(minHeight: 10, value: progress),
@@ -832,7 +844,9 @@ class _ProfileCompletenessCard extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: AppTheme.cardGap),
+            SizedBox(
+              height: isComplete ? AppTheme.compactCardGap : AppTheme.cardGap,
+            ),
             Wrap(
               spacing: AppTheme.cardGap,
               runSpacing: AppTheme.cardGap,
@@ -946,6 +960,30 @@ class _PhotoSection extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text('Photos', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(width: 8),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: _profileViolet.withValues(
+                      alpha: Theme.of(context).brightness == Brightness.dark
+                          ? 0.18
+                          : 0.09,
+                    ),
+                    borderRadius: AppTheme.chipRadius,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      '${photoUrls.length}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: _profileViolet,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: AppTheme.cardGap),
@@ -985,19 +1023,51 @@ class _PhotoPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       height: height,
       width: width,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: _profileSurfaceColor(context, _profileViolet),
+        gradient: LinearGradient(
+          colors: [
+            _profileSky.withValues(alpha: isDark ? 0.22 : 0.10),
+            _profileViolet.withValues(alpha: isDark ? 0.20 : 0.08),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.photo_camera_back_outlined, color: _profileViolet),
-          const SizedBox(height: 10),
-          Text(message, textAlign: TextAlign.center),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface.withValues(alpha: 0.72),
+              shape: BoxShape.circle,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Icon(
+                Icons.photo_camera_back_outlined,
+                color: _profileViolet,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
     );

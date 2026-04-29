@@ -123,7 +123,7 @@ class _LocationCompletionScreenState
                       ),
                     ),
                     child: Padding(
-                      padding: AppTheme.sectionPadding(),
+                      padding: AppTheme.sectionPadding(compact: true),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -159,13 +159,17 @@ class _LocationCompletionScreenState
                               ),
                             ],
                           ),
-                          const SizedBox(height: AppTheme.cardGap),
+                          const SizedBox(height: AppTheme.compactCardGap),
                           DropdownButtonFormField<String>(
                             key: ValueKey<String?>(_countryCode),
                             initialValue: _countryCode,
                             isExpanded: true,
                             decoration: const InputDecoration(
                               labelText: 'Country',
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 14,
+                              ),
                             ),
                             items: availableCountries
                                 .map(
@@ -195,7 +199,7 @@ class _LocationCompletionScreenState
                               });
                             },
                           ),
-                          const SizedBox(height: AppTheme.cardGap),
+                          const SizedBox(height: AppTheme.compactCardGap),
                           TextField(
                             controller: _cityController,
                             decoration: const InputDecoration(
@@ -208,7 +212,7 @@ class _LocationCompletionScreenState
                               });
                             },
                           ),
-                          const SizedBox(height: AppTheme.cardGap),
+                          const SizedBox(height: AppTheme.compactCardGap),
                           TextField(
                             controller: _zipController,
                             decoration: const InputDecoration(
@@ -225,9 +229,10 @@ class _LocationCompletionScreenState
                             ),
                             child: SwitchListTile.adaptive(
                               contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 2,
+                                horizontal: 10,
+                                vertical: 0,
                               ),
+                              dense: true,
                               value: _allowApproximate,
                               title: const Text(
                                 'Use the closest match if needed',
@@ -300,86 +305,100 @@ class _LocationCompletionScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const _LocationSectionLabel(
-                            title: 'Suggested cities',
-                            accentColor: _locationSky,
-                          ),
-                          const SizedBox(height: AppTheme.cardGap),
                           citySuggestionsState.when(
                             data: (cities) {
-                              if (cities.isEmpty) {
-                                return const _SuggestionStateNotice(
-                                  icon: Icons.search_rounded,
-                                  title: 'Start typing a city',
-                                  message:
-                                      'Type at least two letters to see the closest matches.',
-                                  color: _locationSky,
-                                );
-                              }
                               return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  for (final city in cities)
-                                    Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        borderRadius: AppTheme.panelRadius,
-                                        onTap: () {
-                                          setState(() {
-                                            _cityController.text = city.name;
-                                            _selectedCityLabel =
-                                                _cityDisplayLabel(city);
-                                          });
-                                        },
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 10,
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              const _LocationLeadChip(
-                                                icon: Icons.place_outlined,
-                                                color: _locationSky,
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      city.name,
-                                                      style: theme
-                                                          .textTheme
-                                                          .titleSmall,
+                                  _LocationSectionLabel(
+                                    title: 'Suggested cities',
+                                    accentColor: _locationSky,
+                                    countText: '${cities.length}',
+                                  ),
+                                  const SizedBox(height: AppTheme.cardGap),
+                                  if (cities.isEmpty)
+                                    const _SuggestionStateNotice(
+                                      icon: Icons.search_rounded,
+                                      title: 'Start typing a city',
+                                      message:
+                                          'Type at least two letters to see the closest matches.',
+                                      color: _locationSky,
+                                    )
+                                  else
+                                    Column(
+                                      children: [
+                                        for (final city in cities)
+                                          Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              borderRadius:
+                                                  AppTheme.panelRadius,
+                                              onTap: () {
+                                                setState(() {
+                                                  _cityController.text =
+                                                      city.name;
+                                                  _selectedCityLabel =
+                                                      _cityDisplayLabel(city);
+                                                });
+                                              },
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 10,
                                                     ),
-                                                    if (city
-                                                        .district
-                                                        .isNotEmpty) ...[
-                                                      const SizedBox(height: 2),
-                                                      Text(
-                                                        city.district,
-                                                        style: theme
-                                                            .textTheme
-                                                            .bodySmall
-                                                            ?.copyWith(
-                                                              color: colorScheme
-                                                                  .onSurfaceVariant,
+                                                child: Row(
+                                                  children: [
+                                                    const _LocationLeadChip(
+                                                      icon:
+                                                          Icons.place_outlined,
+                                                      color: _locationSky,
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            city.name,
+                                                            style: theme
+                                                                .textTheme
+                                                                .titleSmall,
+                                                          ),
+                                                          if (city
+                                                              .district
+                                                              .isNotEmpty) ...[
+                                                            const SizedBox(
+                                                              height: 2,
                                                             ),
+                                                            Text(
+                                                              city.district,
+                                                              style: theme
+                                                                  .textTheme
+                                                                  .bodySmall
+                                                                  ?.copyWith(
+                                                                    color: colorScheme
+                                                                        .onSurfaceVariant,
+                                                                  ),
+                                                            ),
+                                                          ],
+                                                        ],
                                                       ),
-                                                    ],
+                                                    ),
+                                                    Icon(
+                                                      Icons
+                                                          .chevron_right_rounded,
+                                                      size: 20,
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
                                                   ],
                                                 ),
                                               ),
-                                              Icon(
-                                                Icons.chevron_right_rounded,
-                                                size: 20,
-                                                color: colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                            ],
+                                            ),
                                           ),
-                                        ),
-                                      ),
+                                      ],
                                     ),
                                 ],
                               );
@@ -520,33 +539,78 @@ class _LocationLeadChip extends StatelessWidget {
 }
 
 class _LocationSectionLabel extends StatelessWidget {
-  const _LocationSectionLabel({required this.title, required this.accentColor});
+  const _LocationSectionLabel({
+    required this.title,
+    required this.accentColor,
+    this.countText,
+  });
 
   final String title;
   final Color accentColor;
+  final String? countText;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 18,
-          decoration: BoxDecoration(
-            color: accentColor,
-            borderRadius: BorderRadius.circular(999),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: 4,
+            decoration: BoxDecoration(
+              color: accentColor,
+              borderRadius: BorderRadius.circular(999),
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
-        ),
-      ],
+          if (countText != null) ...[
+            const SizedBox(width: 8),
+            Align(
+              alignment: Alignment.center,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.18 : 0.08,
+                  ),
+                  borderRadius: AppTheme.chipRadius,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  child: Text(
+                    countText!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: accentColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                height: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -122,12 +122,18 @@ class _StatsDashboard extends StatelessWidget {
                   'Stats start populating after a few likes, matches, and conversations. Check back once you\'ve been active.',
             )
           else ...[
-            const _SectionLabel(title: 'Snapshot'),
+            _SectionLabel(
+              title: 'Snapshot',
+              countText: '${snapshotItems.length}',
+            ),
             const SizedBox(height: AppTheme.cardGap),
             _SnapshotGrid(items: snapshotItems),
             if (performanceItems.isNotEmpty) ...[
               SizedBox(height: AppTheme.sectionSpacing()),
-              const _SectionLabel(title: 'Performance'),
+              _SectionLabel(
+                title: 'Performance',
+                countText: '${performanceItems.length}',
+              ),
               const SizedBox(height: AppTheme.cardGap),
               for (var index = 0; index < performanceItems.length; index++) ...[
                 _PerformanceStatCard(item: performanceItems[index]),
@@ -143,9 +149,10 @@ class _StatsDashboard extends StatelessWidget {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.title});
+  const _SectionLabel({required this.title, this.countText});
 
   final String title;
+  final String? countText;
 
   @override
   Widget build(BuildContext context) {
@@ -170,6 +177,31 @@ class _SectionLabel extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
+          if (countText != null) ...[
+            const SizedBox(width: 8),
+            Align(
+              alignment: Alignment.center,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.08),
+                  borderRadius: AppTheme.chipRadius,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  child: Text(
+                    countText!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(width: 12),
           Expanded(
             child: Align(

@@ -58,9 +58,10 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
               children: [
                 _BlockedUsersOverviewCard(blockedCount: users.length),
                 SizedBox(height: AppTheme.sectionSpacing()),
-                const _BlockedUsersSectionLabel(
+                _BlockedUsersSectionLabel(
                   title: 'Blocked profiles',
                   accentColor: _blockedRose,
+                  countText: '${users.length}',
                 ),
                 SizedBox(height: AppTheme.listSpacing()),
                 if (users.isEmpty)
@@ -353,10 +354,12 @@ class _BlockedUsersSectionLabel extends StatelessWidget {
   const _BlockedUsersSectionLabel({
     required this.title,
     required this.accentColor,
+    this.countText,
   });
 
   final String title;
   final Color accentColor;
+  final String? countText;
 
   @override
   Widget build(BuildContext context) {
@@ -381,6 +384,33 @@ class _BlockedUsersSectionLabel extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
+          if (countText != null) ...[
+            const SizedBox(width: 8),
+            Align(
+              alignment: Alignment.center,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.18 : 0.08,
+                  ),
+                  borderRadius: AppTheme.chipRadius,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  child: Text(
+                    countText!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: accentColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(width: 12),
           Expanded(
             child: Align(
@@ -489,7 +519,7 @@ class _BlockedUserTile extends StatelessWidget {
     final surfaceColor = Color.alphaBlend(
       _blockedSlate.withValues(alpha: isDark ? 0.08 : 0.02),
       Color.alphaBlend(
-        _blockedRose.withValues(alpha: isDark ? 0.16 : 0.06),
+        _blockedCoral.withValues(alpha: isDark ? 0.14 : 0.05),
         colorScheme.surfaceContainerLow,
       ),
     );
@@ -551,11 +581,25 @@ class _BlockedUserTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      _BlockedStatusPill(
-                        icon: Icons.shield_outlined,
-                        label: user.statusLabel,
-                        backgroundColor: statusBackgroundColor,
-                        foregroundColor: statusForegroundColor,
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _BlockedStatusPill(
+                            icon: Icons.shield_outlined,
+                            label: user.statusLabel,
+                            backgroundColor: statusBackgroundColor,
+                            foregroundColor: statusForegroundColor,
+                          ),
+                          _BlockedStatusPill(
+                            icon: Icons.lock_open_rounded,
+                            label: 'Unblock available',
+                            backgroundColor: _blockedSlate.withValues(
+                              alpha: isDark ? 0.16 : 0.07,
+                            ),
+                            foregroundColor: _blockedSlate,
+                          ),
+                        ],
                       ),
                     ],
                   ),

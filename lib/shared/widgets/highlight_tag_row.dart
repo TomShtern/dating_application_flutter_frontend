@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Horizontal scrollable row of highlight chips.
-/// Used for match-quality highlights, interest tags.
+/// Wrapping row of highlight chips used for match-quality and interest tags.
 class HighlightTagRow extends StatelessWidget {
   const HighlightTagRow({super.key, required this.tags, this.icon});
 
@@ -15,27 +14,29 @@ class HighlightTagRow extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: tags.map((tag) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: Chip(
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: tags
+          .map((tag) {
+            return Chip(
               avatar: icon != null
                   ? Icon(icon, size: 14, color: colorScheme.onSurfaceVariant)
                   : null,
-              label: Text(tag),
+              label: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 126),
+                child: Text(tag, overflow: TextOverflow.ellipsis),
+              ),
               labelStyle: theme.textTheme.labelSmall?.copyWith(
                 color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
               ),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
-            ),
-          );
-        }).toList(),
-      ),
+            );
+          })
+          .toList(growable: false),
     );
   }
 }

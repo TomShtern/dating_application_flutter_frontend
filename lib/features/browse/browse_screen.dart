@@ -384,7 +384,7 @@ class _BrowseIntroCard extends StatelessWidget {
                 ),
                 IconButton(
                   tooltip: 'Refresh browse',
-                  onPressed: onRefresh,
+                  onPressed: actionsDisabled ? null : onRefresh,
                   icon: const Icon(Icons.refresh_rounded),
                 ),
               ],
@@ -593,6 +593,7 @@ class _BrowseContent extends StatelessWidget {
                     onViewProfile: () => onViewProfile(currentCandidate),
                   ),
                 ),
+                const SizedBox(height: AppTheme.navBarHeight),
                 SizedBox(height: AppTheme.listSpacing()),
                 if (browse.dailyPick case final dailyPick?) ...[
                   _DailyPickCard(dailyPick: dailyPick),
@@ -1017,7 +1018,7 @@ class _CandidateCard extends ConsumerWidget {
                   name: candidate.name,
                   photoUrl: photoUrl,
                   width: double.infinity,
-                  height: 248,
+                  height: 220,
                   borderRadius: const BorderRadius.all(Radius.circular(26)),
                 ),
                 Positioned(
@@ -1129,15 +1130,6 @@ class _CandidateCard extends ConsumerWidget {
                   ),
               ],
             ),
-            if (candidate.summaryLine != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                candidate.summaryLine!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
             SizedBox(height: AppTheme.listSpacing()),
             _BrowsePresentationContext(state: presentationContextState),
             const SizedBox(height: 8),
@@ -1199,8 +1191,8 @@ class _BrowsePresentationContextContent extends StatelessWidget {
       decoration: AppTheme.surfaceDecoration(
         context,
         color: Color.alphaBlend(
-          _browseRose.withValues(
-            alpha: theme.brightness == Brightness.dark ? 0.10 : 0.04,
+          _browseSky.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.12 : 0.04,
           ),
           colorScheme.surfaceContainerLow,
         ),
@@ -1212,7 +1204,7 @@ class _BrowsePresentationContextContent extends StatelessWidget {
           children: [
             const _BrowseSectionLabel(
               title: 'Why this profile is shown',
-              accentColor: _browseRose,
+              accentColor: _browseSky,
             ),
             const SizedBox(height: 6),
             Text(contextData.summary),
@@ -1223,15 +1215,6 @@ class _BrowsePresentationContextContent extends StatelessWidget {
                     .map(formatDisplayLabel)
                     .toList(growable: false),
                 icon: Icons.sell_outlined,
-              ),
-            ],
-            if (contextData.details.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              ...contextData.details.map(
-                (detail) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(detail),
-                ),
               ),
             ],
           ],

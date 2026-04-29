@@ -477,6 +477,26 @@ class AppTheme {
     return EdgeInsets.all(compact ? compactPagePadding : pagePadding);
   }
 
+  static EdgeInsets shellScrollPadding({bool compact = false}) {
+    final horizontal = compact ? compactPagePadding : pagePadding;
+    return EdgeInsets.fromLTRB(
+      horizontal,
+      compact ? compactPagePadding : pagePadding,
+      horizontal,
+      navBarHeight + pagePadding,
+    );
+  }
+
+  static EdgeInsets bottomActionScrollPadding({bool compact = false}) {
+    final horizontal = compact ? compactPagePadding : pagePadding;
+    return EdgeInsets.fromLTRB(
+      horizontal,
+      compact ? compactPagePadding : pagePadding,
+      horizontal,
+      navBarHeight + (compact ? compactPagePadding : pagePadding),
+    );
+  }
+
   static EdgeInsets sectionPadding({bool compact = false}) {
     return EdgeInsets.all(compact ? compactCardPadding : cardPadding);
   }

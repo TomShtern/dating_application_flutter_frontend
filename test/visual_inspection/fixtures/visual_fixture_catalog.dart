@@ -312,7 +312,7 @@ final conversationMessages = <MessageDto>[
     id: 'msg-12',
     conversationId: _conversationId,
     senderId: currentUser.id,
-    content: 'Perfect. See you Saturday and have a great week until then ☀️',
+    content: 'Perfect. See you Saturday and have a great week until then.',
     sentAt: DateTime.parse('2026-04-23T09:15:00Z'),
   ),
 ];

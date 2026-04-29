@@ -12,6 +12,10 @@ import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import 'verification_provider.dart';
 
+const _verificationTrust = Color(0xFF16A871);
+const _verificationSky = Color(0xFF188DC8);
+const _verificationViolet = Color(0xFF7C4DFF);
+
 class VerificationScreen extends ConsumerStatefulWidget {
   const VerificationScreen({super.key});
 
@@ -51,7 +55,18 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         : 'Step 2 of 2';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Verification')),
+      appBar: AppBar(
+        toolbarHeight: 44,
+        title: Text(
+          'Verification',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
       body: SafeArea(
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -63,6 +78,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               description:
                   'Confirm your email or phone. Verified profiles get a badge and build more trust with matches.',
               trailing: _VerificationStepPill(currentStep: currentStep),
+              iconBackgroundColor: _verificationTrust.withValues(alpha: 0.12),
+              iconColor: _verificationTrust,
               badges: const [
                 ShellHeroPill(
                   icon: Icons.verified_outlined,
@@ -83,7 +100,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               padding: const EdgeInsets.symmetric(
                 horizontal: AppTheme.compactCardPadding,
               ),
-              child: _VerificationProgressBar(value: progressValue),
+              child: _VerificationProgressBar(
+                value: progressValue,
+                color: _verificationTrust,
+              ),
             ),
             const SizedBox(height: AppTheme.compactCardGap),
             _VerificationStepCard(
@@ -125,6 +145,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                   const SizedBox(height: AppTheme.cardGap),
                   FilledButton.icon(
                     onPressed: _starting ? null : _handleStart,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _verificationTrust,
+                      foregroundColor: Colors.white,
+                    ),
                     icon: const Icon(Icons.verified_outlined),
                     label: Text(
                       _starting ? 'Starting…' : 'Send verification code',
@@ -178,6 +202,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                     const SizedBox(height: AppTheme.cardGap),
                     FilledButton(
                       onPressed: _confirming ? null : _handleConfirm,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _verificationTrust,
+                        foregroundColor: Colors.white,
+                      ),
                       child: Text(
                         _confirming ? 'Confirming…' : 'Confirm verification',
                       ),
@@ -309,13 +337,12 @@ class _VerificationStepPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Theme(
       data: theme.copyWith(
         textTheme: theme.textTheme.copyWith(
           labelLarge: theme.textTheme.labelLarge?.copyWith(
-            color: colorScheme.primary,
+            color: _verificationTrust,
           ),
         ),
       ),
@@ -325,9 +352,10 @@ class _VerificationStepPill extends StatelessWidget {
 }
 
 class _VerificationProgressBar extends StatelessWidget {
-  const _VerificationProgressBar({required this.value});
+  const _VerificationProgressBar({required this.value, required this.color});
 
   final double value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -338,7 +366,12 @@ class _VerificationProgressBar extends StatelessWidget {
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
         builder: (context, animatedValue, _) {
-          return LinearProgressIndicator(value: animatedValue, minHeight: 6);
+          return LinearProgressIndicator(
+            value: animatedValue,
+            minHeight: 6,
+            color: color,
+            backgroundColor: color.withValues(alpha: 0.16),
+          );
         },
       ),
     );
@@ -366,7 +399,14 @@ class _VerificationStepCard extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: colorScheme.surface,
+        color: Color.alphaBlend(
+          _verificationSky.withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark
+                ? 0.10
+                : 0.04,
+          ),
+          colorScheme.surfaceContainerLow,
+        ),
       ),
       child: Padding(
         padding: AppTheme.sectionPadding(compact: true),
@@ -402,7 +442,14 @@ class _VerificationTrustSection extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: colorScheme.surfaceContainerLow,
+        color: Color.alphaBlend(
+          _verificationTrust.withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark
+                ? 0.12
+                : 0.05,
+          ),
+          colorScheme.surfaceContainerLow,
+        ),
       ),
       child: Padding(
         padding: AppTheme.sectionPadding(compact: true),
@@ -440,7 +487,6 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return IntrinsicHeight(
       child: Row(
@@ -451,7 +497,7 @@ class _SectionLabel extends StatelessWidget {
             child: SizedBox(
               width: 3,
               child: ColoredBox(
-                color: colorScheme.primary.withValues(alpha: 0.85),
+                color: _verificationTrust.withValues(alpha: 0.85),
               ),
             ),
           ),
@@ -459,7 +505,7 @@ class _SectionLabel extends StatelessWidget {
           Text(
             title,
             style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.primary,
+              color: _verificationTrust,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -478,12 +524,11 @@ class _TrustBullet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: colorScheme.primary.withValues(alpha: 0.7)),
+        Icon(icon, size: 16, color: _verificationTrust.withValues(alpha: 0.8)),
         const SizedBox(width: AppTheme.cardGap),
         Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
       ],
@@ -505,7 +550,14 @@ class _VerificationInfoChip extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: colorScheme.surfaceContainerHighest,
+        color: Color.alphaBlend(
+          _verificationViolet.withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark
+                ? 0.14
+                : 0.06,
+          ),
+          colorScheme.surfaceContainerHighest,
+        ),
         borderRadius: AppTheme.chipRadius,
       ),
       child: Padding(
@@ -516,7 +568,7 @@ class _VerificationInfoChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: colorScheme.primary),
+            Icon(icon, size: 16, color: _verificationViolet),
             const SizedBox(width: AppTheme.compactCardGap),
             Text(label, style: theme.textTheme.labelLarge),
           ],

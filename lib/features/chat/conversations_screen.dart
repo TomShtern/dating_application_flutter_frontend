@@ -64,7 +64,7 @@ class ConversationsScreen extends ConsumerWidget {
                       AppTheme.pagePadding,
                       0,
                       AppTheme.pagePadding,
-                      AppTheme.pagePadding,
+                      AppTheme.navBarHeight + AppTheme.pagePadding,
                     ),
                     children: [
                       if (conversations.isEmpty)
@@ -98,7 +98,7 @@ class ConversationsScreen extends ConsumerWidget {
                     AppTheme.pagePadding,
                     0,
                     AppTheme.pagePadding,
-                    AppTheme.pagePadding,
+                    AppTheme.navBarHeight + AppTheme.pagePadding,
                   ),
                   children: const [
                     AppAsyncState.loading(message: 'Loading conversations…'),
@@ -110,7 +110,7 @@ class ConversationsScreen extends ConsumerWidget {
                     AppTheme.pagePadding,
                     0,
                     AppTheme.pagePadding,
-                    AppTheme.pagePadding,
+                    AppTheme.navBarHeight + AppTheme.pagePadding,
                   ),
                   children: [
                     AppAsyncState.error(
@@ -225,7 +225,9 @@ class _ChatsIntroCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 IconButton(
                   tooltip: 'Refresh conversations',
-                  onPressed: onRefresh,
+                  onPressed: () async {
+                    await onRefresh();
+                  },
                   icon: const Icon(Icons.refresh_rounded),
                 ),
               ],
@@ -247,10 +249,12 @@ class _ChatsIntroCard extends StatelessWidget {
                       ? const Color(0xFF91E2DC)
                       : _conversationTeal,
                 ),
-                if (totalCount != null && pendingFirstMessageCount > 0)
+                if (totalCount != null)
                   _ConversationInfoPill(
                     icon: Icons.mark_email_unread_outlined,
-                    label: pendingFirstMessageCount == 1
+                    label: pendingFirstMessageCount == 0
+                        ? 'All started'
+                        : pendingFirstMessageCount == 1
                         ? '1 waiting to start'
                         : '$pendingFirstMessageCount waiting to start',
                     backgroundColor: _conversationSky.withValues(
@@ -407,7 +411,9 @@ class _ConversationsEmptyState extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   TextButton.icon(
-                    onPressed: onRefresh,
+                    onPressed: () async {
+                      await onRefresh();
+                    },
                     icon: const Icon(Icons.refresh_rounded),
                     label: const Text('Refresh'),
                   ),
@@ -460,7 +466,7 @@ class _ConversationCard extends StatelessWidget {
             color: _conversationSurfaceColor(context, spec),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,29 +501,11 @@ class _ConversationCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: _conversationSlate.withValues(
-                                  alpha: theme.brightness == Brightness.dark
-                                      ? 0.22
-                                      : 0.08,
-                                ),
-                                borderRadius: AppTheme.chipRadius,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                child: Text(
-                                  timestamp,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.brightness == Brightness.dark
-                                        ? const Color(0xFFC7D0D6)
-                                        : _conversationSlate,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                            Text(
+                              timestamp,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
@@ -532,7 +520,7 @@ class _ConversationCard extends StatelessWidget {
                             height: 1.35,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
                             _ConversationInfoPill(
@@ -577,26 +565,26 @@ class _ConversationAvatarStack extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SizedBox(
-      width: 56,
-      height: 56,
+      width: 52,
+      height: 52,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Positioned.fill(
-            child: UserAvatar(name: summary.otherUserName, radius: 26),
+            child: UserAvatar(name: summary.otherUserName, radius: 25),
           ),
           Positioned(
-            right: -1,
-            bottom: -1,
+            right: 0,
+            bottom: 0,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: spec.color.withValues(alpha: 0.14),
-                borderRadius: const BorderRadius.all(Radius.circular(12)),
-                border: Border.all(color: colorScheme.surface, width: 1.6),
+                color: colorScheme.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: spec.color.withValues(alpha: 0.32)),
               ),
               child: SizedBox.square(
-                dimension: 24,
-                child: Icon(spec.icon, color: spec.foregroundColor, size: 14),
+                dimension: 20,
+                child: Icon(spec.icon, color: spec.foregroundColor, size: 12),
               ),
             ),
           ),
