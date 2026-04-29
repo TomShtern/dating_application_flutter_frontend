@@ -1,3 +1,5 @@
+✅ implemented
+
 Status: pending design-language refresh
 
 Target file: `lib/features/verification/verification_screen.dart`

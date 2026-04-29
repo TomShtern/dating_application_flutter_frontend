@@ -13,6 +13,12 @@ import '../../theme/app_theme.dart';
 import '../location/location_completion_screen.dart';
 import 'profile_provider.dart';
 
+const _profileLavender = Color(0xFF8E6DE8);
+const _profileSky = Color(0xFF188DC8);
+const _profileMint = Color(0xFF16A871);
+const _profileRose = Color(0xFFD95F84);
+const _profileSlate = Color(0xFF667085);
+
 class ProfileEditScreen extends ConsumerWidget {
   const ProfileEditScreen({super.key, this.initialDetail});
 
@@ -56,7 +62,13 @@ class _ProfileEditAppBar extends StatelessWidget
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: const SizedBox.shrink(),
+      toolbarHeight: 44,
+      title: Text(
+        'Edit profile',
+        style: Theme.of(
+          context,
+        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+      ),
       backgroundColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -122,19 +134,35 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       appBar: const _ProfileEditAppBar(),
       bottomNavigationBar: SafeArea(
+        top: false,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: Color.alphaBlend(
+              _profileRose.withValues(
+                alpha: theme.brightness == Brightness.dark ? 0.12 : 0.04,
+              ),
+              colorScheme.surface,
+            ),
             border: Border(
               top: BorderSide(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outlineVariant.withValues(alpha: 0.4),
+                color: colorScheme.outlineVariant.withValues(alpha: 0.34),
               ),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withValues(
+                  alpha: theme.brightness == Brightness.dark ? 0.22 : 0.06,
+                ),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -147,6 +175,10 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
               height: 48,
               width: double.infinity,
               child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: _profileRose,
+                  foregroundColor: Colors.white,
+                ),
                 onPressed: _isSaving ? null : _handleSave,
                 icon: _isSaving
                     ? SizedBox.square(
@@ -169,53 +201,106 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: AppTheme.screenPadding(),
+            padding: const EdgeInsets.fromLTRB(
+              AppTheme.pagePadding,
+              8,
+              AppTheme.pagePadding,
+              AppTheme.pagePadding,
+            ),
             children: [
               _ProfileEditHeader(snapshot: widget.snapshot),
               SizedBox(height: AppTheme.sectionSpacing()),
               _ProfileEditSection(
+                icon: Icons.badge_outlined,
+                accentColor: _profileLavender,
                 title: 'Basics',
                 description:
                     'Set the identity and discovery signals people see first.',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Gender',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
+                    _ProfileFieldLabel(title: 'Gender'),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: AppTheme.cardGap,
                       runSpacing: AppTheme.cardGap,
                       children: _genderOptions
-                          .map(
-                            (option) => ChoiceChip(
+                          .map((option) {
+                            final selected = _selectedGender == option;
+                            return ChoiceChip(
                               label: Text(formatDisplayLabel(option)),
-                              selected: _selectedGender == option,
+                              selected: selected,
+                              showCheckmark: true,
+                              selectedColor: _profileLavender.withValues(
+                                alpha: theme.brightness == Brightness.dark
+                                    ? 0.24
+                                    : 0.12,
+                              ),
+                              backgroundColor: colorScheme.surface.withValues(
+                                alpha: theme.brightness == Brightness.dark
+                                    ? 0.72
+                                    : 0.9,
+                              ),
+                              side: BorderSide(
+                                color: selected
+                                    ? _profileLavender.withValues(alpha: 0.3)
+                                    : colorScheme.outlineVariant.withValues(
+                                        alpha: 0.28,
+                                      ),
+                              ),
+                              checkmarkColor: _profileLavender,
+                              labelStyle: theme.textTheme.labelLarge?.copyWith(
+                                color: selected
+                                    ? _profileLavender
+                                    : colorScheme.onSurface,
+                              ),
                               onSelected: (selected) {
                                 setState(() {
                                   _selectedGender = selected ? option : null;
                                 });
                               },
-                            ),
-                          )
+                            );
+                          })
                           .toList(growable: false),
                     ),
                     const SizedBox(height: AppTheme.sectionGap),
-                    Text(
-                      'Interested in',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
+                    _ProfileFieldLabel(title: 'Interested in'),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: AppTheme.cardGap,
                       runSpacing: AppTheme.cardGap,
                       children: _genderOptions
-                          .map(
-                            (option) => FilterChip(
+                          .map((option) {
+                            final selected = _selectedInterestedIn.contains(
+                              option,
+                            );
+                            return FilterChip(
                               label: Text(formatDisplayLabel(option)),
-                              selected: _selectedInterestedIn.contains(option),
+                              selected: selected,
+                              showCheckmark: true,
+                              selectedColor: _profileLavender.withValues(
+                                alpha: theme.brightness == Brightness.dark
+                                    ? 0.24
+                                    : 0.12,
+                              ),
+                              backgroundColor: colorScheme.surface.withValues(
+                                alpha: theme.brightness == Brightness.dark
+                                    ? 0.72
+                                    : 0.9,
+                              ),
+                              side: BorderSide(
+                                color: selected
+                                    ? _profileLavender.withValues(alpha: 0.3)
+                                    : colorScheme.outlineVariant.withValues(
+                                        alpha: 0.28,
+                                      ),
+                              ),
+                              checkmarkColor: _profileLavender,
+                              labelStyle: theme.textTheme.labelLarge?.copyWith(
+                                color: selected
+                                    ? _profileLavender
+                                    : colorScheme.onSurface,
+                              ),
                               onSelected: (selected) {
                                 setState(() {
                                   if (selected) {
@@ -225,8 +310,8 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                                   }
                                 });
                               },
-                            ),
-                          )
+                            );
+                          })
                           .toList(growable: false),
                     ),
                   ],
@@ -234,6 +319,8 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
               ),
               SizedBox(height: AppTheme.sectionSpacing()),
               _ProfileEditSection(
+                icon: Icons.tune_rounded,
+                accentColor: _profileRose,
                 title: 'Distance',
                 description: 'Choose how far the app should look for matches.',
                 child: Column(
@@ -258,21 +345,34 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                           Text(
                             '${_distanceSliderValue.round()} km',
                             style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700),
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: _profileRose,
+                                ),
                           ),
                       ],
                     ),
-                    Slider(
-                      value: _distanceSliderValue,
-                      min: 5,
-                      max: 150,
-                      divisions: 29,
-                      label: '${_distanceSliderValue.round()} km',
-                      onChanged: (value) {
-                        setState(() {
-                          _maxDistanceKm = value.round();
-                        });
-                      },
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        activeTrackColor: _profileRose,
+                        inactiveTrackColor: _profileRose.withValues(
+                          alpha: 0.18,
+                        ),
+                        thumbColor: _profileRose,
+                        overlayColor: _profileRose.withValues(alpha: 0.12),
+                      ),
+                      child: Slider(
+                        value: _distanceSliderValue,
+                        min: 5,
+                        max: 150,
+                        divisions: 29,
+                        label: '${_distanceSliderValue.round()} km',
+                        onChanged: (value) {
+                          setState(() {
+                            _maxDistanceKm = value.round();
+                          });
+                        },
+                      ),
                     ),
                     Text(
                       _maxDistanceKm == null
@@ -287,6 +387,8 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
               ),
               SizedBox(height: AppTheme.sectionSpacing()),
               _ProfileEditSection(
+                icon: Icons.edit_note_rounded,
+                accentColor: _profileSky,
                 title: 'About',
                 description:
                     'Share the details people connect with after the basics.',
@@ -303,6 +405,8 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
               ),
               SizedBox(height: AppTheme.sectionSpacing()),
               _ProfileEditSection(
+                icon: Icons.location_on_outlined,
+                accentColor: _profileMint,
                 title: 'Location',
                 description:
                     'Keep your area current so nearby matches stay relevant.',
@@ -312,9 +416,25 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          color: Theme.of(context).colorScheme.primary,
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: _profileMint.withValues(
+                              alpha: theme.brightness == Brightness.dark
+                                  ? 0.18
+                                  : 0.10,
+                            ),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(12),
+                            ),
+                          ),
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.location_on_outlined,
+                              color: _profileMint,
+                              size: 18,
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -331,6 +451,12 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _profileMint,
+                          side: BorderSide(
+                            color: _profileMint.withValues(alpha: 0.26),
+                          ),
+                        ),
                         onPressed: () async {
                           final resolved = await Navigator.of(context)
                               .push<ResolvedLocation>(
@@ -361,49 +487,71 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
               ),
               SizedBox(height: AppTheme.sectionSpacing()),
               _ProfileEditSection(
+                icon: Icons.auto_awesome_outlined,
+                accentColor: _profileLavender,
                 title: 'Fine-tune matching',
                 description:
                     'Optional filters stay here so the main edit flow stays quick.',
-                child: ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  childrenPadding: EdgeInsets.zero,
-                  title: const Text('Age and height filters'),
-                  subtitle: const Text('Leave blank to keep these flexible.'),
-                  children: [
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _minAgeController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Minimum preferred age',
-                        hintText: '25',
+                child: Theme(
+                  data: theme.copyWith(dividerColor: Colors.transparent),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: _profileLavender.withValues(
+                        alpha: theme.brightness == Brightness.dark
+                            ? 0.12
+                            : 0.05,
                       ),
-                      validator: _validatePositiveInteger,
+                      borderRadius: AppTheme.cardRadius,
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _maxAgeController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Maximum preferred age',
-                        hintText: '35',
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 2,
                       ),
-                      validator: (value) => _validateMaxAge(
-                        value,
-                        minAgeValue: _minAgeController.text,
+                      childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                      iconColor: _profileLavender,
+                      collapsedIconColor: _profileSlate,
+                      title: const Text('Age and height filters'),
+                      subtitle: const Text(
+                        'Leave blank to keep these flexible.',
                       ),
+                      children: [
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _minAgeController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Minimum preferred age',
+                            hintText: '25',
+                          ),
+                          validator: _validatePositiveInteger,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _maxAgeController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Maximum preferred age',
+                            hintText: '35',
+                          ),
+                          validator: (value) => _validateMaxAge(
+                            value,
+                            minAgeValue: _minAgeController.text,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _heightController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Height (cm)',
+                            hintText: '172',
+                          ),
+                          validator: _validatePositiveInteger,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _heightController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Height (cm)',
-                        hintText: '172',
-                      ),
-                      validator: _validatePositiveInteger,
-                    ),
-                  ],
+                  ),
                 ),
               ),
               SizedBox(height: AppTheme.sectionSpacing(compact: true)),
@@ -599,14 +747,7 @@ class _ProfileEditHeader extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final readOnly = snapshot.readOnly;
     final location = snapshot.editable.location?.label.trim();
-    final verificationText = readOnly.verified
-        ? 'Verified profile'
-        : 'Verification not complete';
-    final subtitleParts = <String>[
-      formatDisplayLabel(readOnly.state),
-      if (location != null && location.isNotEmpty) location,
-      verificationText,
-    ];
+    final isDark = theme.brightness == Brightness.dark;
     final photoUrl = readOnly.photoUrls.isEmpty
         ? null
         : readOnly.photoUrls.first;
@@ -614,59 +755,110 @@ class _ProfileEditHeader extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: colorScheme.surfaceContainerLowest,
+        color: Color.alphaBlend(
+          _profileSky.withValues(alpha: isDark ? 0.10 : 0.035),
+          colorScheme.surfaceContainerLow,
+        ),
         borderRadius: AppTheme.cardRadius,
+        prominent: true,
       ),
       child: Padding(
         padding: AppTheme.sectionPadding(compact: true),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (photoUrl != null)
-              UserAvatar(name: readOnly.name, photoUrl: photoUrl, radius: 24)
-            else
-              Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: const BorderRadius.all(Radius.circular(16)),
-                ),
-                child: Text(
-                  _initialFor(readOnly.name),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    readOnly.name,
-                    style: theme.textTheme.titleMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitleParts.join(' · '),
-                    style: theme.textTheme.bodySmall,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Edit the core details first. Optional filters stay lower on the page.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [_profileSky, _profileLavender],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: const BorderRadius.all(Radius.circular(18)),
                   ),
-                ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: photoUrl != null
+                        ? UserAvatar(
+                            name: readOnly.name,
+                            photoUrl: photoUrl,
+                            radius: 24,
+                          )
+                        : Container(
+                            width: 48,
+                            height: 48,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: colorScheme.surface,
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(15),
+                              ),
+                            ),
+                            child: Text(
+                              _initialFor(readOnly.name),
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: _profileSky,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        readOnly.name,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _ProfileStatusPill(
+                            icon: Icons.check_circle_outline_rounded,
+                            label: formatDisplayLabel(readOnly.state),
+                            color: _profileSky,
+                          ),
+                          if (location != null && location.isNotEmpty)
+                            _ProfileStatusPill(
+                              icon: Icons.location_on_outlined,
+                              label: location,
+                              color: _profileMint,
+                            ),
+                          _ProfileStatusPill(
+                            icon: readOnly.verified
+                                ? Icons.verified_rounded
+                                : Icons.verified_outlined,
+                            label: readOnly.verified
+                                ? 'Verified profile'
+                                : 'Verification pending',
+                            color: readOnly.verified
+                                ? _profileMint
+                                : _profileRose,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Edit the core details first. Optional filters stay lower on the page.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -683,37 +875,145 @@ String _initialFor(String value) {
 
 class _ProfileEditSection extends StatelessWidget {
   const _ProfileEditSection({
+    required this.icon,
+    required this.accentColor,
     required this.title,
     required this.description,
     required this.child,
   });
 
+  final IconData icon;
+  final Color accentColor;
   final String title;
   final String description;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Color.alphaBlend(
+          accentColor.withValues(alpha: isDark ? 0.12 : 0.04),
+          theme.colorScheme.surfaceContainerLow,
+        ),
+      ),
       child: Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ProfileSectionIconChip(icon: icon, color: accentColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: theme.textTheme.titleLarge),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppTheme.cardGap),
             child,
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ProfileSectionIconChip extends StatelessWidget {
+  const _ProfileSectionIconChip({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.10,
+        ),
+        borderRadius: const BorderRadius.all(Radius.circular(14)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(9),
+        child: Icon(icon, size: 18, color: color),
+      ),
+    );
+  }
+}
+
+class _ProfileStatusPill extends StatelessWidget {
+  const _ProfileStatusPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.09,
+        ),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.16)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileFieldLabel extends StatelessWidget {
+  const _ProfileFieldLabel({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(
+        context,
+      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
     );
   }
 }

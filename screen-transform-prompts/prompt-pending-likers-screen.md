@@ -1,3 +1,5 @@
+✅ implemented
+
 Status: pending design-language refresh
 
 Target file: `lib/features/browse/pending_likers_screen.dart`

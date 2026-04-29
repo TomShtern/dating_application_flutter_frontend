@@ -7,13 +7,17 @@ import '../../models/match_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'matches_provider.dart';
+
+const _matchRose = Color(0xFFD95F84);
+const _matchViolet = Color(0xFF8E6DE8);
+const _matchMint = Color(0xFF16A871);
+const _matchSlate = Color(0xFF667085);
 
 enum _MatchFilter { all, newMatches }
 
@@ -33,34 +37,24 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   Widget build(BuildContext context) {
     final matchesState = ref.watch(matchesProvider);
     final controller = ref.read(matchesControllerProvider);
-    final heroDescription = switch (matchesState) {
-      AsyncData(:final value) when value.matches.isEmpty =>
-        'New mutual likes will appear here.',
-      AsyncData(:final value) =>
-        '${value.matches.length} ${value.matches.length == 1 ? 'match' : 'matches'} so far',
-      _ => 'Your matches',
-    };
+    final totalMatches = matchesState.maybeWhen(
+      data: (value) => value.matches.length,
+      orElse: () => null,
+    );
+    final newMatchCount = matchesState.maybeWhen(
+      data: (value) => value.matches.where(_isNewMatch).length,
+      orElse: () => null,
+    );
 
     return SafeArea(
       top: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ShellHero(
-            compact: true,
-            eyebrowLabel: 'Connections',
-            header: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  tooltip: 'Refresh matches',
-                  onPressed: () => ref.invalidate(matchesProvider),
-                  icon: const Icon(Icons.refresh_rounded),
-                ),
-              ],
-            ),
-            title: 'Your matches',
-            description: heroDescription,
+          _MatchesIntroCard(
+            totalMatches: totalMatches,
+            newMatchCount: newMatchCount,
+            onRefresh: () => ref.invalidate(matchesProvider),
           ),
           _MatchFilterRow(
             selectedFilter: _selectedFilter,
@@ -81,8 +75,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: AppTheme.screenPadding(),
                       children: [
-                        AppAsyncState.empty(
-                          message: _emptyMatchesMessage(_selectedFilter),
+                        _MatchesEmptyState(
+                          filter: _selectedFilter,
                           onRefresh: controller.refresh,
                         ),
                       ],
@@ -129,6 +123,204 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   }
 }
 
+class _MatchesIntroCard extends StatelessWidget {
+  const _MatchesIntroCard({
+    required this.totalMatches,
+    required this.newMatchCount,
+    required this.onRefresh,
+  });
+
+  final int? totalMatches;
+  final int? newMatchCount;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final totalLabel = switch (totalMatches) {
+      null => 'Checking your connections',
+      0 => 'No matches yet',
+      final total => '$total ${total == 1 ? 'match' : 'matches'} ready',
+    };
+    final freshnessLabel = switch (newMatchCount) {
+      null => 'Refresh when you want the latest view.',
+      0 => 'Start a conversation with the people you liked back.',
+      final count when count == 1 => '1 new match is waiting to chat.',
+      final count => '$count new matches are waiting to chat.',
+    };
+
+    return Padding(
+      padding: AppTheme.screenPadding(compact: true),
+      child: DecoratedBox(
+        decoration: AppTheme.surfaceDecoration(
+          context,
+          color: Color.alphaBlend(
+            _matchRose.withValues(alpha: isDark ? 0.16 : 0.05),
+            colorScheme.surfaceContainerLow,
+          ),
+          prominent: true,
+        ),
+        child: Padding(
+          padding: AppTheme.sectionPadding(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Your matches',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          freshnessLabel,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    tooltip: 'Refresh matches',
+                    onPressed: onRefresh,
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _MatchesInfoPill(
+                    icon: Icons.favorite_rounded,
+                    label: totalLabel,
+                    color: _matchRose,
+                  ),
+                  _MatchesInfoPill(
+                    icon: Icons.mark_chat_unread_rounded,
+                    label: switch (newMatchCount) {
+                      null => 'Live status loading',
+                      0 => 'No new matches yet',
+                      final count when count == 1 => '1 new today',
+                      final count => '$count new today',
+                    },
+                    color: _matchViolet,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchesInfoPill extends StatelessWidget {
+  const _MatchesInfoPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.10,
+        ),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchesEmptyState extends StatelessWidget {
+  const _MatchesEmptyState({required this.filter, required this.onRefresh});
+
+  final _MatchFilter filter;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Color.alphaBlend(
+          _matchViolet.withValues(alpha: isDark ? 0.16 : 0.05),
+          theme.colorScheme.surfaceContainerLow,
+        ),
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _MatchesInfoPill(
+              icon: Icons.favorite_border_rounded,
+              label: filter == _MatchFilter.all
+                  ? 'Waiting for mutual likes'
+                  : 'No fresh matches today',
+              color: _matchRose,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              filter == _MatchFilter.all
+                  ? 'Keep liking profiles you genuinely connect with and your conversations will appear here.'
+                  : 'You are caught up for now. Check back after a few more likes or refresh later.',
+              style: theme.textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Refresh matches'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MatchFilterRow extends StatelessWidget {
   const _MatchFilterRow({
     required this.selectedFilter,
@@ -140,22 +332,30 @@ class _MatchFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _FilterChip(
-            label: 'All',
-            selected: selectedFilter == _MatchFilter.all,
-            onTap: () => onSelected(_MatchFilter.all),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'New',
-            selected: selectedFilter == _MatchFilter.newMatches,
-            onTap: () => onSelected(_MatchFilter.newMatches),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppTheme.pagePadding,
+        0,
+        AppTheme.pagePadding,
+        8,
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _FilterChip(
+              label: 'All',
+              selected: selectedFilter == _MatchFilter.all,
+              onTap: () => onSelected(_MatchFilter.all),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'New',
+              selected: selectedFilter == _MatchFilter.newMatches,
+              onTap: () => onSelected(_MatchFilter.newMatches),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -174,9 +374,12 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final selectedColor = selected ? _matchRose : _matchSlate;
+
     return Material(
       color: selected
-          ? AppTheme.matchAccent(context).withValues(alpha: 0.12)
+          ? _matchRose.withValues(alpha: isDark ? 0.18 : 0.10)
           : Theme.of(context).colorScheme.surface,
       borderRadius: AppTheme.chipRadius,
       child: InkWell(
@@ -187,7 +390,7 @@ class _FilterChip extends StatelessWidget {
             borderRadius: AppTheme.chipRadius,
             border: Border.all(
               color: selected
-                  ? AppTheme.matchAccent(context).withValues(alpha: 0.36)
+                  ? _matchRose.withValues(alpha: 0.34)
                   : Theme.of(
                       context,
                     ).colorScheme.outlineVariant.withValues(alpha: 0.28),
@@ -198,9 +401,7 @@ class _FilterChip extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: selected
-                    ? AppTheme.matchAccent(context)
-                    : AppTheme.matchTextSecondary(context),
+                color: selectedColor,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -253,11 +454,24 @@ class _MatchCard extends StatelessWidget {
     final photoUrl = _primaryPhotoUrl(match.primaryPhotoUrl, match.photoUrls);
     final isActive = _isActive(match.state);
     final isNew = _isNewMatch(match);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = Color.alphaBlend(
+      (isNew ? _matchRose : _matchViolet).withValues(
+        alpha: isDark ? (isNew ? 0.18 : 0.12) : (isNew ? 0.07 : 0.03),
+      ),
+      colorScheme.surfaceContainerLow,
+    );
 
     return ClipRRect(
       borderRadius: AppTheme.cardRadius,
       child: DecoratedBox(
-        decoration: AppTheme.surfaceDecoration(context),
+        decoration: AppTheme.surfaceDecoration(
+          context,
+          color: cardColor,
+          prominent: isNew,
+        ),
         child: Stack(
           children: [
             if (isNew)
@@ -266,9 +480,9 @@ class _MatchCard extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      gradient: AppTheme.accentGradient(context),
+                      gradient: _matchPrimaryGradient(context),
                     ),
-                    child: const SizedBox(width: 3),
+                    child: const SizedBox(width: 4),
                   ),
                 ),
               ),
@@ -312,11 +526,23 @@ class _MatchCard extends StatelessWidget {
                         ),
                       ),
                       SizedBox.square(
-                        dimension: 32,
-                        child: SafetyActionsButton(
-                          targetUserId: match.otherUserId,
-                          targetUserName: match.otherUserName,
-                          canUnmatch: true,
+                        dimension: 36,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface.withValues(
+                              alpha: isDark ? 0.72 : 0.92,
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant
+                                  .withValues(alpha: 0.18),
+                            ),
+                          ),
+                          child: SafetyActionsButton(
+                            targetUserId: match.otherUserId,
+                            targetUserName: match.otherUserName,
+                            canUnmatch: true,
+                          ),
                         ),
                       ),
                     ],
@@ -344,12 +570,12 @@ class _MatchCard extends StatelessWidget {
                             ),
                             label: const Text('View profile'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: AppTheme.matchAccent(context),
+                              foregroundColor: _matchSlate,
                               side: BorderSide(
-                                color: AppTheme.matchAccent(
-                                  context,
-                                ).withValues(alpha: 0.4),
+                                color: _matchSlate.withValues(alpha: 0.22),
                               ),
+                              backgroundColor: theme.colorScheme.surface
+                                  .withValues(alpha: isDark ? 0.76 : 0.88),
                               shape: const RoundedRectangleBorder(
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(999),
@@ -393,14 +619,14 @@ class _MatchAvatar extends StatelessWidget {
         DecoratedBox(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: AppTheme.accentGradient(context),
+            gradient: _matchPrimaryGradient(context),
           ),
           child: Padding(
             padding: const EdgeInsets.all(3),
             child: UserAvatar(
               name: match.otherUserName,
               photoUrl: photoUrl,
-              radius: 45,
+              radius: 43,
             ),
           ),
         ),
@@ -410,7 +636,7 @@ class _MatchAvatar extends StatelessWidget {
             bottom: 4,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: AppTheme.activeColor(context),
+                color: _matchMint,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: Theme.of(context).colorScheme.surface,
@@ -439,6 +665,13 @@ class _MatchSummaryBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = match.approximateLocation;
+    final activityLabel = isActive
+        ? 'Active now'
+        : formatDisplayLabel(match.state);
+    final fallbackSummary =
+        match.summaryLine ??
+        match.approximateLocation ??
+        'Say hi to start your first conversation.';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,87 +695,27 @@ class _MatchSummaryBlock extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        _FadedBio(
-          text:
-              match.summaryLine ??
-              match.approximateLocation ??
-              'Matched ${_formatRelativeMatchDate(match.createdAt)}',
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Icon(
-              Icons.favorite_rounded,
-              color: AppTheme.matchAccent(context),
-              size: 17,
-              shadows: const [
-                Shadow(
-                  color: Color(0x33E91E8C),
-                  blurRadius: 5,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                'Matched ${_formatRelativeMatchDate(match.createdAt)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.matchTextTertiary(context),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 7),
+        _FadedBio(text: fallbackSummary),
+        const SizedBox(height: 10),
         Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 7,
-          runSpacing: 4,
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            if (location != null) ...[
-              Icon(
-                Icons.location_on_rounded,
-                color: AppTheme.matchTextTertiary(context),
-                size: 15,
+            _MatchSignalPill(
+              icon: Icons.favorite_rounded,
+              label: 'Matched ${_formatRelativeMatchDate(match.createdAt)}',
+              color: _matchRose,
+            ),
+            if (location != null)
+              _MatchSignalPill(
+                icon: Icons.location_on_outlined,
+                label: location,
+                color: _matchViolet,
               ),
-              Text(
-                location,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.matchTextTertiary(context),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0,
-                ),
-              ),
-              Text(
-                '·',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppTheme.matchTextTertiary(context),
-                ),
-              ),
-            ],
-            if (isActive)
-              const _InlineDot()
-            else
-              Icon(
-                Icons.circle_outlined,
-                color: AppTheme.matchTextTertiary(context),
-                size: 10,
-              ),
-            Text(
-              isActive ? 'Active now' : formatDisplayLabel(match.state),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: isActive
-                    ? AppTheme.activeColor(context)
-                    : AppTheme.matchTextTertiary(context),
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0,
-              ),
+            _MatchSignalPill(
+              icon: isActive ? Icons.circle_rounded : Icons.schedule_rounded,
+              label: activityLabel,
+              color: isActive ? _matchMint : _matchSlate,
             ),
           ],
         ),
@@ -558,26 +731,14 @@ class _FadedBio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) {
-        return const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.white, Colors.white, Colors.transparent],
-          stops: [0, 0.82, 1],
-        ).createShader(bounds);
-      },
-      blendMode: BlendMode.dstIn,
-      child: Text(
-        text,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: AppTheme.matchTextSecondary(context),
-          fontSize: 13,
-          height: 1.28,
-          letterSpacing: 0,
-        ),
+    return Text(
+      text,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        color: AppTheme.matchTextSecondary(context),
+        fontSize: 13,
+        height: 1.3,
       ),
     );
   }
@@ -590,13 +751,13 @@ class _NewBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: AppTheme.accentGradient(context),
+        gradient: _matchPrimaryGradient(context),
         borderRadius: AppTheme.chipRadius,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         child: Text(
-          'NEW',
+          'NEW MATCH',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: Colors.white,
             fontSize: 10,
@@ -609,17 +770,44 @@ class _NewBadge extends StatelessWidget {
   }
 }
 
-class _InlineDot extends StatelessWidget {
-  const _InlineDot();
+class _MatchSignalPill extends StatelessWidget {
+  const _MatchSignalPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppTheme.activeColor(context),
-        shape: BoxShape.circle,
+        color: color.withValues(alpha: isDark ? 0.18 : 0.09),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
-      child: const SizedBox(width: 8, height: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -641,13 +829,13 @@ class _GradientActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: AppTheme.accentGradient(context),
+        gradient: _matchPrimaryGradient(context),
         borderRadius: AppTheme.chipRadius,
         boxShadow: [
           BoxShadow(
-            color: AppTheme.matchAccent(context).withValues(alpha: 0.20),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+            color: _matchRose.withValues(alpha: 0.20),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -704,17 +892,23 @@ List<MatchSummary> _filteredMatches(
   };
 }
 
-String _emptyMatchesMessage(_MatchFilter filter) {
-  return switch (filter) {
-    _MatchFilter.all =>
-      'No matches yet — keep liking profiles you connect with.',
-    _MatchFilter.newMatches => 'No new matches right now.',
-  };
-}
-
 bool _isNewMatch(MatchSummary match) {
   final elapsed = DateTime.now().difference(match.createdAt.toLocal());
   return !elapsed.isNegative && elapsed.inHours < 24;
+}
+
+LinearGradient _matchPrimaryGradient(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.dark
+      ? const LinearGradient(
+          colors: [Color(0xFF5F8FB8), Color(0xFF8E6DE8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        )
+      : const LinearGradient(
+          colors: [_matchRose, _matchViolet],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
 }
 
 String _formatRelativeMatchDate(DateTime value) {

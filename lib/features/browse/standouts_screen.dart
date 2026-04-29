@@ -6,7 +6,6 @@ import '../../models/standout.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/person_media_thumbnail.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import 'standouts_provider.dart';
@@ -17,6 +16,9 @@ enum _StandoutCardMode { grid, list }
 
 const double _standoutsCardGap = 16;
 const double _standoutsPhoneListBreakpoint = 520;
+const _standoutAmber = Color(0xFFD98914);
+const _standoutViolet = Color(0xFF8E6DE8);
+const _standoutRose = Color(0xFFD95F84);
 
 class StandoutsScreen extends ConsumerStatefulWidget {
   const StandoutsScreen({super.key});
@@ -43,6 +45,13 @@ class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: Navigator.of(context).canPop(),
+        toolbarHeight: 44,
+        title: Text(
+          'Standouts',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+        ),
         actionsPadding: const EdgeInsets.only(right: AppTheme.pagePadding - 8),
         actions: [
           IconButton(
@@ -132,64 +141,103 @@ class _StandoutsHero extends StatelessWidget {
         ? 'Tap the card to open the profile.'
         : 'Scroll for all ${snapshot.totalCandidates} profiles and tap any card to open one.';
 
-    return ShellHero(
-      key: const ValueKey('standouts-summary'),
-      eyebrowLabel: 'Browse',
-      eyebrowIcon: Icons.auto_awesome_rounded,
-      title: 'Standouts',
-      description: _humanizeStandoutsIntro(snapshot.message),
-      compact: true,
-      badges: [
-        ShellHeroPill(
-          icon: Icons.auto_awesome_rounded,
-          label: snapshot.totalCandidates == 1
-              ? '1 standout ready'
-              : '${snapshot.totalCandidates} standouts ready',
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppTheme.pagePadding,
+        0,
+        AppTheme.pagePadding,
+        10,
+      ),
+      child: DecoratedBox(
+        decoration: AppTheme.surfaceDecoration(
+          context,
+          color: _standoutSurfaceColor(
+            context,
+            _standoutAmber,
+            prominent: true,
+          ),
+          prominent: true,
         ),
-        ShellHeroPill(
-          icon: snapshot.fromCache ? Icons.cloud_outlined : Icons.bolt_rounded,
-          label: snapshot.fromCache ? 'Cached results' : 'Fresh picks',
-        ),
-      ],
-      footer: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
+        child: Padding(
+          padding: AppTheme.sectionPadding(compact: true),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'View',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
+                'Standouts',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              SegmentedButton<_StandoutsViewMode>(
-                key: const ValueKey('standouts-view-toggle'),
-                segments: const [
-                  ButtonSegment<_StandoutsViewMode>(
-                    value: _StandoutsViewMode.grid,
-                    icon: Icon(Icons.grid_view_rounded),
-                    label: Text('Grid'),
+              const SizedBox(height: 6),
+              Text(
+                _humanizeStandoutsIntro(snapshot.message),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _StandoutInfoPill(
+                    icon: Icons.auto_awesome_rounded,
+                    label: snapshot.totalCandidates == 1
+                        ? '1 standout ready'
+                        : '${snapshot.totalCandidates} standouts ready',
+                    color: _standoutAmber,
                   ),
-                  ButtonSegment<_StandoutsViewMode>(
-                    value: _StandoutsViewMode.list,
-                    icon: Icon(Icons.view_agenda_outlined),
-                    label: Text('List'),
+                  _StandoutInfoPill(
+                    icon: snapshot.fromCache
+                        ? Icons.cloud_outlined
+                        : Icons.bolt_rounded,
+                    label: snapshot.fromCache
+                        ? 'Cached results'
+                        : 'Fresh picks',
+                    color: _standoutViolet,
                   ),
                 ],
-                selected: {viewMode},
-                onSelectionChanged: (selection) {
-                  onViewModeChanged(selection.first);
-                },
               ),
+              const SizedBox(height: 12),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  Text(
+                    'View',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SegmentedButton<_StandoutsViewMode>(
+                    key: const ValueKey('standouts-view-toggle'),
+                    segments: const [
+                      ButtonSegment<_StandoutsViewMode>(
+                        value: _StandoutsViewMode.grid,
+                        icon: Icon(Icons.grid_view_rounded),
+                        label: Text('Grid'),
+                      ),
+                      ButtonSegment<_StandoutsViewMode>(
+                        value: _StandoutsViewMode.list,
+                        icon: Icon(Icons.view_agenda_outlined),
+                        label: Text('List'),
+                      ),
+                    ],
+                    selected: {viewMode},
+                    onSelectionChanged: (selection) {
+                      onViewModeChanged(selection.first);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(hintLabel, style: theme.textTheme.bodySmall),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(hintLabel, style: theme.textTheme.bodySmall),
-        ],
+        ),
       ),
     );
   }
@@ -280,13 +328,18 @@ class _StandoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final accentColor = standout.rank == 1 ? _standoutAmber : _standoutViolet;
 
     return DecoratedBox(
       key: ValueKey('standout-card-${standout.id}'),
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: colorScheme.surface.withValues(alpha: 0.94),
+        color: _standoutSurfaceColor(
+          context,
+          accentColor,
+          prominent: standout.rank == 1,
+        ),
+        prominent: standout.rank == 1,
       ),
       child: Material(
         color: Colors.transparent,
@@ -325,8 +378,8 @@ class _StandoutListContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final metadata = _standoutFreshness(standout);
+    final location = standout.approximateLocation;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,22 +420,34 @@ class _StandoutListContent extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    standout.approximateLocation ?? 'Standout profile',
-                    style: theme.textTheme.bodyMedium,
-                  ),
                   if (standout.summaryLine case final summary?) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       summary,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                      style: theme.textTheme.bodySmall,
                     ),
                   ],
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (location != null && location.isNotEmpty)
+                        _StandoutInfoPill(
+                          icon: Icons.location_on_outlined,
+                          label: location,
+                          color: _standoutViolet,
+                        ),
+                      if (metadata != null)
+                        _StandoutInfoPill(
+                          icon: Icons.schedule_rounded,
+                          label: metadata,
+                          color: _standoutRose,
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -397,13 +462,13 @@ class _StandoutListContent extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (metadata != null) ...[
-          const SizedBox(height: 8),
-          Text(metadata, style: theme.textTheme.labelMedium),
-        ],
         const SizedBox(height: 14),
         FilledButton.tonalIcon(
           onPressed: onOpenProfile,
+          style: FilledButton.styleFrom(
+            backgroundColor: _standoutRose.withValues(alpha: 0.14),
+            foregroundColor: _standoutRose,
+          ),
           icon: const Icon(Icons.arrow_forward_rounded, size: 18),
           label: const Text('Open profile'),
         ),
@@ -424,10 +489,11 @@ class _StandoutGridContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final metadata = _standoutFreshness(standout);
+    final location = standout.approximateLocation;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_rankLabel(standout) != null)
           Align(
@@ -435,46 +501,52 @@ class _StandoutGridContent extends StatelessWidget {
             child: _StandoutRankBadge(standout: standout, compact: true),
           ),
         const SizedBox(height: 8),
-        Center(
-          child: PersonMediaThumbnail(
-            key: ValueKey('standout-media-${standout.id}'),
-            name: standout.standoutUserName,
-            photoUrl: _primaryPhotoUrl(
-              standout.primaryPhotoUrl,
-              standout.photoUrls,
-            ),
-            width: 80,
-            height: 100,
-            borderRadius: AppTheme.cardRadius,
+        PersonMediaThumbnail(
+          key: ValueKey('standout-media-${standout.id}'),
+          name: standout.standoutUserName,
+          photoUrl: _primaryPhotoUrl(
+            standout.primaryPhotoUrl,
+            standout.photoUrls,
           ),
+          width: double.infinity,
+          height: 116,
+          borderRadius: AppTheme.cardRadius,
         ),
         const SizedBox(height: 8),
         Text(
           _standoutDisplayName(standout),
-          textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          standout.approximateLocation ?? 'Standout profile',
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall,
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (location != null && location.isNotEmpty)
+              _StandoutInfoPill(
+                icon: Icons.location_on_outlined,
+                label: location,
+                color: _standoutViolet,
+              ),
+            if (metadata != null)
+              _StandoutInfoPill(
+                icon: Icons.schedule_rounded,
+                label: metadata,
+                color: _standoutRose,
+              ),
+          ],
         ),
         const SizedBox(height: 10),
         Expanded(
           child: Text(
             _humanizeStandoutReason(standout),
-            textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -485,6 +557,8 @@ class _StandoutGridContent extends StatelessWidget {
           style: FilledButton.styleFrom(
             minimumSize: const Size(0, 40),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            backgroundColor: _standoutRose.withValues(alpha: 0.14),
+            foregroundColor: _standoutRose,
           ),
           child: const Text('Open profile'),
         ),
@@ -507,13 +581,25 @@ class _StandoutRankBadge extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isTopRank = standout.rank == 1;
 
     return DecoratedBox(
       key: ValueKey('standout-rank-${standout.id}'),
       decoration: BoxDecoration(
-        gradient: standout.rank == 1 ? AppTheme.accentGradient(context) : null,
-        color: standout.rank == 1 ? null : colorScheme.primaryContainer,
+        gradient: isTopRank
+            ? const LinearGradient(
+                colors: [_standoutRose, _standoutAmber],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: isTopRank
+            ? null
+            : _standoutAmber.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.22
+                    : 0.12,
+              ),
         borderRadius: AppTheme.chipRadius,
       ),
       child: Padding(
@@ -527,17 +613,55 @@ class _StandoutRankBadge extends StatelessWidget {
             Icon(
               Icons.auto_awesome_rounded,
               size: compact ? 14 : 16,
-              color: standout.rank == 1
-                  ? colorScheme.onPrimary
-                  : colorScheme.onPrimaryContainer,
+              color: isTopRank ? Colors.white : _standoutAmber,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: standout.rank == 1
-                    ? colorScheme.onPrimary
-                    : colorScheme.onPrimaryContainer,
+                color: isTopRank ? Colors.white : _standoutAmber,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StandoutInfoPill extends StatelessWidget {
+  const _StandoutInfoPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.18 : 0.10),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.16)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -615,4 +739,20 @@ String? _primaryPhotoUrl(String? primaryPhotoUrl, List<String> photoUrls) {
   }
 
   return photoUrls.isEmpty ? null : photoUrls.first;
+}
+
+Color _standoutSurfaceColor(
+  BuildContext context,
+  Color accent, {
+  bool prominent = false,
+}) {
+  final theme = Theme.of(context);
+  final alpha = prominent
+      ? (theme.brightness == Brightness.dark ? 0.18 : 0.06)
+      : (theme.brightness == Brightness.dark ? 0.12 : 0.04);
+
+  return Color.alphaBlend(
+    accent.withValues(alpha: alpha),
+    theme.colorScheme.surface,
+  );
 }

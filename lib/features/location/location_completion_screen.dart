@@ -7,6 +7,10 @@ import '../../shared/widgets/app_async_state.dart';
 import '../../theme/app_theme.dart';
 import 'location_provider.dart';
 
+const _locationSky = Color(0xFF188DC8);
+const _locationMint = Color(0xFF16A871);
+const _locationSlate = Color(0xFF596579);
+
 class LocationCompletionScreen extends ConsumerStatefulWidget {
   const LocationCompletionScreen({super.key});
 
@@ -80,14 +84,25 @@ class _LocationCompletionScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const SizedBox.shrink(),
+        toolbarHeight: 44,
+        title: Text(
+          'Location',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
       body: SafeArea(
         child: Padding(
-          padding: AppTheme.screenPadding(),
+          padding: const EdgeInsets.fromLTRB(
+            AppTheme.pagePadding,
+            0,
+            AppTheme.pagePadding,
+            AppTheme.pagePadding,
+          ),
           child: countriesState.when(
             data: (countries) {
               final availableCountries = countries
@@ -95,23 +110,54 @@ class _LocationCompletionScreenState
                   .toList(growable: false);
               final theme = Theme.of(context);
               final colorScheme = theme.colorScheme;
+              final isDark = theme.brightness == Brightness.dark;
 
               return ListView(
                 children: [
                   DecoratedBox(
-                    decoration: AppTheme.surfaceDecoration(context),
+                    decoration: AppTheme.surfaceDecoration(
+                      context,
+                      color: Color.alphaBlend(
+                        _locationSky.withValues(alpha: isDark ? 0.08 : 0.03),
+                        colorScheme.surfaceContainerLow,
+                      ),
+                    ),
                     child: Padding(
                       padding: AppTheme.sectionPadding(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Your area', style: theme.textTheme.titleLarge),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Choose the country and city you want us to use for nearby matches.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const _LocationLeadChip(
+                                icon: Icons.location_on_outlined,
+                                color: _locationSky,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Match area',
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Choose the country and city we should use for nearby matches.',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: AppTheme.cardGap),
                           DropdownButtonFormField<String>(
@@ -170,26 +216,41 @@ class _LocationCompletionScreenState
                             ),
                           ),
                           const SizedBox(height: 4),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            value: _allowApproximate,
-                            title: const Text(
-                              'Use the closest match if needed',
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: _locationSlate.withValues(
+                                alpha: isDark ? 0.12 : 0.04,
+                              ),
+                              borderRadius: AppTheme.cardRadius,
                             ),
-                            subtitle: const Text(
-                              "If we can't resolve the exact city or ZIP, we'll use the nearest available area.",
+                            child: SwitchListTile.adaptive(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 2,
+                              ),
+                              value: _allowApproximate,
+                              title: const Text(
+                                'Use the closest match if needed',
+                              ),
+                              subtitle: const Text(
+                                "If we can't resolve the exact city or ZIP, we'll use the nearest available area.",
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  _allowApproximate = value;
+                                });
+                              },
                             ),
-                            onChanged: (value) {
-                              setState(() {
-                                _allowApproximate = value;
-                              });
-                            },
                           ),
                           const SizedBox(height: AppTheme.sectionGap),
                           SizedBox(
                             width: double.infinity,
                             height: 48,
                             child: FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: _locationSky,
+                                foregroundColor: Colors.white,
+                              ),
                               onPressed: _saving
                                   ? null
                                   : () => _handleSave(context),
@@ -227,39 +288,32 @@ class _LocationCompletionScreenState
                   ),
                   SizedBox(height: AppTheme.sectionSpacing(compact: true)),
                   DecoratedBox(
-                    decoration: AppTheme.surfaceDecoration(context),
+                    decoration: AppTheme.surfaceDecoration(
+                      context,
+                      color: Color.alphaBlend(
+                        _locationSlate.withValues(alpha: isDark ? 0.10 : 0.03),
+                        colorScheme.surfaceContainerLow,
+                      ),
+                    ),
                     child: Padding(
                       padding: AppTheme.sectionPadding(compact: true),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Suggested cities',
-                            style: theme.textTheme.titleMedium,
+                          const _LocationSectionLabel(
+                            title: 'Suggested cities',
+                            accentColor: _locationSky,
                           ),
                           const SizedBox(height: AppTheme.cardGap),
                           citySuggestionsState.when(
                             data: (cities) {
                               if (cities.isEmpty) {
-                                return Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline_rounded,
-                                      size: 18,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Type at least two letters for city suggestions.',
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              color:
-                                                  colorScheme.onSurfaceVariant,
-                                            ),
-                                      ),
-                                    ),
-                                  ],
+                                return const _SuggestionStateNotice(
+                                  icon: Icons.search_rounded,
+                                  title: 'Start typing a city',
+                                  message:
+                                      'Type at least two letters to see the closest matches.',
+                                  color: _locationSky,
                                 );
                               }
                               return Column(
@@ -282,10 +336,9 @@ class _LocationCompletionScreenState
                                           ),
                                           child: Row(
                                             children: [
-                                              Icon(
-                                                Icons.place_outlined,
-                                                size: 18,
-                                                color: colorScheme.primary,
+                                              const _LocationLeadChip(
+                                                icon: Icons.place_outlined,
+                                                color: _locationSky,
                                               ),
                                               const SizedBox(width: 10),
                                               Expanded(
@@ -332,24 +385,22 @@ class _LocationCompletionScreenState
                               );
                             },
                             loading: () => const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Center(child: CircularProgressIndicator()),
+                              padding: EdgeInsets.symmetric(vertical: 4),
+                              child: _SuggestionStateNotice(
+                                icon: Icons.sync_rounded,
+                                title: 'Loading suggestions',
+                                message:
+                                    'Checking nearby city matches for you.',
+                                color: _locationSky,
+                                showSpinner: true,
+                              ),
                             ),
-                            error: (_, _) => Row(
-                              children: [
-                                Icon(
-                                  Icons.error_outline_rounded,
-                                  size: 18,
-                                  color: colorScheme.error,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    "We can't load city suggestions right now.",
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                ),
-                              ],
+                            error: (_, _) => const _SuggestionStateNotice(
+                              icon: Icons.error_outline_rounded,
+                              title: 'Suggestions unavailable',
+                              message:
+                                  "We can't load city suggestions right now.",
+                              color: _locationSlate,
                             ),
                           ),
                         ],
@@ -445,6 +496,130 @@ String _cityDisplayLabel(LocationCity city) {
   return '${city.name}, ${city.district}';
 }
 
+class _LocationLeadChip extends StatelessWidget {
+  const _LocationLeadChip({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.22 : 0.12,
+        ),
+        borderRadius: const BorderRadius.all(Radius.circular(14)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        child: Icon(icon, size: 18, color: color),
+      ),
+    );
+  }
+}
+
+class _LocationSectionLabel extends StatelessWidget {
+  const _LocationSectionLabel({required this.title, required this.accentColor});
+
+  final String title;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 18,
+          decoration: BoxDecoration(
+            color: accentColor,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuggestionStateNotice extends StatelessWidget {
+  const _SuggestionStateNotice({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.color,
+    this.showSpinner = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final Color color;
+  final bool showSpinner;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.14 : 0.07),
+        borderRadius: AppTheme.cardRadius,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _LocationLeadChip(icon: icon, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (showSpinner) ...[
+              const SizedBox(width: 12),
+              SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CountryFlagIcon extends StatelessWidget {
   const _CountryFlagIcon();
 
@@ -454,16 +629,15 @@ class _CountryFlagIcon extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: const BorderRadius.all(Radius.circular(10)),
+        color: _locationSky.withValues(
+          alpha: theme.brightness == Brightness.dark ? 0.20 : 0.10,
+        ),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
+        border: Border.all(color: _locationSky.withValues(alpha: 0.16)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Icon(
-          Icons.flag_outlined,
-          size: 18,
-          color: theme.colorScheme.primary,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Icon(Icons.flag_outlined, size: 18, color: _locationSky),
       ),
     );
   }
@@ -477,25 +651,31 @@ class _SelectedCityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.32),
+        color: _locationMint.withValues(
+          alpha: theme.brightness == Brightness.dark ? 0.18 : 0.10,
+        ),
         borderRadius: AppTheme.cardRadius,
-        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.18)),
+        border: Border.all(color: _locationMint.withValues(alpha: 0.18)),
       ),
       child: Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Row(
           children: [
-            Icon(Icons.check_circle_rounded, color: colorScheme.primary),
+            Icon(Icons.check_circle_rounded, color: _locationMint),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Selected city', style: theme.textTheme.labelLarge),
+                  Text(
+                    'Selected city',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: _locationMint,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(cityLabel, style: theme.textTheme.bodyMedium),
                 ],

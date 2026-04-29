@@ -18,6 +18,9 @@ import 'conversation_thread_provider.dart';
 
 enum _ConversationMenuAction { viewProfile, safetyActions, refresh }
 
+const _threadTeal = Color(0xFF009688);
+const _threadSky = Color(0xFF188DC8);
+
 class ConversationThreadScreen extends ConsumerStatefulWidget {
   const ConversationThreadScreen({
     super.key,
@@ -91,12 +94,20 @@ class _ConversationThreadScreenState
     final threadState = ref.watch(
       conversationThreadProvider(widget.conversation.id),
     );
+    final threadController = ref.read(
+      conversationThreadControllerProvider(widget.conversation.id),
+    );
     final trimmedMessage = _messageController.text.trim();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 46,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         title: InkWell(
           onTap: () => _handleConversationMenuAction(
             _ConversationMenuAction.viewProfile,
@@ -117,7 +128,9 @@ class _ConversationThreadScreenState
                       Text(
                         widget.conversation.otherUserName,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       if (_showActivityIndicator)
@@ -143,6 +156,15 @@ class _ConversationThreadScreenState
                               ),
                             ),
                           ],
+                        )
+                      else
+                        Text(
+                          'Conversation',
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                     ],
                   ),
@@ -174,7 +196,7 @@ class _ConversationThreadScreenState
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -183,16 +205,9 @@ class _ConversationThreadScreenState
                   builder: (context, constraints) => threadState.when(
                     data: (messages) {
                       if (messages.isEmpty) {
-                        return AppAsyncState.empty(
-                          message:
-                              'No messages yet. Say hello to start the conversation.',
-                          onRefresh: () => ref
-                              .read(
-                                conversationThreadControllerProvider(
-                                  widget.conversation.id,
-                                ),
-                              )
-                              .refresh(),
+                        return _ConversationThreadEmptyState(
+                          otherUserName: widget.conversation.otherUserName,
+                          onRefresh: threadController.refresh,
                         );
                       }
 
@@ -207,27 +222,14 @@ class _ConversationThreadScreenState
                               scrollController: _messagesScrollController,
                               messages: messages,
                               currentUserId: widget.currentUser.id,
-                              otherUserName: widget.conversation.otherUserName,
                               viewportHeight: constraints.maxHeight,
-                              onRefresh: () => ref
-                                  .read(
-                                    conversationThreadControllerProvider(
-                                      widget.conversation.id,
-                                    ),
-                                  )
-                                  .refresh(),
+                              onRefresh: threadController.refresh,
                             )
                           : _MessageList(
                               scrollController: _messagesScrollController,
                               messages: messages,
                               currentUserId: widget.currentUser.id,
-                              onRefresh: () => ref
-                                  .read(
-                                    conversationThreadControllerProvider(
-                                      widget.conversation.id,
-                                    ),
-                                  )
-                                  .refresh(),
+                              onRefresh: threadController.refresh,
                             );
                     },
                     loading: () => const AppAsyncState.loading(
@@ -237,9 +239,7 @@ class _ConversationThreadScreenState
                       message: error is ApiError
                           ? error.message
                           : 'Unable to load messages right now.',
-                      onRetry: () => ref.invalidate(
-                        conversationThreadProvider(widget.conversation.id),
-                      ),
+                      onRetry: threadController.refresh,
                     ),
                   ),
                 ),
@@ -248,11 +248,17 @@ class _ConversationThreadScreenState
               DecoratedBox(
                 decoration: AppTheme.surfaceDecoration(
                   context,
-                  color: colorScheme.surface.withValues(alpha: 0.97),
+                  color: Color.alphaBlend(
+                    _threadSky.withValues(alpha: isDark ? 0.08 : 0.03),
+                    Color.alphaBlend(
+                      _threadTeal.withValues(alpha: isDark ? 0.12 : 0.05),
+                      colorScheme.surface.withValues(alpha: 0.98),
+                    ),
+                  ),
                   prominent: true,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -264,8 +270,9 @@ class _ConversationThreadScreenState
                           textInputAction: TextInputAction.send,
                           onChanged: (_) => setState(() {}),
                           onSubmitted: (_) => _handleSend(),
-                          decoration: const InputDecoration(
-                            hintText: 'Say something kind, curious, or clear',
+                          decoration: InputDecoration(
+                            hintText:
+                                'Message ${widget.conversation.otherUserName}',
                             isDense: true,
                             filled: false,
                             border: InputBorder.none,
@@ -280,15 +287,28 @@ class _ConversationThreadScreenState
                       ),
                       const SizedBox(width: 8),
                       IconButton.filled(
-                        tooltip: 'Send message',
+                        tooltip: _isSending
+                            ? 'Sending message…'
+                            : 'Send message',
                         onPressed: trimmedMessage.isEmpty || _isSending
                             ? null
                             : _handleSend,
+                        style: IconButton.styleFrom(
+                          backgroundColor: _threadTeal,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor:
+                              colorScheme.surfaceContainerHighest,
+                          disabledForegroundColor: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.62),
+                        ),
                         icon: _isSending
                             ? const SizedBox.square(
                                 dimension: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Icon(Icons.arrow_upward_rounded),
@@ -503,7 +523,6 @@ class _SparseMessageList extends StatelessWidget {
     required this.scrollController,
     required this.messages,
     required this.currentUserId,
-    required this.otherUserName,
     required this.viewportHeight,
     required this.onRefresh,
   });
@@ -511,7 +530,6 @@ class _SparseMessageList extends StatelessWidget {
   final ScrollController scrollController;
   final List<MessageDto> messages;
   final String currentUserId;
-  final String otherUserName;
   final double viewportHeight;
   final Future<void> Function() onRefresh;
 
@@ -521,25 +539,19 @@ class _SparseMessageList extends StatelessWidget {
       messages,
       currentUserId,
     );
-    final topInset = _sparseThreadTopInset(viewportHeight);
 
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: SingleChildScrollView(
         controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.only(top: topInset, bottom: 4),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: viewportHeight - topInset - 4),
+          constraints: BoxConstraints(minHeight: viewportHeight - 8),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _SparseThreadSummaryCard(
-                otherUserName: otherUserName,
-                messageCount: messages.length,
-                startedAt: messages.first.sentAt,
-              ),
-              const SizedBox(height: 14),
               for (final entry in entries)
                 Padding(
                   padding: EdgeInsets.only(top: entry.topSpacing),
@@ -555,76 +567,74 @@ class _SparseMessageList extends StatelessWidget {
   }
 }
 
-double _sparseThreadTopInset(double viewportHeight) {
-  return (viewportHeight * 0.18).clamp(72.0, 160.0).toDouble();
-}
-
-class _SparseThreadSummaryCard extends StatelessWidget {
-  const _SparseThreadSummaryCard({
+class _ConversationThreadEmptyState extends StatelessWidget {
+  const _ConversationThreadEmptyState({
     required this.otherUserName,
-    required this.messageCount,
-    required this.startedAt,
+    required this.onRefresh,
   });
 
   final String otherUserName;
-  final int messageCount;
-  final DateTime startedAt;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final countLabel = messageCount == 1
-        ? '1 message so far'
-        : '$messageCount messages so far';
-    final summaryGradient = LinearGradient(
-      colors: theme.brightness == Brightness.dark
-          ? [colorScheme.surfaceContainerLow, AppTheme.matchTintColor(context)]
-          : [AppTheme.matchTint, colorScheme.surface],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
+    final isDark = theme.brightness == Brightness.dark;
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        gradient: summaryGradient,
-        prominent: true,
+        color: Color.alphaBlend(
+          _threadSky.withValues(alpha: isDark ? 0.08 : 0.03),
+          Color.alphaBlend(
+            _threadTeal.withValues(alpha: isDark ? 0.14 : 0.05),
+            colorScheme.surfaceContainerLow,
+          ),
+        ),
       ),
       child: Padding(
         padding: AppTheme.sectionPadding(compact: true),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserAvatar(name: otherUserName, radius: 32),
-            const SizedBox(height: 12),
-            Text(
-              otherUserName,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '$countLabel · Started ${formatShortDate(startedAt)}',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: _threadTeal.withValues(alpha: isDark ? 0.22 : 0.12),
+                borderRadius: const BorderRadius.all(Radius.circular(14)),
+              ),
+              child: SizedBox.square(
+                dimension: 44,
+                child: Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: isDark ? const Color(0xFF91E2DC) : _threadTeal,
+                  size: 22,
+                ),
               ),
             ),
-            const SizedBox(height: 14),
-            DecoratedBox(
-              decoration: AppTheme.glassDecoration(context),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                child: Text(
-                  'Be genuine, be curious',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.primary,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No messages yet',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Start the conversation with $otherUserName when you\'re ready.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: onRefresh,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Refresh'),
+                  ),
+                ],
               ),
             ),
           ],
@@ -641,21 +651,41 @@ class _MessageDayDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Center(
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHigh,
+          color: Color.alphaBlend(
+            _threadSky.withValues(alpha: isDark ? 0.10 : 0.04),
+            colorScheme.surfaceContainerHigh,
+          ),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.18),
+          ),
           borderRadius: const BorderRadius.all(Radius.circular(999)),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                size: 12,
+                color: isDark ? const Color(0xFF9FD2EF) : _threadSky,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -673,16 +703,20 @@ class _MessageBubble extends StatelessWidget {
     final message = entry.message!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final incomingBubbleColor = theme.brightness == Brightness.dark
-        ? colorScheme.surfaceContainerLow
-        : AppTheme.matchTint;
+    final isDark = theme.brightness == Brightness.dark;
+    final incomingBubbleColor = Color.alphaBlend(
+      _threadSky.withValues(alpha: isDark ? 0.10 : 0.035),
+      colorScheme.surfaceContainerLow,
+    );
+    final outgoingTextColor = isDark
+        ? const Color(0xFFEAFBFA)
+        : const Color(0xFF0F4D54);
     final bubbleDecoration = entry.isOutgoing
         ? BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                colorScheme.primaryContainer,
-                colorScheme.primaryContainer.withValues(alpha: 0.70),
-              ],
+              colors: isDark
+                  ? const [Color(0xFF0E3C41), Color(0xFF145058)]
+                  : const [Color(0xFFD8F5F1), Color(0xFFC8EFE9)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -690,6 +724,9 @@ class _MessageBubble extends StatelessWidget {
           )
         : BoxDecoration(
             color: incomingBubbleColor,
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.16),
+            ),
             borderRadius: _messageBubbleRadius(entry),
           );
 
@@ -706,7 +743,15 @@ class _MessageBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(message.content),
+                Text(
+                  message.content,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: entry.isOutgoing
+                        ? outgoingTextColor
+                        : colorScheme.onSurface,
+                    height: 1.34,
+                  ),
+                ),
                 if (entry.showTimestamp) ...[
                   const SizedBox(height: 6),
                   Align(
@@ -716,7 +761,10 @@ class _MessageBubble extends StatelessWidget {
                     child: Text(
                       _formatMessageTime(message.sentAt),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                        color: entry.isOutgoing
+                            ? outgoingTextColor.withValues(alpha: 0.78)
+                            : colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

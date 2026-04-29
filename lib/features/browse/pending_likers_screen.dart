@@ -5,35 +5,18 @@ import '../../api/api_error.dart';
 import '../../models/pending_liker.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/compact_context_strip.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'pending_likers_provider.dart';
 
+const _pendingRose = Color(0xFFD95F84);
+const _pendingCoral = Color(0xFFE28B6C);
+const _pendingViolet = Color(0xFF8E6DE8);
+
 class PendingLikersScreen extends ConsumerWidget {
   const PendingLikersScreen({super.key});
-
-  Widget _buildHero(List<PendingLiker> likers) {
-    return ShellHero(
-      compact: true,
-      eyebrowLabel: 'Pending likes',
-      eyebrowIcon: Icons.favorite_rounded,
-      title: 'People who liked you',
-      description:
-          'Open a profile for a closer look, or refresh to see new interest as it lands.',
-      badges: likers.isNotEmpty
-          ? [
-              ShellHeroPill(
-                icon: Icons.people_outline_rounded,
-                label: '${likers.length} waiting',
-              ),
-            ]
-          : const <Widget>[],
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,7 +25,13 @@ class PendingLikersScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const SizedBox.shrink(),
+        toolbarHeight: 44,
+        title: Text(
+          'Likes you',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+        ),
         actions: [
           IconButton(
             tooltip: 'Refresh people who liked you',
@@ -56,7 +45,15 @@ class PendingLikersScreen extends ConsumerWidget {
           data: (likers) => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHero(likers),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppTheme.pagePadding,
+                  0,
+                  AppTheme.pagePadding,
+                  10,
+                ),
+                child: _PendingLikersIntroCard(waitingCount: likers.length),
+              ),
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: controller.refresh,
@@ -64,19 +61,18 @@ class PendingLikersScreen extends ConsumerWidget {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: AppTheme.screenPadding(),
                     children: [
-                      if (likers.isNotEmpty) ...[
-                        _PendingLikersSummaryStrip(waitingCount: likers.length),
-                        SizedBox(
-                          height: AppTheme.sectionSpacing(compact: true),
-                        ),
-                      ],
                       if (likers.isEmpty)
-                        AppAsyncState.empty(
-                          message:
-                              'No likes are waiting right now. New interest will show up here.',
+                        _PendingLikersEmptyState(
+                          waitingCount: likers.length,
                           onRefresh: controller.refresh,
                         )
-                      else
+                      else ...[
+                        _PendingLikersSectionLabel(
+                          title: likers.length == 1
+                              ? '1 person waiting'
+                              : '${likers.length} people waiting',
+                        ),
+                        SizedBox(height: AppTheme.listSpacing(compact: true)),
                         ...likers.map(
                           (liker) => Padding(
                             padding: EdgeInsets.only(
@@ -85,6 +81,7 @@ class PendingLikersScreen extends ConsumerWidget {
                             child: _PendingLikerCard(liker: liker),
                           ),
                         ),
+                      ],
                     ],
                   ),
                 ),
@@ -112,8 +109,8 @@ class PendingLikersScreen extends ConsumerWidget {
   }
 }
 
-class _PendingLikersSummaryStrip extends StatelessWidget {
-  const _PendingLikersSummaryStrip({required this.waitingCount});
+class _PendingLikersIntroCard extends StatelessWidget {
+  const _PendingLikersIntroCard({required this.waitingCount});
 
   final int waitingCount;
 
@@ -121,79 +118,193 @@ class _PendingLikersSummaryStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer.withValues(alpha: 0.86),
-            colorScheme.tertiaryContainer.withValues(alpha: 0.46),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Color.alphaBlend(
+          _pendingRose.withValues(alpha: isDark ? 0.16 : 0.06),
+          colorScheme.surfaceContainerLow,
         ),
-        borderRadius: AppTheme.panelRadius,
-        boxShadow: AppTheme.softShadow(context),
+        prominent: true,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: colorScheme.surface.withValues(alpha: 0.55),
-                shape: BoxShape.circle,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Icon(
-                  Icons.favorite_rounded,
-                  size: 18,
-                  color: colorScheme.primary,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: _pendingRose.withValues(alpha: isDark ? 0.22 : 0.12),
+                    borderRadius: const BorderRadius.all(Radius.circular(14)),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Icon(
+                      Icons.favorite_rounded,
+                      size: 18,
+                      color: _pendingRose,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Already interested',
-                          style: theme.textTheme.titleMedium,
+                      Text(
+                        waitingCount == 1
+                            ? '1 person liked you'
+                            : '$waitingCount people liked you',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      TweenAnimationBuilder<int>(
-                        tween: IntTween(begin: 0, end: waitingCount),
-                        duration: const Duration(milliseconds: 620),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, _) {
-                          final label = value == 1
-                              ? '1 person waiting'
-                              : '$value people waiting';
-                          return Text(
-                            label,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: colorScheme.primary,
-                            ),
-                          );
-                        },
+                      const SizedBox(height: 4),
+                      Text(
+                        'Open a profile for a closer look or refresh to catch new likes as they land.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Tap a profile for a closer look.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _PendingInfoPill(
+              icon: Icons.people_outline_rounded,
+              label: waitingCount == 1
+                  ? '1 waiting now'
+                  : '$waitingCount waiting now',
+              color: _pendingCoral,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingLikersSectionLabel extends StatelessWidget {
+  const _PendingLikersSectionLabel({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 18,
+          decoration: BoxDecoration(
+            color: _pendingRose,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PendingLikersEmptyState extends StatelessWidget {
+  const _PendingLikersEmptyState({
+    required this.waitingCount,
+    required this.onRefresh,
+  });
+
+  final int waitingCount;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Color.alphaBlend(
+          _pendingViolet.withValues(alpha: isDark ? 0.16 : 0.05),
+          theme.colorScheme.surfaceContainerLow,
+        ),
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _PendingInfoPill(
+              icon: Icons.favorite_border_rounded,
+              label: 'No pending likes right now',
+              color: _pendingRose,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'New interest will show up here when someone likes your profile.',
+              style: theme.textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Refresh'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingInfoPill extends StatelessWidget {
+  const _PendingInfoPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.18 : 0.10),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -223,12 +334,16 @@ class _PendingLikerCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final likedAtLabel = _pendingLikerLikedAtLabel(liker);
     final photoUrl = _primaryPhotoUrl(liker.primaryPhotoUrl, liker.photoUrls);
+    final isDark = theme.brightness == Brightness.dark;
+    final surfaceColor = Color.alphaBlend(
+      _pendingRose.withValues(alpha: isDark ? 0.14 : 0.05),
+      colorScheme.surface,
+    );
+    final summary =
+        liker.summaryLine ?? 'Open ${liker.name}’s profile for a closer look.';
 
     return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        color: colorScheme.surface.withValues(alpha: 0.94),
-      ),
+      decoration: AppTheme.surfaceDecoration(context, color: surfaceColor),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -236,90 +351,145 @@ class _PendingLikerCard extends StatelessWidget {
           onTap: () => _openProfile(context),
           child: Padding(
             padding: AppTheme.sectionPadding(compact: true),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(
-                  key: ValueKey('pending-liker-media-${liker.userId}'),
-                  radius: 28,
-                  photoUrl: photoUrl,
-                  name: liker.name,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              liker.age > 0
-                                  ? '${liker.name}, ${liker.age}'
-                                  : liker.name,
-                              style: theme.textTheme.titleMedium,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [_pendingRose, _pendingViolet],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                           ),
-                          SafetyActionsButton(
-                            targetUserId: liker.userId,
-                            targetUserName: liker.name,
-                            tooltip: 'More actions for ${liker.name}',
+                          child: Padding(
+                            padding: const EdgeInsets.all(3),
+                            child: UserAvatar(
+                              key: ValueKey(
+                                'pending-liker-media-${liker.userId}',
+                              ),
+                              radius: 30,
+                              photoUrl: photoUrl,
+                              name: liker.name,
+                            ),
                           ),
-                        ],
-                      ),
-                      if (liker.summaryLine case final summary?) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          '“$summary”',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface,
-                            fontStyle: FontStyle.italic,
+                        ),
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: _pendingRose,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: colorScheme.surface,
+                                width: 2,
+                              ),
+                            ),
+                            child: const SizedBox(width: 14, height: 14),
                           ),
                         ),
                       ],
-                      const SizedBox(height: 10),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Wrap(
-                              spacing: 12,
-                              runSpacing: 6,
-                              children: [
-                                if (likedAtLabel != null)
-                                  CompactContextStrip(
-                                    leadingIcon: Icons.schedule_rounded,
-                                    label: likedAtLabel,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  liker.age > 0
+                                      ? '${liker.name}, ${liker.age}'
+                                      : liker.name,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
                                   ),
-                                if (liker.approximateLocation
-                                    case final location?)
-                                  CompactContextStrip(
-                                    leadingIcon: Icons.location_on_outlined,
-                                    label: location,
+                                ),
+                              ),
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surface.withValues(
+                                    alpha: isDark ? 0.76 : 0.92,
                                   ),
-                              ],
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: colorScheme.outlineVariant
+                                        .withValues(alpha: 0.18),
+                                  ),
+                                ),
+                                child: SafetyActionsButton(
+                                  targetUserId: liker.userId,
+                                  targetUserName: liker.name,
+                                  tooltip: 'More actions for ${liker.name}',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            summary,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurface,
+                              height: 1.35,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          TextButton.icon(
-                            onPressed: () => _openProfile(context),
-                            icon: const Icon(
-                              Icons.open_in_new_rounded,
-                              size: 16,
-                            ),
-                            label: const Text('Open profile'),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              if (likedAtLabel != null)
+                                _PendingInfoPill(
+                                  icon: Icons.schedule_rounded,
+                                  label: likedAtLabel,
+                                  color: _pendingCoral,
+                                ),
+                              if (liker.approximateLocation
+                                  case final location?)
+                                _PendingInfoPill(
+                                  icon: Icons.location_on_outlined,
+                                  label: location,
+                                  color: _pendingViolet,
+                                ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openProfile(context),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                    label: const Text('Open profile'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _pendingRose,
+                      side: BorderSide(
+                        color: _pendingRose.withValues(alpha: 0.28),
+                      ),
+                      backgroundColor: colorScheme.surface.withValues(
+                        alpha: isDark ? 0.76 : 0.88,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                    ),
                   ),
                 ),
               ],

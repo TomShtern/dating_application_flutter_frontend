@@ -1,3 +1,5 @@
+✅ implemented
+
 Status: pending reference-maintenance refresh
 
 Target file: `lib/features/notifications/notifications_screen.dart`

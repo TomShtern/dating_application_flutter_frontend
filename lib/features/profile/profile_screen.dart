@@ -9,13 +9,17 @@ import '../../shared/formatting/display_text.dart';
 import '../../shared/media/media_url.dart';
 import '../../shared/widgets/highlight_tag_row.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../location/location_completion_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'profile_edit_screen.dart';
 import 'profile_provider.dart';
+
+const _profileRose = Color(0xFFD95F84);
+const _profileViolet = Color(0xFF8E6DE8);
+const _profileMint = Color(0xFF16A871);
+const _profileSky = Color(0xFF188DC8);
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen.currentUser({super.key}) : userId = null, userName = null;
@@ -55,32 +59,19 @@ class ProfileScreen extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ShellHero(
-                  compact: true,
-                  eyebrowLabel: 'Your profile',
-                  header: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        tooltip: 'Edit profile',
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) => const ProfileEditScreen(),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.edit_outlined),
-                      ),
-                      IconButton(
-                        tooltip: 'Refresh profile',
-                        onPressed: controller.refreshCurrentUserProfile,
-                        icon: const Icon(Icons.refresh_rounded),
-                      ),
-                    ],
+                Padding(
+                  padding: AppTheme.screenPadding(compact: true),
+                  child: _CurrentUserProfileIntroCard(
+                    readinessLabel: readinessLabel,
+                    onEditProfile: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) => const ProfileEditScreen(),
+                        ),
+                      );
+                    },
+                    onRefresh: controller.refreshCurrentUserProfile,
                   ),
-                  title: _headline(detail),
-                  description: readinessLabel,
                 ),
                 Expanded(
                   child: SingleChildScrollView(
@@ -128,7 +119,13 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const SizedBox.shrink(),
+        toolbarHeight: 44,
+        title: Text(
+          'Profile',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -178,6 +175,79 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
+class _CurrentUserProfileIntroCard extends StatelessWidget {
+  const _CurrentUserProfileIntroCard({
+    required this.readinessLabel,
+    required this.onEditProfile,
+    required this.onRefresh,
+  });
+
+  final String readinessLabel;
+  final VoidCallback onEditProfile;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: _profileSurfaceColor(context, _profileRose, prominent: true),
+        prominent: true,
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Your profile',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Keep photos, bio, and preferences current.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  tooltip: 'Edit profile',
+                  onPressed: onEditProfile,
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Refresh profile',
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _ProfileMetaPill(
+              icon: Icons.tune_rounded,
+              label: readinessLabel,
+              color: _profileRose,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileContent extends StatelessWidget {
   const _ProfileContent({
     required this.detail,
@@ -201,7 +271,7 @@ class _ProfileContent extends StatelessWidget {
         _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
         if (!isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
-          _PhotoSection(photoUrls: detail.photoUrls),
+          _PhotoSection(photoUrls: detail.photoUrls, isCurrentUser: false),
         ],
         if (!isCurrentUser && presentationContextState != null) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
@@ -210,6 +280,7 @@ class _ProfileContent extends StatelessWidget {
         SizedBox(height: AppTheme.sectionSpacing()),
         _ProfileSection(
           icon: Icons.notes_rounded,
+          accentColor: _profileRose,
           title: _aboutTitle(detail),
           value: _bio(detail, isCurrentUser: isCurrentUser),
         ),
@@ -225,7 +296,7 @@ class _ProfileContent extends StatelessWidget {
         _ProfileDetailsCard(detail: detail, isCurrentUser: isCurrentUser),
         if (isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
-          _PhotoSection(photoUrls: detail.photoUrls),
+          _PhotoSection(photoUrls: detail.photoUrls, isCurrentUser: true),
         ],
       ],
     );
@@ -243,11 +314,13 @@ class _PresentationContextSection extends StatelessWidget {
       data: (contextData) => _PresentationContextCard(contextData: contextData),
       loading: () => const _ProfileSection(
         icon: Icons.lightbulb_outline_rounded,
+        accentColor: _profileViolet,
         title: 'Why this profile is shown',
         value: 'Loading recommendation context...',
       ),
       error: (error, stackTrace) => const _ProfileSection(
         icon: Icons.lightbulb_outline_rounded,
+        accentColor: _profileViolet,
         title: 'Why this profile is shown',
         value: 'Recommendation context is unavailable right now.',
       ),
@@ -264,7 +337,11 @@ class _PresentationContextCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = contextData.details;
 
-    return Card(
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: _profileSurfaceColor(context, _profileViolet),
+      ),
       child: Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Column(
@@ -272,20 +349,9 @@ class _PresentationContextCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: const BorderRadius.all(Radius.circular(16)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(
-                      Icons.lightbulb_outline_rounded,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
+                const _ProfileIconChip(
+                  icon: Icons.lightbulb_outline_rounded,
+                  color: _profileViolet,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -320,7 +386,7 @@ class _PresentationContextCard extends StatelessWidget {
                         child: Icon(
                           Icons.check_circle_outline,
                           size: 16,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: _profileViolet,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -345,10 +411,20 @@ class _ProfileHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final readiness = _profileReadiness(detail);
 
-    return Card(
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: _profileSurfaceColor(
+          context,
+          isCurrentUser ? _profileSky : _profileViolet,
+          prominent: true,
+        ),
+        prominent: true,
+      ),
       child: Padding(
         padding: AppTheme.sectionPadding(),
         child: Column(
@@ -357,12 +433,27 @@ class _ProfileHeroCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                UserAvatar(
-                  name: _displayName(detail),
-                  photoUrl: detail.photoUrls.isEmpty
-                      ? null
-                      : detail.photoUrls.first,
-                  radius: 38,
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isCurrentUser
+                          ? const [_profileSky, _profileViolet]
+                          : const [_profileRose, _profileViolet],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: UserAvatar(
+                      name: _displayName(detail),
+                      photoUrl: detail.photoUrls.isEmpty
+                          ? null
+                          : detail.photoUrls.first,
+                      radius: 38,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -393,15 +484,18 @@ class _ProfileHeroCard extends StatelessWidget {
                           _ProfileMetaPill(
                             icon: Icons.verified_user_outlined,
                             label: _state(detail),
+                            color: _profileRose,
                           ),
                           _ProfileMetaPill(
                             icon: Icons.location_on_outlined,
                             label: _approximateLocation(detail),
+                            color: _profileMint,
                           ),
                           if (detail.maxDistanceKm > 0)
                             _ProfileMetaPill(
                               icon: Icons.route_outlined,
                               label: _distancePreference(detail),
+                              color: _profileViolet,
                             ),
                         ],
                       ),
@@ -410,21 +504,26 @@ class _ProfileHeroCard extends StatelessWidget {
                 ),
               ],
             ),
+            SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+            Text(
+              isCurrentUser
+                  ? 'A quick look at what people currently see when they open your profile.'
+                  : _heroSummary(detail, isCurrentUser: isCurrentUser),
+              style: theme.textTheme.bodyMedium,
+            ),
             if (isCurrentUser) ...[
-              SizedBox(height: AppTheme.sectionSpacing()),
+              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
               ClipRRect(
                 borderRadius: const BorderRadius.all(Radius.circular(999)),
                 child: LinearProgressIndicator(
                   minHeight: 8,
+                  color: _profileSky,
+                  backgroundColor: _profileSky.withValues(alpha: 0.14),
                   value: readiness.progress,
                 ),
               ),
             ] else ...[
               SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-              Text(
-                _heroSummary(detail, isCurrentUser: isCurrentUser),
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
             ],
           ],
         ),
@@ -434,34 +533,40 @@ class _ProfileHeroCard extends StatelessWidget {
 }
 
 class _ProfileMetaPill extends StatelessWidget {
-  const _ProfileMetaPill({required this.icon, required this.label});
+  const _ProfileMetaPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   final IconData icon;
   final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: color.withValues(alpha: isDark ? 0.18 : 0.08),
         borderRadius: AppTheme.chipRadius,
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.32),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.16)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: colorScheme.primary),
+            Icon(icon, size: 15, color: color),
             const SizedBox(width: 6),
             Flexible(
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.labelMedium,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -483,22 +588,45 @@ class _ProfileDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: _profileSurfaceColor(
+          context,
+          isCurrentUser ? _profileSky : _profileViolet,
+        ),
+      ),
       child: Padding(
         padding: AppTheme.sectionPadding(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              isCurrentUser ? 'Profile details' : 'Shared details',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              isCurrentUser
-                  ? 'The signals currently shaping discovery.'
-                  : 'The basics this person has chosen to share.',
-              style: Theme.of(context).textTheme.bodySmall,
+            Row(
+              children: [
+                _ProfileIconChip(
+                  icon: Icons.dashboard_customize_outlined,
+                  color: isCurrentUser ? _profileSky : _profileViolet,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isCurrentUser ? 'Profile details' : 'Shared details',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isCurrentUser
+                            ? 'The signals currently shaping discovery.'
+                            : 'The basics this person has chosen to share.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: AppTheme.sectionSpacing(compact: true)),
             Wrap(
@@ -509,26 +637,31 @@ class _ProfileDetailsCard extends StatelessWidget {
                   icon: Icons.person_outline_rounded,
                   title: 'Gender',
                   value: _gender(detail),
+                  color: _profileSky,
                 ),
                 _ProfileFactTile(
                   icon: Icons.favorite_outline_rounded,
                   title: 'Interested in',
                   value: _interestedIn(detail),
+                  color: _profileRose,
                 ),
                 _ProfileFactTile(
                   icon: Icons.location_on_outlined,
                   title: 'Location',
                   value: _approximateLocation(detail),
+                  color: _profileMint,
                 ),
                 _ProfileFactTile(
                   icon: Icons.route_outlined,
                   title: 'Distance',
                   value: _distancePreference(detail),
+                  color: _profileViolet,
                 ),
                 _ProfileFactTile(
                   icon: Icons.verified_user_outlined,
                   title: 'Status',
                   value: _state(detail),
+                  color: _profileSky,
                 ),
               ],
             ),
@@ -544,34 +677,40 @@ class _ProfileFactTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.value,
+    required this.color,
   });
 
   final IconData icon;
   final String title;
   final String value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 142, maxWidth: 168),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLow,
+          color: color.withValues(alpha: isDark ? 0.14 : 0.06),
           borderRadius: AppTheme.cardRadius,
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.26),
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.14)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 18, color: colorScheme.primary),
+              Icon(icon, size: 18, color: color),
               const SizedBox(height: 8),
-              Text(title, style: Theme.of(context).textTheme.labelMedium),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 3),
               Text(
                 value,
@@ -614,14 +753,12 @@ class _ProfileCompletenessCard extends StatelessWidget {
     final missingLocation = !checklist['Choose a location']!;
     final colorScheme = Theme.of(context).colorScheme;
 
+    final accent = isComplete ? _profileMint : _profileRose;
+
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        gradient: LinearGradient(
-          colors: [colorScheme.surface, colorScheme.surfaceContainerLow],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: _profileSurfaceColor(context, accent),
       ),
       child: Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
@@ -630,16 +767,7 @@ class _ProfileCompletenessCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: const BorderRadius.all(Radius.circular(16)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(Icons.tune_rounded, color: colorScheme.primary),
-                  ),
-                ),
+                _ProfileIconChip(icon: Icons.tune_rounded, color: accent),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -678,7 +806,7 @@ class _ProfileCompletenessCard extends StatelessWidget {
                       DecoratedBox(
                         decoration: BoxDecoration(
                           color: entry.value
-                              ? colorScheme.primaryContainer
+                              ? accent.withValues(alpha: 0.16)
                               : colorScheme.surfaceContainerHigh,
                           shape: BoxShape.circle,
                         ),
@@ -690,7 +818,7 @@ class _ProfileCompletenessCard extends StatelessWidget {
                                 : Icons.radio_button_unchecked_rounded,
                             size: 18,
                             color: entry.value
-                                ? colorScheme.primary
+                                ? accent
                                 : colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -710,12 +838,20 @@ class _ProfileCompletenessCard extends StatelessWidget {
               runSpacing: AppTheme.cardGap,
               children: [
                 FilledButton.tonalIcon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: accent.withValues(alpha: 0.12),
+                    foregroundColor: accent,
+                  ),
                   onPressed: onEditProfile,
                   icon: const Icon(Icons.edit_outlined),
                   label: const Text('Review details'),
                 ),
                 if (missingLocation)
                   FilledButton.tonalIcon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _profileMint.withValues(alpha: 0.12),
+                      foregroundColor: _profileMint,
+                    ),
                     onPressed: onFixLocation,
                     icon: const Icon(Icons.location_on_outlined),
                     label: const Text('Fix location'),
@@ -732,34 +868,29 @@ class _ProfileCompletenessCard extends StatelessWidget {
 class _ProfileSection extends StatelessWidget {
   const _ProfileSection({
     required this.icon,
+    required this.accentColor,
     required this.title,
     required this.value,
   });
 
   final IconData icon;
+  final Color accentColor;
   final String title;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Card(
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: _profileSurfaceColor(context, accentColor),
+      ),
       child: Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: const BorderRadius.all(Radius.circular(16)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Icon(icon, color: colorScheme.primary),
-              ),
-            ),
+            _ProfileIconChip(icon: icon, color: accentColor),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -779,21 +910,29 @@ class _ProfileSection extends StatelessWidget {
 }
 
 class _PhotoSection extends StatelessWidget {
-  const _PhotoSection({required this.photoUrls});
+  const _PhotoSection({required this.photoUrls, required this.isCurrentUser});
 
   final List<String> photoUrls;
+  final bool isCurrentUser;
 
   @override
   Widget build(BuildContext context) {
     if (photoUrls.isEmpty) {
-      return const _ProfileSection(
+      return _ProfileSection(
         icon: Icons.photo_library_outlined,
+        accentColor: _profileViolet,
         title: 'Photos',
-        value: 'No photos added yet.',
+        value: isCurrentUser
+            ? 'Add a few photos so people can put a face to the profile.'
+            : 'No photos shared yet.',
       );
     }
 
-    return Card(
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: _profileSurfaceColor(context, _profileViolet),
+      ),
       child: Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
         child: Column(
@@ -801,20 +940,9 @@ class _PhotoSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: const BorderRadius.all(Radius.circular(16)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(
-                      Icons.photo_library_outlined,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
+                const _ProfileIconChip(
+                  icon: Icons.photo_library_outlined,
+                  color: _profileViolet,
                 ),
                 const SizedBox(width: 12),
                 Text('Photos', style: Theme.of(context).textTheme.titleMedium),
@@ -862,25 +990,38 @@ class _PhotoPlaceholder extends StatelessWidget {
       width: width,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.surfaceContainerHighest,
-            Theme.of(context).colorScheme.surfaceContainerHigh,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: _profileSurfaceColor(context, _profileViolet),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.photo_camera_back_outlined,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          Icon(Icons.photo_camera_back_outlined, color: _profileViolet),
           const SizedBox(height: 10),
           Text(message, textAlign: TextAlign.center),
         ],
+      ),
+    );
+  }
+}
+
+class _ProfileIconChip extends StatelessWidget {
+  const _ProfileIconChip({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.10,
+        ),
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Icon(icon, color: color),
       ),
     );
   }
@@ -945,6 +1086,22 @@ class UserAvatarPhoto extends ConsumerWidget {
       },
     );
   }
+}
+
+Color _profileSurfaceColor(
+  BuildContext context,
+  Color accent, {
+  bool prominent = false,
+}) {
+  final theme = Theme.of(context);
+  final alpha = prominent
+      ? (theme.brightness == Brightness.dark ? 0.18 : 0.06)
+      : (theme.brightness == Brightness.dark ? 0.12 : 0.04);
+
+  return Color.alphaBlend(
+    accent.withValues(alpha: alpha),
+    theme.colorScheme.surfaceContainerLow,
+  );
 }
 
 String _displayName(UserDetail detail) {

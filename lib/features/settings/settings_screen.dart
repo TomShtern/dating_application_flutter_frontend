@@ -5,7 +5,6 @@ import '../../models/app_preferences.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
-import '../../shared/widgets/shell_hero.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../auth/selected_user_provider.dart';
@@ -15,6 +14,12 @@ import '../stats/achievements_screen.dart';
 import '../stats/stats_screen.dart';
 import '../verification/verification_screen.dart';
 import 'app_preferences_provider.dart';
+
+const _settingsRose = Color(0xFFD95F84);
+const _settingsViolet = Color(0xFF8E6DE8);
+const _settingsMint = Color(0xFF16A871);
+const _settingsSky = Color(0xFF188DC8);
+const _settingsSlate = Color(0xFF667085);
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key, required this.currentUser});
@@ -30,11 +35,12 @@ class SettingsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const ShellHero(
-            compact: true,
-            eyebrowLabel: 'Account',
-            title: 'Settings',
-            description: 'Profile, appearance, and quick access.',
+          Padding(
+            padding: AppTheme.screenPadding(compact: true),
+            child: _SettingsIntroCard(
+              currentUser: currentUser,
+              selectedThemeMode: selectedThemeMode,
+            ),
           ),
           Expanded(
             child: ListView(
@@ -51,12 +57,14 @@ class SettingsScreen extends ConsumerWidget {
                 SizedBox(height: AppTheme.sectionSpacing()),
                 _SettingsSectionCard(
                   icon: Icons.query_stats_rounded,
+                  accentColor: _settingsRose,
                   title: 'Quick access',
                   subtitle: 'Open the essentials faster.',
                   child: Column(
                     children: [
                       _SettingsLinkTile(
                         icon: Icons.query_stats_rounded,
+                        accentColor: _settingsSky,
                         title: 'View stats',
                         subtitle:
                             'See matches, chats, and activity at a glance',
@@ -72,6 +80,7 @@ class SettingsScreen extends ConsumerWidget {
                       _SettingsDivider(),
                       _SettingsLinkTile(
                         icon: Icons.notifications_none_rounded,
+                        accentColor: _settingsViolet,
                         title: 'Notifications',
                         subtitle:
                             'Review recent activity and catch anything unread',
@@ -86,6 +95,7 @@ class SettingsScreen extends ConsumerWidget {
                       _SettingsDivider(),
                       _SettingsLinkTile(
                         icon: Icons.verified_user_outlined,
+                        accentColor: _settingsMint,
                         title: 'Verification',
                         subtitle: 'Confirm your email or phone number',
                         onTap: () {
@@ -99,6 +109,7 @@ class SettingsScreen extends ConsumerWidget {
                       _SettingsDivider(),
                       _SettingsLinkTile(
                         icon: Icons.block_outlined,
+                        accentColor: _settingsSlate,
                         title: 'Blocked users',
                         subtitle:
                             'Review blocked profiles and make changes anytime',
@@ -113,6 +124,7 @@ class SettingsScreen extends ConsumerWidget {
                       _SettingsDivider(),
                       _SettingsLinkTile(
                         icon: Icons.workspace_premium_outlined,
+                        accentColor: _settingsRose,
                         title: 'View achievements',
                         subtitle:
                             'Celebrate the milestones you have already unlocked',
@@ -131,6 +143,7 @@ class SettingsScreen extends ConsumerWidget {
                 SizedBox(height: AppTheme.sectionSpacing()),
                 _SettingsSectionCard(
                   icon: Icons.palette_outlined,
+                  accentColor: _settingsSky,
                   title: 'Appearance',
                   subtitle: 'Choose how the app should look on this device.',
                   child: Column(
@@ -159,9 +172,16 @@ class SettingsScreen extends ConsumerWidget {
                       DecoratedBox(
                         decoration: AppTheme.surfaceDecoration(
                           context,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surface.withValues(alpha: 0.84),
+                          color: Color.alphaBlend(
+                            _settingsSky.withValues(
+                              alpha:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? 0.12
+                                  : 0.05,
+                            ),
+                            Theme.of(context).colorScheme.surface,
+                          ),
                           borderRadius: AppTheme.panelRadius,
                         ),
                         child: Padding(
@@ -177,6 +197,48 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SettingsIntroCard extends StatelessWidget {
+  const _SettingsIntroCard({
+    required this.currentUser,
+    required this.selectedThemeMode,
+  });
+
+  final UserSummary currentUser;
+  final AppThemeModePreference selectedThemeMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: _settingsSurfaceColor(context, _settingsRose, prominent: true),
+        prominent: true,
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Settings',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${currentUser.name} · ${formatDisplayLabel(currentUser.state)} profile · ${_shortThemeLabel(selectedThemeMode)}',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -236,24 +298,24 @@ class _SettingsSessionCard extends StatelessWidget {
 class _SettingsSectionCard extends StatelessWidget {
   const _SettingsSectionCard({
     required this.icon,
+    required this.accentColor,
     required this.title,
     required this.subtitle,
     required this.child,
   });
 
   final IconData icon;
+  final Color accentColor;
   final String title;
   final String subtitle;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: colorScheme.surface.withValues(alpha: 0.9),
+        color: _settingsSurfaceColor(context, accentColor),
       ),
       child: Padding(
         padding: EdgeInsets.all(AppTheme.cardPadding),
@@ -263,16 +325,7 @@ class _SettingsSectionCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: const BorderRadius.all(Radius.circular(16)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(icon, color: colorScheme.primary),
-                  ),
-                ),
+                _SettingsIconChip(icon: icon, color: accentColor),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -304,12 +357,14 @@ class _SettingsSectionCard extends StatelessWidget {
 class _SettingsLinkTile extends StatelessWidget {
   const _SettingsLinkTile({
     required this.icon,
+    required this.accentColor,
     required this.title,
     required this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
+  final Color accentColor;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -330,16 +385,7 @@ class _SettingsLinkTile extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: const BorderRadius.all(Radius.circular(14)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(9),
-                    child: Icon(icon, color: colorScheme.primary),
-                  ),
-                ),
+                _SettingsIconChip(icon: icon, color: accentColor),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -348,7 +394,8 @@ class _SettingsLinkTile extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -365,7 +412,7 @@ class _SettingsLinkTile extends StatelessWidget {
                   dimension: 24,
                   child: Icon(
                     Icons.chevron_right_rounded,
-                    color: colorScheme.onSurfaceVariant,
+                    color: accentColor.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -393,6 +440,29 @@ class _SettingsDivider extends StatelessWidget {
   }
 }
 
+class _SettingsIconChip extends StatelessWidget {
+  const _SettingsIconChip({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.18 : 0.10,
+        ),
+        borderRadius: const BorderRadius.all(Radius.circular(14)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(9),
+        child: Icon(icon, color: color),
+      ),
+    );
+  }
+}
+
 String _label(AppThemeModePreference themeMode) {
   return switch (themeMode) {
     AppThemeModePreference.system => 'Use system theme',
@@ -408,4 +478,28 @@ String _description(AppThemeModePreference themeMode) {
     AppThemeModePreference.light => 'Always use the light appearance.',
     AppThemeModePreference.dark => 'Always use the dark appearance.',
   };
+}
+
+String _shortThemeLabel(AppThemeModePreference themeMode) {
+  return switch (themeMode) {
+    AppThemeModePreference.system => 'System theme',
+    AppThemeModePreference.light => 'Light theme',
+    AppThemeModePreference.dark => 'Dark theme',
+  };
+}
+
+Color _settingsSurfaceColor(
+  BuildContext context,
+  Color accent, {
+  bool prominent = false,
+}) {
+  final theme = Theme.of(context);
+  final alpha = prominent
+      ? (theme.brightness == Brightness.dark ? 0.18 : 0.06)
+      : (theme.brightness == Brightness.dark ? 0.12 : 0.04);
+
+  return Color.alphaBlend(
+    accent.withValues(alpha: alpha),
+    theme.colorScheme.surface,
+  );
 }

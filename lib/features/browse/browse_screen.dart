@@ -25,6 +25,13 @@ import 'pending_likers_screen.dart';
 import 'browse_provider.dart';
 import 'standouts_screen.dart';
 
+const _browseRose = Color(0xFFE24A68);
+const _browseAmber = Color(0xFFD98914);
+const _browseTeal = Color(0xFF009688);
+const _browseSky = Color(0xFF188DC8);
+const _browseMint = Color(0xFF16A871);
+const _browseSlate = Color(0xFF596579);
+
 class BrowseScreen extends ConsumerStatefulWidget {
   const BrowseScreen({super.key, required this.currentUser});
 
@@ -40,23 +47,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   @override
   Widget build(BuildContext context) {
     final browseState = ref.watch(browseProvider);
+    final browseData = browseState.asData?.value;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Discover'),
-        actions: [
-          IconButton(
-            tooltip: 'Undo last swipe',
-            onPressed: _isSubmitting ? null : _handleUndo,
-            icon: const Icon(Icons.undo_rounded),
-          ),
-          IconButton(
-            tooltip: 'Refresh browse',
-            onPressed: () => ref.read(browseControllerProvider).refresh(),
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -68,17 +61,15 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ShellHero(
-                    compact: true,
-                    title: 'Discover',
-                    description:
-                        'Swipe on a profile or open it for more detail.',
-                    badges: [
-                      ShellHeroPill(
-                        icon: Icons.favorite_outline_rounded,
-                        label: 'Browsing as ${widget.currentUser.name}',
-                      ),
-                    ],
+                  _BrowseIntroCard(
+                    currentUserName: widget.currentUser.name,
+                    candidateCount: browseData?.candidates.length,
+                    hasDailyPick: browseData?.dailyPick != null,
+                    locationMissing: browseData?.locationMissing ?? false,
+                    onUndo: _handleUndo,
+                    onRefresh: () =>
+                        ref.read(browseControllerProvider).refresh(),
+                    actionsDisabled: _isSubmitting,
                   ),
                   SizedBox(height: sectionSpacing),
                   Expanded(
@@ -305,6 +296,180 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   }
 }
 
+class _BrowseIntroCard extends StatelessWidget {
+  const _BrowseIntroCard({
+    required this.currentUserName,
+    required this.candidateCount,
+    required this.hasDailyPick,
+    required this.locationMissing,
+    required this.onUndo,
+    required this.onRefresh,
+    required this.actionsDisabled,
+  });
+
+  final String currentUserName;
+  final int? candidateCount;
+  final bool hasDailyPick;
+  final bool locationMissing;
+  final VoidCallback onUndo;
+  final VoidCallback onRefresh;
+  final bool actionsDisabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final description = switch (candidateCount) {
+      null => 'Refreshing the next profiles for you.',
+      0 => 'No one new is ready right now. Refresh for the latest candidates.',
+      final count =>
+        '$count ${count == 1 ? 'candidate is' : 'candidates are'} ready to browse.',
+    };
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF2D2236), Color(0xFF20323B), Color(0xFF3A3123)]
+              : const [Color(0xFFFBE4EE), Color(0xFFE9F3FF), Color(0xFFFFF0D2)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        prominent: true,
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: _browseRose.withValues(alpha: isDark ? 0.20 : 0.12),
+                    borderRadius: const BorderRadius.all(Radius.circular(14)),
+                  ),
+                  child: SizedBox.square(
+                    dimension: 40,
+                    child: Icon(
+                      Icons.favorite_outline_rounded,
+                      color: isDark ? const Color(0xFFFFC4D0) : _browseRose,
+                      size: 22,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Discover',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(description, style: theme.textTheme.bodyMedium),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                IconButton(
+                  tooltip: 'Undo last swipe',
+                  onPressed: actionsDisabled ? null : onUndo,
+                  icon: const Icon(Icons.undo_rounded),
+                ),
+                IconButton(
+                  tooltip: 'Refresh browse',
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _BrowseStatusPill(
+                  icon: Icons.favorite_outline_rounded,
+                  label: 'Browsing as $currentUserName',
+                  color: _browseRose,
+                ),
+                if (candidateCount != null)
+                  _BrowseStatusPill(
+                    icon: Icons.people_outline_rounded,
+                    label: '$candidateCount ready now',
+                    color: _browseSky,
+                  ),
+                if (hasDailyPick)
+                  const _BrowseStatusPill(
+                    icon: Icons.auto_awesome_rounded,
+                    label: 'Daily pick live',
+                    color: _browseAmber,
+                  ),
+                if (locationMissing)
+                  const _BrowseStatusPill(
+                    icon: Icons.location_off_outlined,
+                    label: 'Location incomplete',
+                    color: _browseMint,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BrowseStatusPill extends StatelessWidget {
+  const _BrowseStatusPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(
+          alpha: theme.brightness == Brightness.dark ? 0.18 : 0.10,
+        ),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DeveloperSessionPanel extends StatelessWidget {
   const _DeveloperSessionPanel({required this.user});
 
@@ -364,9 +529,6 @@ class _BrowseContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
     if (browse.candidates.isEmpty) {
       return RefreshIndicator(
         onRefresh: onRefresh,
@@ -402,10 +564,6 @@ class _BrowseContent extends StatelessWidget {
             onRefresh: onRefresh,
             child: ListView(
               children: [
-                if (browse.dailyPick case final dailyPick?) ...[
-                  _DailyPickCard(dailyPick: dailyPick),
-                  SizedBox(height: AppTheme.listSpacing()),
-                ],
                 Dismissible(
                   key: ValueKey(currentCandidate.id),
                   direction: isSubmitting
@@ -436,39 +594,13 @@ class _BrowseContent extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: AppTheme.listSpacing()),
+                if (browse.dailyPick case final dailyPick?) ...[
+                  _DailyPickCard(dailyPick: dailyPick),
+                  SizedBox(height: AppTheme.listSpacing()),
+                ],
                 _DiscoveryShortcutRow(
                   onOpenPendingLikers: onOpenPendingLikers,
                   onOpenStandouts: onOpenStandouts,
-                ),
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.center,
-                  child: DecoratedBox(
-                    decoration: AppTheme.glassDecoration(context),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.people_outline_rounded,
-                            size: 14,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${browse.candidates.length} ready to explore',
-                            style: textTheme.labelMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ),
                 if (browse.locationMissing) ...[
                   SizedBox(height: AppTheme.listSpacing()),
@@ -508,7 +640,7 @@ class _DiscoveryShortcutRow extends StatelessWidget {
         Expanded(
           child: _DiscoveryShortcutCard(
             icon: Icons.favorite_rounded,
-            accentColor: AppTheme.matchPink,
+            accentColor: _browseRose,
             title: 'Likes you',
             subtitle: 'See who is already interested',
             onTap: onOpenPendingLikers,
@@ -518,7 +650,7 @@ class _DiscoveryShortcutRow extends StatelessWidget {
         Expanded(
           child: _DiscoveryShortcutCard(
             icon: Icons.auto_awesome_rounded,
-            accentColor: const Color(0xFFD98914),
+            accentColor: _browseAmber,
             title: 'Standouts',
             subtitle: 'Jump to the strongest signals',
             onTap: onOpenStandouts,
@@ -546,32 +678,68 @@ class _DiscoveryShortcutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(context),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: AppTheme.cardRadius,
-          onTap: onTap,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: AppTheme.cardRadius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        borderRadius: AppTheme.cardRadius,
+        onTap: onTap,
+        child: Ink(
+          decoration: AppTheme.surfaceDecoration(
+            context,
+            color: Color.alphaBlend(
+              accentColor.withValues(alpha: isDark ? 0.14 : 0.07),
+              colorScheme.surfaceContainerLow,
+            ),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            child: Row(
               children: [
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: accentColor.withValues(alpha: 0.14),
-                    borderRadius: const BorderRadius.all(Radius.circular(16)),
+                    borderRadius: const BorderRadius.all(Radius.circular(14)),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(icon, color: accentColor),
+                  child: SizedBox.square(
+                    dimension: 38,
+                    child: Icon(icon, color: accentColor, size: 20),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 4),
-                Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ],
             ),
           ),
@@ -640,12 +808,20 @@ class _BrowseActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return SafeArea(
       top: false,
       child: DecoratedBox(
         decoration: AppTheme.surfaceDecoration(
           context,
-          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.94),
+          color: Color.alphaBlend(
+            _browseRose.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.10 : 0.04,
+            ),
+            colorScheme.surface.withValues(alpha: 0.95),
+          ),
           borderRadius: AppTheme.panelRadius,
           prominent: true,
         ),
@@ -656,6 +832,15 @@ class _BrowseActionBar extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: isSubmitting ? null : () => onPass(candidate),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _browseSlate,
+                    side: BorderSide(
+                      color: _browseSlate.withValues(alpha: 0.22),
+                    ),
+                    backgroundColor: theme.brightness == Brightness.dark
+                        ? colorScheme.surface.withValues(alpha: 0.72)
+                        : Colors.white.withValues(alpha: 0.82),
+                  ),
                   icon: const Icon(Icons.close_rounded),
                   label: const Text('Pass'),
                 ),
@@ -664,6 +849,10 @@ class _BrowseActionBar extends StatelessWidget {
               Expanded(
                 child: FilledButton.icon(
                   onPressed: isSubmitting ? null : () => onLike(candidate),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _browseRose,
+                    foregroundColor: Colors.white,
+                  ),
                   icon: const Icon(Icons.favorite_rounded),
                   label: const Text('Like'),
                 ),
@@ -676,22 +865,34 @@ class _BrowseActionBar extends StatelessWidget {
   }
 }
 
-class _DailyPickCard extends ConsumerWidget {
+class _DailyPickCard extends StatelessWidget {
   const _DailyPickCard({required this.dailyPick});
 
   final DailyPick dailyPick;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final presentationContextState = ref.watch(
-      presentationContextProvider(dailyPick.userId),
-    );
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final headline = dailyPick.reason.isEmpty
+        ? (dailyPick.alreadySeen ? 'Already seen today' : 'Featured for today')
+        : dailyPick.reason;
+    final supportingLine = [
+      dailyPick.approximateLocation,
+      dailyPick.summaryLine,
+    ].whereType<String>().join(' · ');
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        gradient: AppTheme.heroGradient(context),
+        color: Color.alphaBlend(
+          _browseRose.withValues(alpha: isDark ? 0.08 : 0.03),
+          Color.alphaBlend(
+            _browseAmber.withValues(alpha: isDark ? 0.18 : 0.09),
+            colorScheme.surfaceContainerLow,
+          ),
+        ),
         prominent: true,
       ),
       child: Padding(
@@ -699,9 +900,22 @@ class _DailyPickCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ShellHeroPill(
-              icon: Icons.auto_awesome_rounded,
-              label: 'Today\'s daily pick',
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                const _BrowseStatusPill(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'Today\'s daily pick',
+                  color: _browseAmber,
+                ),
+                if (dailyPick.alreadySeen)
+                  const _BrowseStatusPill(
+                    icon: Icons.visibility_outlined,
+                    label: 'Already seen',
+                    color: _browseSlate,
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
             Row(
@@ -725,27 +939,27 @@ class _DailyPickCard extends ConsumerWidget {
                     children: [
                       Text(
                         '${dailyPick.userName}, ${dailyPick.userAge}',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        dailyPick.alreadySeen
-                            ? 'Already seen today'
-                            : 'Featured for today',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      if (dailyPick.approximateLocation != null ||
-                          dailyPick.summaryLine != null) ...[
-                        const SizedBox(height: 8),
+                      const SizedBox(height: 6),
+                      Text(
+                        headline,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (supportingLine.isNotEmpty) ...[
+                        const SizedBox(height: 6),
                         Text(
-                          [
-                            dailyPick.approximateLocation,
-                            dailyPick.summaryLine,
-                          ].whereType<String>().join(' · '),
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                          supportingLine,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ],
@@ -753,8 +967,6 @@ class _DailyPickCard extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            _BrowsePresentationContext(state: presentationContextState),
           ],
         ),
       ),
@@ -770,6 +982,9 @@ class _CandidateCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final presentationContextState = ref.watch(
       presentationContextProvider(candidate.id),
     );
@@ -777,8 +992,19 @@ class _CandidateCard extends ConsumerWidget {
       candidate.primaryPhotoUrl,
       candidate.photoUrls,
     );
+    final stateColor = candidate.state.toLowerCase() == 'active'
+        ? _browseMint
+        : _browseSlate;
 
-    return Card(
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Color.alphaBlend(
+          _browseRose.withValues(alpha: isDark ? 0.10 : 0.04),
+          colorScheme.surfaceContainerLow,
+        ),
+        prominent: true,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -798,13 +1024,24 @@ class _CandidateCard extends ConsumerWidget {
                   top: 14,
                   left: 14,
                   child: DecoratedBox(
-                    decoration: AppTheme.glassDecoration(context),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(
+                    decoration: BoxDecoration(
+                      color: _browseRose.withValues(alpha: 0.16),
+                      borderRadius: AppTheme.chipRadius,
+                      border: Border.all(
+                        color: _browseRose.withValues(alpha: 0.14),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 8,
                       ),
-                      child: Text('New for you'),
+                      child: Text(
+                        'New for you',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: _browseRose,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -832,8 +1069,10 @@ class _CandidateCard extends ConsumerWidget {
                         children: [
                           Text(
                             candidate.name,
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(color: Colors.white),
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Wrap(
@@ -843,22 +1082,16 @@ class _CandidateCard extends ConsumerWidget {
                               if (candidate.age > 0)
                                 Text(
                                   'Age ${candidate.age}',
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.92,
-                                        ),
-                                      ),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.92),
+                                  ),
                                 ),
                               if (candidate.approximateLocation != null)
                                 Text(
                                   candidate.approximateLocation!,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.92,
-                                        ),
-                                      ),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.92),
+                                  ),
                                 ),
                             ],
                           ),
@@ -866,10 +1099,9 @@ class _CandidateCard extends ConsumerWidget {
                             const SizedBox(height: 8),
                             Text(
                               candidate.summaryLine!,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.88),
-                                  ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.88),
+                              ),
                             ),
                           ],
                         ],
@@ -880,18 +1112,43 @@ class _CandidateCard extends ConsumerWidget {
               ],
             ),
             SizedBox(height: AppTheme.listSpacing()),
-            _BrowsePresentationContext(state: presentationContextState),
-            SizedBox(height: AppTheme.listSpacing()),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onViewProfile,
-                    icon: const Icon(Icons.person_outline_rounded),
-                    label: const Text('See full profile'),
-                  ),
+                _BrowseStatusPill(
+                  icon: Icons.person_outline_rounded,
+                  label: formatDisplayLabel(candidate.state),
+                  color: stateColor,
                 ),
+                if (candidate.approximateLocation != null)
+                  _BrowseStatusPill(
+                    icon: Icons.location_on_outlined,
+                    label: candidate.approximateLocation!,
+                    color: _browseSky,
+                  ),
               ],
+            ),
+            if (candidate.summaryLine != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                candidate.summaryLine!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            SizedBox(height: AppTheme.listSpacing()),
+            _BrowsePresentationContext(state: presentationContextState),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: onViewProfile,
+                style: TextButton.styleFrom(foregroundColor: _browseTeal),
+                icon: const Icon(Icons.person_outline_rounded),
+                label: const Text('See full profile'),
+              ),
             ),
           ],
         ),
@@ -935,17 +1192,28 @@ class _BrowsePresentationContextContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        color: Color.alphaBlend(
+          _browseRose.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.10 : 0.04,
+          ),
+          colorScheme.surfaceContainerLow,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _BrowseSectionLabel(title: 'Why this profile is shown'),
+            const _BrowseSectionLabel(
+              title: 'Why this profile is shown',
+              accentColor: _browseRose,
+            ),
             const SizedBox(height: 6),
             Text(contextData.summary),
             if (contextData.reasonTags.isNotEmpty) ...[
@@ -980,17 +1248,28 @@ class _BrowseWhyPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        color: Color.alphaBlend(
+          _browseSky.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.08 : 0.03,
+          ),
+          colorScheme.surfaceContainerLow,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _BrowseSectionLabel(title: 'Why this profile is shown'),
+            const _BrowseSectionLabel(
+              title: 'Why this profile is shown',
+              accentColor: _browseSky,
+            ),
             const SizedBox(height: 6),
             Text(message),
           ],
@@ -1001,9 +1280,10 @@ class _BrowseWhyPlaceholder extends StatelessWidget {
 }
 
 class _BrowseSectionLabel extends StatelessWidget {
-  const _BrowseSectionLabel({required this.title});
+  const _BrowseSectionLabel({required this.title, required this.accentColor});
 
   final String title;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1017,8 +1297,8 @@ class _BrowseSectionLabel extends StatelessWidget {
           Container(
             width: 3,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.85),
-              borderRadius: AppTheme.chipRadius,
+              color: accentColor.withValues(alpha: 0.85),
+              borderRadius: const BorderRadius.all(Radius.circular(999)),
             ),
           ),
           const SizedBox(width: 10),
