@@ -77,7 +77,6 @@ class _PhotoFallback extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final palette = appPhotoFallbackPalette(context, name);
-    final showPendingCopy = width >= 96 && height >= 120;
     final showMediaIcon = width >= 88 && height >= 104;
     final emblemSize = showMediaIcon ? 44.0 : 0.0;
 
@@ -138,50 +137,6 @@ class _PhotoFallback extends StatelessWidget {
               ],
             ),
           ),
-          if (showPendingCopy)
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 10,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: palette.labelBackground,
-                  borderRadius: const BorderRadius.all(Radius.circular(999)),
-                  border: Border.all(color: palette.outline),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.photo_library_outlined,
-                        size: 13,
-                        color: palette.labelForeground,
-                      ),
-                      const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          'No photo yet',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: palette.labelForeground,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );

@@ -51,7 +51,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 padding: AppTheme.screenPadding(),
                 children: [
                   const AppRouteHeader(title: 'Notifications'),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   _NotificationsIntroCard(
                     totalCount: notifications.length,
                     unreadCount: unreadCount,
@@ -528,7 +528,7 @@ class _NotificationsIntroCard extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(context, color: introSurface),
       child: Padding(
-        padding: AppTheme.sectionPadding(compact: true),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -579,7 +579,7 @@ class _NotificationsIntroCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 10,
               runSpacing: 10,

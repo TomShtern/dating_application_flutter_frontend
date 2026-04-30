@@ -717,6 +717,14 @@ String _humanizeStandoutsIntro(String message) {
     return 'These picks feel especially promising right now, so you can start with the profiles most worth a closer look.';
   }
 
+  final normalized = trimmed.toLowerCase();
+  if (normalized.contains('backend rank suggests high reply odds')) {
+    return 'Fresh standout picks based on current activity.';
+  }
+  if (normalized.contains('backend rank')) {
+    return 'Fresh standout picks based on current activity.';
+  }
+
   return trimmed;
 }
 
@@ -724,6 +732,14 @@ String _humanizeStandoutReason(Standout standout) {
   final reason = standout.reason.trim();
   if (reason.isEmpty) {
     return standout.summaryLine ?? 'Standout profile';
+  }
+
+  final normalized = reason.toLowerCase();
+  if (normalized.contains('backend rank suggests high reply odds')) {
+    return 'Strong reply signals right now.';
+  }
+  if (normalized.contains('backend rank')) {
+    return 'This profile looks especially promising right now.';
   }
 
   return reason;

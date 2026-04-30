@@ -330,8 +330,8 @@ class _BrowseIntroCard extends StatelessWidget {
         context,
         gradient: LinearGradient(
           colors: isDark
-              ? const [Color(0xFF2D2236), Color(0xFF20323B), Color(0xFF3A3123)]
-              : const [Color(0xFFFBE4EE), Color(0xFFE9F3FF), Color(0xFFFFF0D2)],
+              ? const [Color(0xFF252534), Color(0xFF1E313A), Color(0xFF343226)]
+              : const [Color(0xFFFFF3E6), Color(0xFFEAF6FF), Color(0xFFF4F0FF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -819,10 +819,15 @@ class _BrowseActionBar extends StatelessWidget {
         decoration: AppTheme.surfaceDecoration(
           context,
           color: Color.alphaBlend(
-            _browseRose.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.10 : 0.04,
+            _browseSky.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.08 : 0.03,
             ),
-            colorScheme.surface.withValues(alpha: 0.95),
+            Color.alphaBlend(
+              _browseAmber.withValues(
+                alpha: theme.brightness == Brightness.dark ? 0.05 : 0.02,
+              ),
+              colorScheme.surface.withValues(alpha: 0.95),
+            ),
           ),
           borderRadius: AppTheme.panelRadius,
           prominent: true,
@@ -837,14 +842,12 @@ class _BrowseActionBar extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                     foregroundColor: theme.brightness == Brightness.dark
-                        ? const Color(0xFFF3D3DE)
-                        : const Color(0xFF8B455C),
-                    side: BorderSide(
-                      color: _browseRose.withValues(alpha: 0.26),
-                    ),
+                        ? const Color(0xFFD6E4EF)
+                        : const Color(0xFF4E6478),
+                    side: BorderSide(color: _browseSky.withValues(alpha: 0.22)),
                     backgroundColor: theme.brightness == Brightness.dark
-                        ? _browseRose.withValues(alpha: 0.12)
-                        : _browseRose.withValues(alpha: 0.06),
+                        ? _browseSky.withValues(alpha: 0.12)
+                        : _browseSky.withValues(alpha: 0.05),
                   ),
                   icon: const Icon(Icons.close_rounded),
                   label: const Text('Pass'),
@@ -1011,8 +1014,11 @@ class _CandidateCard extends ConsumerWidget {
       decoration: AppTheme.surfaceDecoration(
         context,
         color: Color.alphaBlend(
-          _browseRose.withValues(alpha: isDark ? 0.10 : 0.04),
-          colorScheme.surfaceContainerLow,
+          _browseSky.withValues(alpha: isDark ? 0.10 : 0.035),
+          Color.alphaBlend(
+            _browseAmber.withValues(alpha: isDark ? 0.05 : 0.025),
+            colorScheme.surfaceContainerLow,
+          ),
         ),
         prominent: true,
       ),
@@ -1061,7 +1067,12 @@ class _CandidateCard extends ConsumerWidget {
                   bottom: 16,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.26),
+                      color: Colors.black.withValues(
+                        alpha: photoUrl == null ? 0.14 : 0.24,
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
                       borderRadius: const BorderRadius.all(Radius.circular(22)),
                     ),
                     child: Padding(

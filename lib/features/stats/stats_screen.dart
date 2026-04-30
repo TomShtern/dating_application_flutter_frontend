@@ -263,8 +263,12 @@ class _SnapshotStatTile extends StatelessWidget {
                               ),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(7, 5, 7, 5),
-                              child: _StatDetailBadge(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 7,
+                              ),
+                              child: _StatActivityMarks(
+                                seed: item.label,
                                 color: spec.color,
                                 compact: true,
                               ),
@@ -375,7 +379,11 @@ class _PerformanceStatCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                _StatDetailBadge(color: spec.color),
+                _PerformanceAccent(
+                  label: item.label,
+                  value: item.value,
+                  color: spec.color,
+                ),
               ],
             ),
           ),
@@ -402,9 +410,9 @@ class _StatsOverviewCard extends StatelessWidget {
         context,
         gradient: LinearGradient(
           colors: [
-            const Color(0xFFFF99C2).withValues(alpha: 0.97),
-            const Color(0xFFC8AEFF).withValues(alpha: 0.96),
-            const Color(0xFFADC8FF).withValues(alpha: 0.94),
+            const Color(0xFFFFD4B3).withValues(alpha: 0.98),
+            const Color(0xFFD2BCFF).withValues(alpha: 0.96),
+            const Color(0xFFB8E1FF).withValues(alpha: 0.95),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -691,40 +699,144 @@ class _AnimatedIntText extends StatelessWidget {
   }
 }
 
-class _StatDetailBadge extends StatelessWidget {
-  const _StatDetailBadge({required this.color, this.compact = false});
+class _PerformanceAccent extends StatelessWidget {
+  const _PerformanceAccent({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = _tryParsePercent(value);
+
+    if (percent != null) {
+      return _StatCurrentValueRing(percent: percent, color: color);
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.08,
+        ),
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        child: _StatActivityMarks(seed: '$label-$value', color: color),
+      ),
+    );
+  }
+}
+
+class _StatActivityMarks extends StatelessWidget {
+  const _StatActivityMarks({
+    required this.seed,
+    required this.color,
+    this.compact = false,
+  });
+
+  final String seed;
   final Color color;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final size = compact ? 18.0 : 42.0;
-    final iconSize = compact ? 14.0 : 22.0;
+    final pattern = _activityPattern(seed);
+    final maxHeight = compact ? 16.0 : 30.0;
+    final barWidth = compact ? 4.0 : 6.0;
+    final spacing = compact ? 3.0 : 4.0;
 
-    return Tooltip(
-      message: 'Tap for details',
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: color.withValues(
-            alpha: Theme.of(context).brightness == Brightness.dark
-                ? 0.18
-                : 0.10,
-          ),
-          borderRadius: BorderRadius.all(Radius.circular(compact ? 999 : 16)),
-          border: Border.all(color: color.withValues(alpha: 0.14)),
-        ),
-        child: SizedBox.square(
-          dimension: size,
-          child: Icon(
-            Icons.arrow_outward_rounded,
-            size: iconSize,
-            color: color,
-          ),
-        ),
+    return SizedBox(
+      height: maxHeight,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (var index = 0; index < pattern.length; index++) ...[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: compact ? 0.72 : 0.64),
+                borderRadius: const BorderRadius.all(Radius.circular(999)),
+              ),
+              child: SizedBox(
+                width: barWidth,
+                height: maxHeight * pattern[index],
+              ),
+            ),
+            if (index != pattern.length - 1) SizedBox(width: spacing),
+          ],
+        ],
       ),
     );
   }
+}
+
+class _StatCurrentValueRing extends StatelessWidget {
+  const _StatCurrentValueRing({required this.percent, required this.color});
+
+  final double percent;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayPercent = (percent * 100).round();
+
+    return SizedBox.square(
+      dimension: 72,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox.square(
+            dimension: 60,
+            child: CircularProgressIndicator(
+              value: percent,
+              strokeWidth: 5,
+              backgroundColor: color.withValues(alpha: 0.14),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+          Text(
+            '$displayPercent%',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+double? _tryParsePercent(String value) {
+  final match = RegExp(r'(\d+)\s*%').firstMatch(value);
+  if (match == null) {
+    return null;
+  }
+
+  final parsed = double.tryParse(match.group(1)!);
+  if (parsed == null) {
+    return null;
+  }
+
+  return (parsed / 100).clamp(0.0, 1.0);
+}
+
+List<double> _activityPattern(String seed) {
+  const patterns = <List<double>>[
+    [0.44, 0.78, 0.52, 0.86, 0.60],
+    [0.62, 0.38, 0.80, 0.50, 0.72],
+    [0.54, 0.84, 0.42, 0.74, 0.58],
+    [0.70, 0.48, 0.64, 0.40, 0.82],
+  ];
+
+  final hash = seed.runes.fold<int>(0, (total, rune) => total + rune);
+  return patterns[hash % patterns.length];
 }
 
 class _StatVisualSpec {

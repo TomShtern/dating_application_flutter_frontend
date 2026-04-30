@@ -31,34 +31,34 @@ AppPhotoFallbackPalette appPhotoFallbackPalette(
   final colorScheme = Theme.of(context).colorScheme;
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final hash = name.trim().runes.fold<int>(0, (total, rune) => total + rune);
-  final baseHue = HSLColor.fromColor(colorScheme.primaryContainer).hue;
-  final hue = (baseHue + (hash % 64) - 32 + 360) % 360;
+  final baseHue = HSLColor.fromColor(const Color(0xFF188DC8)).hue;
+  final hue = (baseHue + (hash % 42) - 21 + 360) % 360;
 
   Color fromHsl(double saturation, double lightness) {
     return HSLColor.fromAHSL(1, hue, saturation, lightness).toColor();
   }
 
   if (isDark) {
-    final accent = fromHsl(0.62, 0.74);
+    final accent = fromHsl(0.46, 0.74);
     return AppPhotoFallbackPalette(
-      surface: fromHsl(0.22, 0.22),
-      surfaceAlt: fromHsl(0.28, 0.28),
+      surface: fromHsl(0.14, 0.22),
+      surfaceAlt: fromHsl(0.18, 0.27),
       accent: accent,
-      accentSoft: accent.withValues(alpha: 0.18),
-      labelBackground: colorScheme.surface.withValues(alpha: 0.74),
+      accentSoft: accent.withValues(alpha: 0.16),
+      labelBackground: colorScheme.surface.withValues(alpha: 0.78),
       labelForeground: accent,
       outline: accent.withValues(alpha: 0.16),
     );
   }
 
-  final accent = fromHsl(0.56, 0.50);
+  final accent = fromHsl(0.36, 0.47);
   return AppPhotoFallbackPalette(
-    surface: fromHsl(0.42, 0.965),
-    surfaceAlt: fromHsl(0.36, 0.92),
+    surface: fromHsl(0.18, 0.972),
+    surfaceAlt: fromHsl(0.20, 0.935),
     accent: accent,
-    accentSoft: accent.withValues(alpha: 0.16),
-    labelBackground: colorScheme.surface.withValues(alpha: 0.82),
-    labelForeground: fromHsl(0.52, 0.34),
+    accentSoft: accent.withValues(alpha: 0.12),
+    labelBackground: colorScheme.surface.withValues(alpha: 0.86),
+    labelForeground: fromHsl(0.28, 0.31),
     outline: accent.withValues(alpha: 0.14),
   );
 }

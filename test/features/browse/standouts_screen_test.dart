@@ -60,7 +60,7 @@ void main() {
       await pumpStandoutsScreen(tester);
 
       expect(
-        find.text('Backend rank suggests high reply odds this week'),
+        find.text('Fresh standout picks based on current activity.'),
         findsOneWidget,
       );
       expect(

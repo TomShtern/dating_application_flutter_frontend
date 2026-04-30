@@ -158,9 +158,6 @@ class ProfileScreen extends ConsumerWidget {
               detail: detail,
               isCurrentUser: false,
               presentationContextState: presentationContextState,
-              onPrimaryAction: () =>
-                  _handleLikeProfile(context, ref, targetUserName),
-              onSecondaryAction: () => _handlePassProfile(context, ref),
             ),
           ),
           loading: () => Padding(
@@ -179,79 +176,6 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _handleLikeProfile(
-    BuildContext context,
-    WidgetRef ref,
-    String targetUserName,
-  ) async {
-    try {
-      final result = await ref
-          .read(browseControllerProvider)
-          .likeCandidate(userId!);
-
-      if (!context.mounted) {
-        return;
-      }
-
-      final message = result.isMatch && result.matchedUserName != null
-          ? 'It\'s a match with ${result.matchedUserName}!'
-          : result.message;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    } on ApiError catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
-    } catch (_) {
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to like $targetUserName right now.')),
-      );
-    }
-  }
-
-  Future<void> _handlePassProfile(BuildContext context, WidgetRef ref) async {
-    try {
-      final message = await ref
-          .read(browseControllerProvider)
-          .passCandidate(userId!);
-
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-    } on ApiError catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
-    } catch (_) {
-      if (!context.mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to pass on this profile right now.'),
-        ),
-      );
-    }
   }
 }
 
@@ -327,8 +251,6 @@ class _ProfileContent extends StatelessWidget {
     this.presentationContextState,
     this.onEditProfile,
     this.onFixLocation,
-    this.onPrimaryAction,
-    this.onSecondaryAction,
   });
 
   final UserDetail detail;
@@ -336,40 +258,27 @@ class _ProfileContent extends StatelessWidget {
   final AsyncValue<ProfilePresentationContext>? presentationContextState;
   final VoidCallback? onEditProfile;
   final VoidCallback? onFixLocation;
-  final VoidCallback? onPrimaryAction;
-  final VoidCallback? onSecondaryAction;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
+        _ProfileHeroCard(
+          detail: detail,
+          isCurrentUser: isCurrentUser,
+          decisionBar: isCurrentUser
+              ? null
+              : _ProfileDecisionRow(
+                  userId: detail.id,
+                  userName: _displayName(detail),
+                ),
+        ),
         SizedBox(height: AppTheme.sectionSpacing()),
         AppGroupLabel(
           title: isCurrentUser ? 'Profile sections' : 'Shared sections',
           accentColor: isCurrentUser ? _profileSky : _profileViolet,
         ),
-        if (!isCurrentUser && onPrimaryAction != null) ...[
-          SizedBox(height: AppTheme.cardGap),
-          Wrap(
-            spacing: AppTheme.cardGap,
-            runSpacing: AppTheme.cardGap,
-            children: [
-              FilledButton.icon(
-                onPressed: onPrimaryAction,
-                icon: const Icon(Icons.favorite_rounded),
-                label: const Text('Like'),
-              ),
-              if (onSecondaryAction != null)
-                OutlinedButton.icon(
-                  onPressed: onSecondaryAction,
-                  icon: const Icon(Icons.close_rounded),
-                  label: const Text('Pass for now'),
-                ),
-            ],
-          ),
-        ],
         if (!isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
           _PhotoSection(
@@ -508,10 +417,15 @@ class _PresentationContextCard extends StatelessWidget {
 }
 
 class _ProfileHeroCard extends StatelessWidget {
-  const _ProfileHeroCard({required this.detail, required this.isCurrentUser});
+  const _ProfileHeroCard({
+    required this.detail,
+    required this.isCurrentUser,
+    this.decisionBar,
+  });
 
   final UserDetail detail;
   final bool isCurrentUser;
+  final Widget? decisionBar;
 
   @override
   Widget build(BuildContext context) {
@@ -612,13 +526,204 @@ class _ProfileHeroCard extends StatelessWidget {
                   : _heroSummary(detail, isCurrentUser: isCurrentUser),
               style: theme.textTheme.bodyMedium,
             ),
-            if (!isCurrentUser) ...[
+            if (!isCurrentUser && decisionBar != null) ...[
               SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+              decisionBar!,
             ],
           ],
         ),
       ),
     );
+  }
+}
+
+enum _ProfileDecisionState { liked, passed }
+
+class _ProfileDecisionRow extends ConsumerStatefulWidget {
+  const _ProfileDecisionRow({required this.userId, required this.userName});
+
+  final String userId;
+  final String userName;
+
+  @override
+  ConsumerState<_ProfileDecisionRow> createState() =>
+      _ProfileDecisionRowState();
+}
+
+class _ProfileDecisionRowState extends ConsumerState<_ProfileDecisionRow> {
+  bool _isSubmitting = false;
+  _ProfileDecisionState? _decisionState;
+
+  @override
+  Widget build(BuildContext context) {
+    final liked = _decisionState == _ProfileDecisionState.liked;
+    final passed = _decisionState == _ProfileDecisionState.passed;
+    final locked = _isSubmitting || _decisionState != null;
+    final passColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFFD6E4EF)
+        : const Color(0xFF5C6D7D);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.05 : 0.56,
+        ),
+        borderRadius: AppTheme.cardRadius,
+        border: Border.all(color: _profileSky.withValues(alpha: 0.10)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          children: [
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: locked ? null : _handleLike,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(46),
+                  backgroundColor: liked
+                      ? _profileRose
+                      : const Color(0xFFA24D67),
+                  foregroundColor: Colors.white,
+                ),
+                icon: Icon(
+                  liked ? Icons.check_rounded : Icons.favorite_rounded,
+                ),
+                label: Text(
+                  _isSubmitting
+                      ? 'Saving…'
+                      : liked
+                      ? 'Liked'
+                      : 'Like',
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: locked ? null : _handlePass,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(46),
+                  foregroundColor: passColor,
+                  side: BorderSide(color: _profileSky.withValues(alpha: 0.18)),
+                  backgroundColor: passed
+                      ? _profileSky.withValues(
+                          alpha: Theme.of(context).brightness == Brightness.dark
+                              ? 0.12
+                              : 0.06,
+                        )
+                      : null,
+                ),
+                icon: Icon(passed ? Icons.check_rounded : Icons.close_rounded),
+                label: Text(
+                  _isSubmitting
+                      ? 'Saving…'
+                      : passed
+                      ? 'Passed'
+                      : 'Pass for now',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleLike() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final result = await ref
+          .read(browseControllerProvider)
+          .likeCandidate(widget.userId);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _decisionState = _ProfileDecisionState.liked;
+      });
+
+      final message = result.isMatch && result.matchedUserName != null
+          ? 'It\'s a match with ${result.matchedUserName}!'
+          : result.message;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } on ApiError catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to like ${widget.userName} right now.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handlePass() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final message = await ref
+          .read(browseControllerProvider)
+          .passCandidate(widget.userId);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _decisionState = _ProfileDecisionState.passed;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } on ApiError catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to pass on this profile right now.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 }
 
