@@ -63,10 +63,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Your matches'), findsOneWidget);
-    expect(find.text('1 total'), findsOneWidget);
+    expect(find.text('1 match ready · 0 new today'), findsOneWidget);
     expect(find.text('All'), findsOneWidget);
     expect(find.text('New'), findsOneWidget);
-    expect(find.text('Nearby'), findsOneWidget);
     expect(find.text('Active now'), findsWidgets);
     expect(find.text('Matches ready for a first hello'), findsNothing);
     expect(find.text('Noa'), findsOneWidget);
@@ -74,17 +73,14 @@ void main() {
     expect(find.text('ACTIVE'), findsNothing);
     expect(find.text('For Dana'), findsNothing);
     expect(find.text('Ready to message'), findsNothing);
-    expect(find.text('Message now'), findsOneWidget);
+    expect(find.text('Message'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'View profile'), findsNothing);
 
-    await tester.tap(find.text('Message now').first);
+    await tester.tap(find.text('Message').first);
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'Noa'), findsOneWidget);
-    expect(
-      find.text('No messages yet. Say hello to start the conversation.'),
-      findsOneWidget,
-    );
+    expect(find.text('Conversation'), findsOneWidget);
+    expect(find.text('No messages yet'), findsOneWidget);
   });
 
   testWidgets('opens the matched user profile from the tappable profile area', (
@@ -183,12 +179,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.byKey(ValueKey('match-media-${match.matchId}')),
+      find.byKey(ValueKey('match-profile-${match.matchId}')),
       findsOneWidget,
     );
+    expect(find.byType(CircleAvatar), findsNothing);
   });
 
-  testWidgets('opens a Why we match sheet with live match-quality details', (
+  testWidgets('does not surface a fake Why we match CTA', (
     WidgetTester tester,
   ) async {
     final apiClient = _FakeMatchesApiClient(
@@ -230,14 +227,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Why we match'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Why we match'), findsWidgets);
-    expect(find.text('Great Match'), findsOneWidget);
-    expect(find.text('Good Sync'), findsOneWidget);
-    expect(find.text('Lives nearby (12.4 km away)'), findsOneWidget);
-    expect(apiClient.getMatchQualityCalls, 1);
+    expect(find.text('Why we match'), findsNothing);
+    expect(find.text('Great Match'), findsNothing);
+    expect(apiClient.getMatchQualityCalls, 0);
   });
 }
 

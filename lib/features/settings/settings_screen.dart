@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/app_preferences.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/app_group_label.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
@@ -55,89 +56,111 @@ class SettingsScreen extends ConsumerWidget {
                   },
                 ),
                 SizedBox(height: AppTheme.sectionSpacing()),
-                _SettingsSectionCard(
-                  icon: Icons.query_stats_rounded,
-                  accentColor: _settingsSky,
+                const AppGroupLabel(
                   title: 'Quick access',
-                  subtitle: 'Open the essentials faster.',
-                  child: Column(
-                    children: [
-                      _SettingsLinkTile(
-                        icon: Icons.query_stats_rounded,
-                        accentColor: _settingsSky,
-                        title: 'View stats',
-                        subtitle:
-                            'See matches, chats, and activity at a glance',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) =>
-                                  StatsScreen(currentUser: currentUser),
+                  accentColor: _settingsSky,
+                ),
+                const SizedBox(height: AppTheme.cardGap),
+                DecoratedBox(
+                  decoration: AppTheme.surfaceDecoration(
+                    context,
+                    color: _settingsSurfaceColor(context, _settingsSky),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(AppTheme.cardPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Open the essentials faster.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: AppTheme.cardGap),
+                        Column(
+                          children: [
+                            _SettingsLinkTile(
+                              icon: Icons.query_stats_rounded,
+                              accentColor: _settingsSky,
+                              title: 'View stats',
+                              subtitle:
+                                  'See matches, chats, and activity at a glance',
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (context) =>
+                                        StatsScreen(currentUser: currentUser),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
-                      _SettingsDivider(),
-                      _SettingsLinkTile(
-                        icon: Icons.notifications_none_rounded,
-                        accentColor: _settingsViolet,
-                        title: 'Notifications',
-                        subtitle:
-                            'Review recent activity and catch anything unread',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) => const NotificationsScreen(),
+                            _SettingsDivider(),
+                            _SettingsLinkTile(
+                              icon: Icons.notifications_none_rounded,
+                              accentColor: _settingsViolet,
+                              title: 'Notifications',
+                              subtitle:
+                                  'Review recent activity and catch anything unread',
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (context) =>
+                                        const NotificationsScreen(),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
-                      _SettingsDivider(),
-                      _SettingsLinkTile(
-                        icon: Icons.verified_user_outlined,
-                        accentColor: _settingsMint,
-                        title: 'Verification',
-                        subtitle: 'Confirm your email or phone number',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) => const VerificationScreen(),
+                            _SettingsDivider(),
+                            _SettingsLinkTile(
+                              icon: Icons.verified_user_outlined,
+                              accentColor: _settingsMint,
+                              title: 'Verification',
+                              subtitle: 'Confirm your email or phone number',
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (context) =>
+                                        const VerificationScreen(),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
-                      _SettingsDivider(),
-                      _SettingsLinkTile(
-                        icon: Icons.block_outlined,
-                        accentColor: _settingsSlate,
-                        title: 'Blocked users',
-                        subtitle:
-                            'Review blocked profiles and make changes anytime',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) => const BlockedUsersScreen(),
+                            _SettingsDivider(),
+                            _SettingsLinkTile(
+                              icon: Icons.block_outlined,
+                              accentColor: _settingsSlate,
+                              title: 'Blocked users',
+                              subtitle:
+                                  'Review blocked profiles and make changes anytime',
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (context) =>
+                                        const BlockedUsersScreen(),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
-                      _SettingsDivider(),
-                      _SettingsLinkTile(
-                        icon: Icons.workspace_premium_outlined,
-                        accentColor: _settingsRose,
-                        title: 'View achievements',
-                        subtitle:
-                            'Celebrate the milestones you have already unlocked',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) =>
-                                  AchievementsScreen(currentUser: currentUser),
+                            _SettingsDivider(),
+                            _SettingsLinkTile(
+                              icon: Icons.workspace_premium_outlined,
+                              accentColor: _settingsRose,
+                              title: 'View achievements',
+                              subtitle:
+                                  'Celebrate the milestones you have already unlocked',
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (context) => AchievementsScreen(
+                                      currentUser: currentUser,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 SizedBox(height: AppTheme.sectionSpacing()),
@@ -467,7 +490,7 @@ class _SettingsLinkTile extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         subtitle,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
@@ -534,7 +557,7 @@ class _SettingsIconChip extends StatelessWidget {
 
 String _label(AppThemeModePreference themeMode) {
   return switch (themeMode) {
-    AppThemeModePreference.system => 'Use system theme',
+    AppThemeModePreference.system => 'System',
     AppThemeModePreference.light => 'Light',
     AppThemeModePreference.dark => 'Dark',
   };

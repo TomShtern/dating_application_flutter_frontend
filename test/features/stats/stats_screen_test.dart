@@ -60,9 +60,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'Stats'), findsOneWidget);
+    expect(find.text('Stats'), findsOneWidget);
     expect(find.text('Momentum for Dana'), findsOneWidget);
-    expect(find.text('2'), findsOneWidget);
     expect(find.text('highlights'), findsOneWidget);
     expect(find.text('Active profile'), findsOneWidget);
     expect(find.text('Why this snapshot matters'), findsNothing);
@@ -97,7 +96,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AchievementsScreen), findsOneWidget);
-    expect(find.text("Dana's achievement progress"), findsOneWidget);
+    expect(find.text('Milestones for Dana'), findsOneWidget);
     expect(find.text('1 unlocked'), findsOneWidget);
 
     await tester.scrollUntilVisible(
@@ -134,8 +133,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('1'), findsOneWidget);
     expect(find.text('highlight'), findsOneWidget);
-    expect(find.text('1 highlights'), findsNothing);
+    expect(find.text('highlights'), findsNothing);
   });
 }

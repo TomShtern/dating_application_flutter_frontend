@@ -6,6 +6,7 @@ import '../../models/conversation_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_group_label.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import 'conversation_thread_screen.dart';
@@ -70,7 +71,7 @@ class ConversationsScreen extends ConsumerWidget {
                       if (conversations.isEmpty)
                         _ConversationsEmptyState(onRefresh: controller.refresh)
                       else ...[
-                        _ConversationSectionLabel(
+                        AppGroupLabel(
                           title: 'Open conversations',
                           accentColor: _conversationTeal,
                           countText: '${conversations.length}',
@@ -273,83 +274,6 @@ class _ChatsIntroCard extends StatelessWidget {
   }
 }
 
-class _ConversationSectionLabel extends StatelessWidget {
-  const _ConversationSectionLabel({
-    required this.title,
-    required this.accentColor,
-    this.countText,
-  });
-
-  final String title;
-  final Color accentColor;
-  final String? countText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 3,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.85),
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (countText != null) ...[
-            const SizedBox(width: 8),
-            Align(
-              alignment: Alignment.center,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(
-                    alpha: theme.brightness == Brightness.dark ? 0.18 : 0.08,
-                  ),
-                  borderRadius: AppTheme.chipRadius,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    countText!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: accentColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 12),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ConversationsEmptyState extends StatelessWidget {
   const _ConversationsEmptyState({required this.onRefresh});
 
@@ -534,10 +458,23 @@ class _ConversationCard extends StatelessWidget {
                               foregroundColor: spec.foregroundColor,
                             ),
                             const Spacer(),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 20,
-                              color: colorScheme.onSurfaceVariant,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Open',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 20,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -669,9 +606,9 @@ class _ConversationVisualSpec {
 
 String _conversationPreview(ConversationSummary summary) {
   return switch (summary.messageCount) {
-    0 => 'No messages yet in this conversation.',
-    1 => '1 message exchanged in this conversation.',
-    final count => '$count messages exchanged in this conversation.',
+    0 => 'Send the first message when you are ready.',
+    1 => 'Conversation started.',
+    final count => '$count messages so far.',
   };
 }
 
@@ -694,7 +631,7 @@ Color _conversationSurfaceColor(
   return Color.alphaBlend(
     _conversationSlate.withValues(alpha: isDark ? 0.03 : 0.015),
     Color.alphaBlend(
-      spec.color.withValues(alpha: isDark ? 0.14 : 0.07),
+      spec.color.withValues(alpha: isDark ? 0.10 : 0.05),
       colorScheme.surfaceContainerLow,
     ),
   );

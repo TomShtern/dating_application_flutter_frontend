@@ -51,7 +51,7 @@ void main() {
     expect(find.byIcon(Icons.flag_outlined), findsAtLeastNWidgets(1));
     expect(find.text('Israel'), findsAtLeastNWidgets(1));
     expect(find.text('IL'), findsNothing);
-    expect(find.text('Use this location'), findsOneWidget);
+    expect(find.text('Save location'), findsOneWidget);
     expect(find.text('You can change this anytime.'), findsOneWidget);
   });
 
@@ -108,16 +108,13 @@ void main() {
     await tester.drag(locationScrollable, const Offset(0, -240));
     await tester.pumpAndSettle();
 
-    await tester.tap(
-      find.widgetWithText(ListTile, 'Tel Aviv').first,
-      warnIfMissed: false,
-    );
+    await tester.tap(find.text('Tel Aviv').last, warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(find.text('Selected city'), findsOneWidget);
     expect(find.text('Tel Aviv, Central District'), findsOneWidget);
 
-    final saveButton = find.widgetWithText(FilledButton, 'Use this location');
+    final saveButton = find.widgetWithText(FilledButton, 'Save location');
     await tester.scrollUntilVisible(
       saveButton,
       200,

@@ -378,11 +378,6 @@ class _BrowseIntroCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 IconButton(
-                  tooltip: 'Undo last swipe',
-                  onPressed: actionsDisabled ? null : onUndo,
-                  icon: const Icon(Icons.undo_rounded),
-                ),
-                IconButton(
                   tooltip: 'Refresh browse',
                   onPressed: actionsDisabled ? null : onRefresh,
                   icon: const Icon(Icons.refresh_rounded),
@@ -408,7 +403,7 @@ class _BrowseIntroCard extends StatelessWidget {
                 if (hasDailyPick)
                   const _BrowseStatusPill(
                     icon: Icons.auto_awesome_rounded,
-                    label: 'Daily pick live',
+                    label: 'Today\'s daily pick',
                     color: _browseAmber,
                   ),
                 if (locationMissing)
@@ -418,6 +413,12 @@ class _BrowseIntroCard extends StatelessWidget {
                     color: _browseMint,
                   ),
               ],
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: actionsDisabled ? null : onUndo,
+              icon: const Icon(Icons.undo_rounded, size: 18),
+              label: const Text('Undo last swipe'),
             ),
           ],
         ),
@@ -590,6 +591,7 @@ class _BrowseContent extends StatelessWidget {
                   },
                   child: _CandidateCard(
                     candidate: currentCandidate,
+                    remainingCount: browse.candidates.length,
                     onViewProfile: () => onViewProfile(currentCandidate),
                   ),
                 ),
@@ -834,13 +836,16 @@ class _BrowseActionBar extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: isSubmitting ? null : () => onPass(candidate),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _browseSlate,
+                    minimumSize: const Size.fromHeight(48),
+                    foregroundColor: theme.brightness == Brightness.dark
+                        ? const Color(0xFFF3D3DE)
+                        : const Color(0xFF8B455C),
                     side: BorderSide(
-                      color: _browseSlate.withValues(alpha: 0.22),
+                      color: _browseRose.withValues(alpha: 0.26),
                     ),
                     backgroundColor: theme.brightness == Brightness.dark
-                        ? colorScheme.surface.withValues(alpha: 0.72)
-                        : Colors.white.withValues(alpha: 0.82),
+                        ? _browseRose.withValues(alpha: 0.12)
+                        : _browseRose.withValues(alpha: 0.06),
                   ),
                   icon: const Icon(Icons.close_rounded),
                   label: const Text('Pass'),
@@ -851,6 +856,7 @@ class _BrowseActionBar extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: isSubmitting ? null : () => onLike(candidate),
                   style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
                     backgroundColor: _browseRose,
                     foregroundColor: Colors.white,
                   ),
@@ -876,9 +882,9 @@ class _DailyPickCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final headline = dailyPick.reason.isEmpty
-        ? (dailyPick.alreadySeen ? 'Already seen today' : 'Featured for today')
-        : dailyPick.reason;
+    final headline = dailyPick.alreadySeen
+        ? 'Already seen today'
+        : 'Featured for today';
     final supportingLine = [
       dailyPick.approximateLocation,
       dailyPick.summaryLine,
@@ -976,9 +982,14 @@ class _DailyPickCard extends StatelessWidget {
 }
 
 class _CandidateCard extends ConsumerWidget {
-  const _CandidateCard({required this.candidate, required this.onViewProfile});
+  const _CandidateCard({
+    required this.candidate,
+    required this.remainingCount,
+    required this.onViewProfile,
+  });
 
   final BrowseCandidate candidate;
+  final int remainingCount;
   final VoidCallback onViewProfile;
 
   @override
@@ -1024,26 +1035,20 @@ class _CandidateCard extends ConsumerWidget {
                 Positioned(
                   top: 14,
                   left: 14,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: _browseRose.withValues(alpha: 0.16),
-                      borderRadius: AppTheme.chipRadius,
-                      border: Border.all(
-                        color: _browseRose.withValues(alpha: 0.14),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _BrowseQueuePill(
+                        label: 'New for you',
+                        color: _browseRose,
                       ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Text(
-                        'New for you',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: _browseRose,
+                      if (remainingCount > 1)
+                        _BrowseQueuePill(
+                          label: '1 of $remainingCount ready',
+                          color: _browseSky,
                         ),
-                      ),
-                    ),
+                    ],
                   ),
                 ),
                 Positioned(
@@ -1054,6 +1059,16 @@ class _CandidateCard extends ConsumerWidget {
                     targetUserName: candidate.name,
                   ),
                 ),
+                if (photoUrl == null)
+                  const Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 100,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _BrowseMediaNotePill(),
+                    ),
+                  ),
                 Positioned(
                   left: 16,
                   right: 16,
@@ -1177,6 +1192,38 @@ class _BrowsePresentationContext extends StatelessWidget {
   }
 }
 
+class _BrowseMediaNotePill extends StatelessWidget {
+  const _BrowseMediaNotePill();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.88),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: _browseSky.withValues(alpha: 0.12)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.photo_library_outlined, size: 14, color: _browseSky),
+            const SizedBox(width: 6),
+            Text(
+              'Photo pending',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: _browseSky,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _BrowsePresentationContextContent extends StatelessWidget {
   const _BrowsePresentationContextContent({required this.contextData});
 
@@ -1185,27 +1232,21 @@ class _BrowsePresentationContextContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        color: Color.alphaBlend(
-          _browseSky.withValues(
-            alpha: theme.brightness == Brightness.dark ? 0.12 : 0.04,
-          ),
-          colorScheme.surfaceContainerLow,
+      decoration: BoxDecoration(
+        color: _browseSky.withValues(
+          alpha: theme.brightness == Brightness.dark ? 0.10 : 0.05,
         ),
+        borderRadius: AppTheme.cardRadius,
+        border: Border.all(color: _browseSky.withValues(alpha: 0.12)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _BrowseSectionLabel(
-              title: 'Why this profile is shown',
-              accentColor: _browseSky,
-            ),
+            const _BrowseReasonHeader(),
             const SizedBox(height: 6),
             Text(contextData.summary),
             if (contextData.reasonTags.isNotEmpty) ...[
@@ -1232,27 +1273,21 @@ class _BrowseWhyPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        color: Color.alphaBlend(
-          _browseSky.withValues(
-            alpha: theme.brightness == Brightness.dark ? 0.08 : 0.03,
-          ),
-          colorScheme.surfaceContainerLow,
+      decoration: BoxDecoration(
+        color: _browseSky.withValues(
+          alpha: theme.brightness == Brightness.dark ? 0.08 : 0.04,
         ),
+        borderRadius: AppTheme.cardRadius,
+        border: Border.all(color: _browseSky.withValues(alpha: 0.10)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _BrowseSectionLabel(
-              title: 'Why this profile is shown',
-              accentColor: _browseSky,
-            ),
+            const _BrowseReasonHeader(),
             const SizedBox(height: 6),
             Text(message),
           ],
@@ -1262,46 +1297,47 @@ class _BrowseWhyPlaceholder extends StatelessWidget {
   }
 }
 
-class _BrowseSectionLabel extends StatelessWidget {
-  const _BrowseSectionLabel({required this.title, required this.accentColor});
-
-  final String title;
-  final Color accentColor;
+class _BrowseReasonHeader extends StatelessWidget {
+  const _BrowseReasonHeader();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    return Row(
+      children: [
+        Icon(Icons.lightbulb_outline_rounded, size: 16, color: _browseSky),
+        const SizedBox(width: 8),
+        Text(
+          'Why this profile is shown',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: _browseSky,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 3,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.85),
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
-        ],
+class _BrowseQueuePill extends StatelessWidget {
+  const _BrowseQueuePill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: color),
+        ),
       ),
     );
   }
@@ -1376,48 +1412,31 @@ class _SwipeCue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final gradient = alignment == Alignment.centerLeft
-        ? LinearGradient(
-            colors: [
-              colorScheme.primaryContainer,
-              colorScheme.tertiaryContainer,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          )
-        : LinearGradient(
-            colors: [
-              colorScheme.secondaryContainer,
-              colorScheme.surfaceContainerHighest,
-            ],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-          );
-
-    return Container(
-      decoration: AppTheme.surfaceDecoration(
-        context,
-        gradient: gradient,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: alignment == Alignment.centerLeft
+            ? _browseRose.withValues(alpha: 0.12)
+            : _browseSlate.withValues(alpha: 0.12),
         borderRadius: AppTheme.cardRadius,
       ),
-      alignment: alignment,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: alignment == Alignment.centerLeft
-            ? MainAxisAlignment.start
-            : MainAxisAlignment.end,
-        children: [
-          if (alignment == Alignment.centerRight) ...[
-            Text(label, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(width: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          mainAxisAlignment: alignment == Alignment.centerLeft
+              ? MainAxisAlignment.start
+              : MainAxisAlignment.end,
+          children: [
+            if (alignment == Alignment.centerRight) ...[
+              Text(label, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(width: 8),
+            ],
+            Icon(icon),
+            if (alignment == Alignment.centerLeft) ...[
+              const SizedBox(width: 8),
+              Text(label, style: Theme.of(context).textTheme.titleMedium),
+            ],
           ],
-          Icon(icon),
-          if (alignment == Alignment.centerLeft) ...[
-            const SizedBox(width: 8),
-            Text(label, style: Theme.of(context).textTheme.titleMedium),
-          ],
-        ],
+        ),
       ),
     );
   }

@@ -9,7 +9,6 @@ import 'package:flutter_dating_application_1/features/safety/blocked_users_provi
 import 'package:flutter_dating_application_1/features/safety/blocked_users_screen.dart';
 import 'package:flutter_dating_application_1/models/blocked_user_summary.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
-import 'package:flutter_dating_application_1/shared/widgets/section_intro_card.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -47,37 +46,31 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(AppBar, 'Blocked users'), findsOneWidget);
-      expect(find.byType(SectionIntroCard), findsOneWidget);
-      expect(find.text('Safety stays on'), findsOneWidget);
-      expect(find.text('2 blocked profiles'), findsOneWidget);
+      expect(find.text('Blocked users'), findsOneWidget);
+      expect(find.text('Safety controls'), findsOneWidget);
+      expect(find.text('2'), findsWidgets);
+      expect(find.text('blocked profiles'), findsOneWidget);
+      expect(
+        find.text(
+          'Blocked profiles stay hidden from discovery, matches, and chat until you unblock them.',
+        ),
+        findsOneWidget,
+      );
       expect(
         find.text(
           'Hidden from discovery, matches, and chat until you unblock them.',
         ),
-        findsOneWidget,
-      );
-      expect(
-        find.text(
-          'Blocked profiles stay out of discovery, matches, and chat until you let them back in.',
-        ),
         findsNothing,
-      );
-      expect(find.text('What unblocking changes'), findsOneWidget);
-      expect(
-        find.text('They can appear in discovery, matches, and chat again.'),
-        findsOneWidget,
       );
       expect(find.byTooltip('Refresh blocked users'), findsNothing);
       expect(find.text('Pull to refresh'), findsNothing);
       expect(find.text('What happens here'), findsNothing);
       expect(find.text('Noa'), findsOneWidget);
       expect(find.text('Mia'), findsOneWidget);
-      expect(find.text('Blocked profile'), findsNWidgets(2));
-      expect(find.text('Hidden from your activity'), findsNothing);
-      expect(find.text('Recently blocked'), findsNothing);
-      expect(find.text('Unblock'), findsNothing);
-      expect(find.byTooltip('Blocked user options'), findsNWidgets(2));
+      expect(find.text('Hidden from your activity'), findsOneWidget);
+      expect(find.text('Recently blocked'), findsOneWidget);
+      expect(find.text('Unblock'), findsNWidgets(2));
+      expect(find.byTooltip('Blocked user options'), findsNothing);
     },
   );
 
@@ -98,7 +91,7 @@ void main() {
 
     expect(
       find.text(
-        'No blocked profiles right now. If someone crosses a line, you can block them from their profile.',
+        'Blocked profiles will appear here when you hide someone from discovery, matches, or chat.',
       ),
       findsOneWidget,
     );
@@ -129,9 +122,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Blocked user options'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Unblock'));
+    await tester.tap(find.widgetWithText(TextButton, 'Unblock'));
     await tester.pumpAndSettle();
 
     expect(find.text('Unblock Noa?'), findsOneWidget);

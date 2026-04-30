@@ -49,25 +49,24 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'Conversations'), findsOneWidget);
-    expect(find.text('Pick up where you left off'), findsNothing);
+    expect(find.text('Open conversations'), findsOneWidget);
     expect(find.text('Noa'), findsOneWidget);
-    expect(
-      find.text('An active conversation is waiting for your next reply.'),
-      findsOneWidget,
-    );
-    expect(find.text('5 messages so far'), findsOneWidget);
+    expect(find.text('1 conversation ready to pick back up.'), findsOneWidget);
+    expect(find.text('5 messages so far.'), findsOneWidget);
     expect(find.text('Updated Apr 18, 2026'), findsNothing);
-    expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
-    expect(find.text('Open chat'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
 
-    final openChatButton = find.widgetWithText(FilledButton, 'Open chat');
-    await tester.scrollUntilVisible(openChatButton, 200);
+    final conversationCard = find.ancestor(
+      of: find.text('Noa'),
+      matching: find.byType(InkWell),
+    );
+    await tester.scrollUntilVisible(conversationCard, 200);
     await tester.pumpAndSettle();
-    await tester.tap(openChatButton);
+    await tester.tap(conversationCard);
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'Noa'), findsOneWidget);
+    expect(find.text('Conversation'), findsOneWidget);
     expect(find.text('See you at 7?'), findsOneWidget);
   });
 }

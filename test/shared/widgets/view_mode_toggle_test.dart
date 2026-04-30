@@ -17,15 +17,15 @@ void main() {
     ) async {
       await tester.pumpWidget(buildSubject(isGrid: true));
 
-      expect(find.byIcon(Icons.view_list_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.grid_view_outlined), findsOneWidget);
+      expect(find.text('List'), findsOneWidget);
+      expect(find.text('Grid'), findsOneWidget);
     });
 
     testWidgets('renders both list and grid icons', (tester) async {
       await tester.pumpWidget(buildSubject(isGrid: false));
 
-      expect(find.byIcon(Icons.view_list_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.grid_view_outlined), findsOneWidget);
+      expect(find.text('List'), findsOneWidget);
+      expect(find.text('Grid'), findsOneWidget);
     });
 
     testWidgets('calls onChanged with true when grid tapped', (tester) async {
@@ -34,7 +34,7 @@ void main() {
         buildSubject(isGrid: false, onChanged: (v) => selected = v),
       );
 
-      await tester.tap(find.byIcon(Icons.grid_view_outlined));
+      await tester.tap(find.byTooltip('Grid view'));
       await tester.pumpAndSettle();
 
       expect(selected, true);
@@ -46,7 +46,7 @@ void main() {
         buildSubject(isGrid: true, onChanged: (v) => selected = v),
       );
 
-      await tester.tap(find.byIcon(Icons.view_list_outlined));
+      await tester.tap(find.byTooltip('List view'));
       await tester.pumpAndSettle();
 
       expect(selected, false);

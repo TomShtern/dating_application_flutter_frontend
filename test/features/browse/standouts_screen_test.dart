@@ -75,15 +75,19 @@ void main() {
       expect(find.text('Museum dates and quiet coffee.'), findsOneWidget);
       expect(find.text('Rank #1'), findsNothing);
       expect(find.text('Score 97'), findsNothing);
-      expect(find.byKey(ValueKey('standout-rank-${standout.id}')), findsOneWidget);
+      expect(
+        find.byKey(ValueKey('standout-rank-${standout.id}')),
+        findsOneWidget,
+      );
       expect(
         find.byKey(ValueKey('standout-media-${standout.id}')),
         findsOneWidget,
       );
       expect(find.byKey(const ValueKey('standouts-list')), findsOneWidget);
       expect(find.byKey(const ValueKey('standouts-grid')), findsNothing);
-      expect(find.widgetWithText(TextButton, 'Open profile'), findsNothing);
-      expect(find.widgetWithText(FilledButton, 'Open profile'), findsOneWidget);
+      expect(find.text('Open profile'), findsNothing);
+      expect(find.byTooltip('Open profile'), findsNothing);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
     },
   );
 
@@ -97,6 +101,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('standouts-grid')), findsOneWidget);
     expect(find.byKey(const ValueKey('standouts-list')), findsNothing);
+    expect(find.byTooltip('Open profile'), findsOneWidget);
 
     final cardSize = tester.getSize(
       find.byKey(ValueKey('standout-card-${standout.id}')),
@@ -104,15 +109,16 @@ void main() {
     expect(cardSize.width, lessThan(220));
   });
 
-  testWidgets('defaults to grid view on wide screens with the same CTA wording', (
-    WidgetTester tester,
-  ) async {
-    await pumpStandoutsScreen(tester, size: const Size(900, 915));
+  testWidgets(
+    'defaults to grid view on wide screens with the same CTA wording',
+    (WidgetTester tester) async {
+      await pumpStandoutsScreen(tester, size: const Size(900, 915));
 
-    expect(find.byKey(const ValueKey('standouts-grid')), findsOneWidget);
-    expect(find.byKey(const ValueKey('standouts-list')), findsNothing);
-    expect(find.widgetWithText(FilledButton, 'Open profile'), findsOneWidget);
-  });
+      expect(find.byKey(const ValueKey('standouts-grid')), findsOneWidget);
+      expect(find.byKey(const ValueKey('standouts-list')), findsNothing);
+      expect(find.byTooltip('Open profile'), findsOneWidget);
+    },
+  );
 
   testWidgets('opens the standout profile from the whole card tap target', (
     WidgetTester tester,

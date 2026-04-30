@@ -77,12 +77,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Open their profile to learn more.'), findsNothing);
-    expect(find.text('Already interested'), findsOneWidget);
+    expect(find.text('Open profile first'), findsOneWidget);
     expect(find.text('2 people waiting'), findsOneWidget);
-    expect(find.text('Tap a profile for a closer look.'), findsOneWidget);
-    expect(find.text('“Museum dates and quiet coffee.”'), findsOneWidget);
-    expect(find.text('“Beach walks and strong espresso.”'), findsOneWidget);
-    expect(find.text('Liked Apr 18, 2026'), findsOneWidget);
+    expect(
+      find.text(
+        'Review who is waiting and open the profile when a signal looks promising.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Museum dates and quiet coffee.'), findsOneWidget);
+    expect(find.text('Beach walks and strong espresso.'), findsOneWidget);
+    expect(find.text('Liked Apr 18'), findsOneWidget);
     expect(
       find.text(
         'Liked your profile on Apr 18, 2026. Open it when you want a closer look.',
@@ -103,7 +108,7 @@ void main() {
     expect(find.byTooltip('More actions for Maya'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
     expect(find.widgetWithText(FilledButton, 'Open profile'), findsNothing);
-    expect(find.text('Open profile'), findsNWidgets(2));
+    expect(find.text('Open profile'), findsNothing);
   });
 
   testWidgets('opens a liker profile from the card CTA', (
@@ -137,7 +142,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Open profile').first);
+    await tester.tap(
+      find.byKey(ValueKey('pending-liker-media-${datedLiker.userId}')),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Always up for a museum date.'), findsOneWidget);

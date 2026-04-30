@@ -8,6 +8,8 @@ import '../../models/user_summary.dart';
 import '../../models/user_stats.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_group_label.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../theme/app_theme.dart';
 import 'achievements_screen.dart';
 import 'stat_detail_sheet.dart';
@@ -23,62 +25,87 @@ class StatsScreen extends ConsumerWidget {
     final statsState = ref.watch(statsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 48,
-        title: Text(
-          'Stats',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          Tooltip(
-            message: 'View achievements',
-            child: IconButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (context) =>
-                        AchievementsScreen(currentUser: currentUser),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.workspace_premium_outlined),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Tooltip(
-              message: 'Refresh stats',
-              child: IconButton(
-                onPressed: () => ref.invalidate(statsProvider),
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-            ),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: statsState.when(
-          data: (stats) => _StatsDashboard(
-            currentUser: currentUser,
-            stats: stats,
-            onRefresh: () => ref.invalidate(statsProvider),
+          data: (stats) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppTheme.pagePadding,
+                  8,
+                  AppTheme.pagePadding,
+                  8,
+                ),
+                child: AppRouteHeader(
+                  title: 'Stats',
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Tooltip(
+                        message: 'View achievements',
+                        child: IconButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) => AchievementsScreen(
+                                  currentUser: currentUser,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.workspace_premium_outlined),
+                        ),
+                      ),
+                      Tooltip(
+                        message: 'Refresh stats',
+                        child: IconButton(
+                          onPressed: () => ref.invalidate(statsProvider),
+                          icon: const Icon(Icons.refresh_rounded),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: _StatsDashboard(
+                  currentUser: currentUser,
+                  stats: stats,
+                  onRefresh: () => ref.invalidate(statsProvider),
+                ),
+              ),
+            ],
           ),
           loading: () => Padding(
             padding: AppTheme.screenPadding(),
-            child: const AppAsyncState.loading(message: 'Loading stats…'),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppRouteHeader(title: 'Stats'),
+                SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.loading(message: 'Loading stats…'),
+                ),
+              ],
+            ),
           ),
           error: (error, stackTrace) => Padding(
             padding: AppTheme.screenPadding(),
-            child: AppAsyncState.error(
-              message: error is ApiError
-                  ? error.message
-                  : 'Unable to load stats right now.',
-              onRetry: () => ref.invalidate(statsProvider),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const AppRouteHeader(title: 'Stats'),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.error(
+                    message: error is ApiError
+                        ? error.message
+                        : 'Unable to load stats right now.',
+                    onRetry: () => ref.invalidate(statsProvider),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -122,7 +149,7 @@ class _StatsDashboard extends StatelessWidget {
                   'Stats start populating after a few likes, matches, and conversations. Check back once you\'ve been active.',
             )
           else ...[
-            _SectionLabel(
+            AppGroupLabel(
               title: 'Snapshot',
               countText: '${snapshotItems.length}',
             ),
@@ -130,7 +157,7 @@ class _StatsDashboard extends StatelessWidget {
             _SnapshotGrid(items: snapshotItems),
             if (performanceItems.isNotEmpty) ...[
               SizedBox(height: AppTheme.sectionSpacing()),
-              _SectionLabel(
+              AppGroupLabel(
                 title: 'Performance',
                 countText: '${performanceItems.length}',
               ),
@@ -142,76 +169,6 @@ class _StatsDashboard extends StatelessWidget {
               ],
             ],
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.title, this.countText});
-
-  final String title;
-  final String? countText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 3,
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.85),
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (countText != null) ...[
-            const SizedBox(width: 8),
-            Align(
-              alignment: Alignment.center,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.08),
-                  borderRadius: AppTheme.chipRadius,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    countText!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 12),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -309,9 +266,8 @@ class _SnapshotStatTile extends StatelessWidget {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(7, 5, 7, 5),
-                              child: _SparkBars(
+                              child: _DecorativePulseMarks(
                                 color: spec.color,
-                                seed: item.value,
                                 width: 34,
                                 height: 18,
                               ),
@@ -431,9 +387,8 @@ class _PerformanceStatCard extends StatelessWidget {
                 else
                   Tooltip(
                     message: 'Tap for details',
-                    child: _SparkBars(
+                    child: _DecorativePulseMarks(
                       color: spec.color,
-                      seed: item.value,
                       width: 52,
                       height: 36,
                     ),
@@ -829,22 +784,20 @@ class _RadialMetricPainter extends CustomPainter {
   }
 }
 
-class _SparkBars extends StatelessWidget {
-  const _SparkBars({
+class _DecorativePulseMarks extends StatelessWidget {
+  const _DecorativePulseMarks({
     required this.color,
-    required this.seed,
     this.width = 44,
     this.height = 28,
   });
 
   final Color color;
-  final String seed;
   final double width;
   final double height;
 
   @override
   Widget build(BuildContext context) {
-    final values = _sparkValues(seed);
+    const values = <double>[0.42, 0.68, 0.54];
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
@@ -977,12 +930,4 @@ double? _tryParsePercent(String value) {
   }
 
   return parsed / 100;
-}
-
-List<double> _sparkValues(String seed) {
-  final total = seed.codeUnits.fold<int>(0, (sum, unit) => sum + unit);
-  return List<double>.generate(5, (index) {
-    final value = 0.28 + ((total + index * 19) % 58) / 100;
-    return value.clamp(0.26, 0.86);
-  });
 }

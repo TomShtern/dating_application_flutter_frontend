@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/location_metadata.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_group_label.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../theme/app_theme.dart';
 import 'location_provider.dart';
 
@@ -83,23 +85,11 @@ class _LocationCompletionScreenState
     );
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 44,
-        title: Text(
-          'Location',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppTheme.pagePadding,
-            0,
+            8,
             AppTheme.pagePadding,
             AppTheme.pagePadding,
           ),
@@ -114,6 +104,8 @@ class _LocationCompletionScreenState
 
               return ListView(
                 children: [
+                  const AppRouteHeader(title: 'Location'),
+                  const SizedBox(height: 8),
                   DecoratedBox(
                     decoration: AppTheme.surfaceDecoration(
                       context,
@@ -272,7 +264,7 @@ class _LocationCompletionScreenState
                                     )
                                   : const Icon(Icons.location_on_outlined),
                               label: Text(
-                                _saving ? 'Saving…' : 'Use this location',
+                                _saving ? 'Saving…' : 'Save location',
                               ),
                             ),
                           ),
@@ -310,7 +302,7 @@ class _LocationCompletionScreenState
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _LocationSectionLabel(
+                                  AppGroupLabel(
                                     title: 'Suggested cities',
                                     accentColor: _locationSky,
                                     countText: '${cities.length}',
@@ -429,14 +421,32 @@ class _LocationCompletionScreenState
                 ],
               );
             },
-            loading: () => const AppAsyncState.loading(
-              message: 'Loading location options…',
+            loading: () => const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppRouteHeader(title: 'Location'),
+                SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.loading(
+                    message: 'Loading location options…',
+                  ),
+                ),
+              ],
             ),
-            error: (error, _) => AppAsyncState.error(
-              message: error is ApiError
-                  ? error.message
-                  : 'Unable to load location options right now.',
-              onRetry: () => ref.invalidate(locationCountriesProvider),
+            error: (error, _) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const AppRouteHeader(title: 'Location'),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.error(
+                    message: error is ApiError
+                        ? error.message
+                        : 'Unable to load location options right now.',
+                    onRetry: () => ref.invalidate(locationCountriesProvider),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -533,83 +543,6 @@ class _LocationLeadChip extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         child: Icon(icon, size: 18, color: color),
-      ),
-    );
-  }
-}
-
-class _LocationSectionLabel extends StatelessWidget {
-  const _LocationSectionLabel({
-    required this.title,
-    required this.accentColor,
-    this.countText,
-  });
-
-  final String title;
-  final Color accentColor;
-  final String? countText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 4,
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (countText != null) ...[
-            const SizedBox(width: 8),
-            Align(
-              alignment: Alignment.center,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(
-                    alpha: theme.brightness == Brightness.dark ? 0.18 : 0.08,
-                  ),
-                  borderRadius: AppTheme.chipRadius,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    countText!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: accentColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 12),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

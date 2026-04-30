@@ -8,6 +8,7 @@ import '../../models/profile_update_request.dart';
 import '../../models/user_detail.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../location/location_completion_screen.dart';
@@ -32,46 +33,46 @@ class ProfileEditScreen extends ConsumerWidget {
     return snapshotState.when(
       data: (snapshot) => _ProfileEditForm(snapshot: snapshot),
       loading: () => const Scaffold(
-        appBar: _ProfileEditAppBar(),
         body: SafeArea(
-          child: AppAsyncState.loading(message: 'Loading profile details…'),
-        ),
-      ),
-      error: (error, stackTrace) => Scaffold(
-        appBar: const _ProfileEditAppBar(),
-        body: SafeArea(
-          child: AppAsyncState.error(
-            message: error is ApiError
-                ? error.message
-                : 'Unable to load profile details right now.',
-            onRetry: () => ref.invalidate(profileEditSnapshotProvider),
+          child: Padding(
+            padding: EdgeInsets.all(AppTheme.pagePadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppRouteHeader(title: 'Edit profile'),
+                SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.loading(
+                    message: 'Loading profile details…',
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ProfileEditAppBar extends StatelessWidget
-    implements PreferredSizeWidget {
-  const _ProfileEditAppBar();
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      toolbarHeight: 44,
-      title: Text(
-        'Edit profile',
-        style: Theme.of(
-          context,
-        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+      error: (error, stackTrace) => Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: AppTheme.screenPadding(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const AppRouteHeader(title: 'Edit profile'),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.error(
+                    message: error is ApiError
+                        ? error.message
+                        : 'Unable to load profile details right now.',
+                    onRetry: () => ref.invalidate(profileEditSnapshotProvider),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
     );
   }
 }
@@ -138,7 +139,6 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: const _ProfileEditAppBar(),
       bottomNavigationBar: SafeArea(
         top: false,
         child: DecoratedBox(
@@ -200,361 +200,322 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppTheme.pagePadding,
-              8,
-              AppTheme.pagePadding,
-              AppTheme.navBarHeight + AppTheme.pagePadding,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _ProfileEditHeader(snapshot: widget.snapshot),
-              SizedBox(height: AppTheme.compactSectionGap),
-              _ProfileEditSection(
-                icon: Icons.badge_outlined,
-                accentColor: _profileLavender,
-                title: 'Basics',
-                description:
-                    'Set the identity and discovery signals people see first.',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _ProfileFieldLabel(title: 'Gender'),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: AppTheme.cardGap,
-                      runSpacing: AppTheme.cardGap,
-                      children: _genderOptions
-                          .map((option) {
-                            final selected = _selectedGender == option;
-                            return ChoiceChip(
-                              label: Text(formatDisplayLabel(option)),
-                              selected: selected,
-                              showCheckmark: true,
-                              selectedColor: _profileLavender.withValues(
-                                alpha: theme.brightness == Brightness.dark
-                                    ? 0.24
-                                    : 0.12,
-                              ),
-                              backgroundColor: colorScheme.surface.withValues(
-                                alpha: theme.brightness == Brightness.dark
-                                    ? 0.72
-                                    : 0.9,
-                              ),
-                              side: BorderSide(
-                                color: selected
-                                    ? _profileLavender.withValues(alpha: 0.3)
-                                    : colorScheme.outlineVariant.withValues(
-                                        alpha: 0.28,
-                                      ),
-                              ),
-                              checkmarkColor: _profileLavender,
-                              labelStyle: theme.textTheme.labelLarge?.copyWith(
-                                color: selected
-                                    ? _profileLavender
-                                    : colorScheme.onSurface,
-                              ),
-                              onSelected: (selected) {
-                                setState(() {
-                                  _selectedGender = selected ? option : null;
-                                });
-                              },
-                            );
-                          })
-                          .toList(growable: false),
-                    ),
-                    const SizedBox(height: AppTheme.sectionGap),
-                    _ProfileFieldLabel(title: 'Interested in'),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: AppTheme.cardGap,
-                      runSpacing: AppTheme.cardGap,
-                      children: _genderOptions
-                          .map((option) {
-                            final selected = _selectedInterestedIn.contains(
-                              option,
-                            );
-                            return FilterChip(
-                              label: Text(formatDisplayLabel(option)),
-                              selected: selected,
-                              showCheckmark: true,
-                              selectedColor: _profileLavender.withValues(
-                                alpha: theme.brightness == Brightness.dark
-                                    ? 0.24
-                                    : 0.12,
-                              ),
-                              backgroundColor: colorScheme.surface.withValues(
-                                alpha: theme.brightness == Brightness.dark
-                                    ? 0.72
-                                    : 0.9,
-                              ),
-                              side: BorderSide(
-                                color: selected
-                                    ? _profileLavender.withValues(alpha: 0.3)
-                                    : colorScheme.outlineVariant.withValues(
-                                        alpha: 0.28,
-                                      ),
-                              ),
-                              checkmarkColor: _profileLavender,
-                              labelStyle: theme.textTheme.labelLarge?.copyWith(
-                                color: selected
-                                    ? _profileLavender
-                                    : colorScheme.onSurface,
-                              ),
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    _selectedInterestedIn.add(option);
-                                  } else {
-                                    _selectedInterestedIn.remove(option);
-                                  }
-                                });
-                              },
-                            );
-                          })
-                          .toList(growable: false),
-                    ),
-                  ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppTheme.pagePadding,
+                  8,
+                  AppTheme.pagePadding,
+                  8,
                 ),
+                child: const AppRouteHeader(title: 'Edit profile'),
               ),
-              SizedBox(height: AppTheme.compactSectionGap),
-              _ProfileEditSection(
-                icon: Icons.tune_rounded,
-                accentColor: _profileRose,
-                title: 'Distance',
-                description: 'Choose how far the app should look for matches.',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppTheme.pagePadding,
+                    0,
+                    AppTheme.pagePadding,
+                    AppTheme.navBarHeight + AppTheme.pagePadding,
+                  ),
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
+                    _ProfileEditHeader(snapshot: widget.snapshot),
+                    SizedBox(height: AppTheme.compactSectionGap),
+                    _ProfileEditSection(
+                      icon: Icons.badge_outlined,
+                      accentColor: _profileLavender,
+                      title: 'Basics',
+                      description:
+                          'Set the identity and discovery signals people see first.',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _ProfileFieldLabel(title: 'Gender'),
+                          const SizedBox(height: 8),
+                          _ProfileEditOptionGrid(
+                            options: _genderOptions,
+                            accentColor: _profileLavender,
+                            selectedOptions: {?_selectedGender},
+                            onOptionToggled: (option, selected) {
+                              setState(() {
+                                _selectedGender = selected ? option : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: AppTheme.sectionGap),
+                          _ProfileFieldLabel(title: 'Interested in'),
+                          const SizedBox(height: 8),
+                          _ProfileEditOptionGrid(
+                            options: _genderOptions,
+                            accentColor: _profileLavender,
+                            selectedOptions: _selectedInterestedIn,
+                            onOptionToggled: (option, selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedInterestedIn.add(option);
+                                } else {
+                                  _selectedInterestedIn.remove(option);
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: AppTheme.compactSectionGap),
+                    _ProfileEditSection(
+                      icon: Icons.tune_rounded,
+                      accentColor: _profileRose,
+                      title: 'Distance',
+                      description:
+                          'Choose how far the app should look for matches.',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _maxDistanceKm == null
+                                      ? 'Distance not set yet'
+                                      : 'Showing matches within',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ),
+                              if (_maxDistanceKm != null)
+                                Text(
+                                  '${_distanceSliderValue.round()} km',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        color: _profileRose,
+                                      ),
+                                ),
+                            ],
+                          ),
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: _profileRose,
+                              inactiveTrackColor: _profileRose.withValues(
+                                alpha: 0.18,
+                              ),
+                              thumbColor: _profileRose,
+                              overlayColor: _profileRose.withValues(
+                                alpha: 0.12,
+                              ),
+                            ),
+                            child: Slider(
+                              value: _distanceSliderValue,
+                              min: 5,
+                              max: 150,
+                              divisions: 29,
+                              label: '${_distanceSliderValue.round()} km',
+                              onChanged: (value) {
+                                setState(() {
+                                  _maxDistanceKm = value.round();
+                                });
+                              },
+                            ),
+                          ),
+                          Text(
                             _maxDistanceKm == null
-                                ? 'Distance not set yet'
-                                : 'Showing matches within',
-                            style: Theme.of(context).textTheme.bodyMedium
+                                ? 'Move the slider to set how far the app should look.'
+                                : 'Anyone further than this won\'t show up in discover.',
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.onSurfaceVariant,
                                 ),
                           ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: AppTheme.compactSectionGap),
+                    _ProfileEditSection(
+                      icon: Icons.edit_note_rounded,
+                      accentColor: _profileSky,
+                      title: 'About',
+                      description:
+                          'Share the details people connect with after the basics.',
+                      child: TextFormField(
+                        controller: _bioController,
+                        minLines: 3,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          labelText: 'Bio',
+                          hintText:
+                              'Share a little about your vibe, interests, or ideal first date',
                         ),
-                        if (_maxDistanceKm != null)
-                          Text(
-                            '${_distanceSliderValue.round()} km',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: _profileRose,
+                      ),
+                    ),
+                    SizedBox(height: AppTheme.compactSectionGap),
+                    _ProfileEditSection(
+                      icon: Icons.location_on_outlined,
+                      accentColor: _profileMint,
+                      title: 'Location',
+                      description:
+                          'Keep your area current so nearby matches stay relevant.',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: _profileMint.withValues(
+                                    alpha: theme.brightness == Brightness.dark
+                                        ? 0.18
+                                        : 0.10,
+                                  ),
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(12),
+                                  ),
                                 ),
-                          ),
-                      ],
-                    ),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        activeTrackColor: _profileRose,
-                        inactiveTrackColor: _profileRose.withValues(
-                          alpha: 0.18,
-                        ),
-                        thumbColor: _profileRose,
-                        overlayColor: _profileRose.withValues(alpha: 0.12),
-                      ),
-                      child: Slider(
-                        value: _distanceSliderValue,
-                        min: 5,
-                        max: 150,
-                        divisions: 29,
-                        label: '${_distanceSliderValue.round()} km',
-                        onChanged: (value) {
-                          setState(() {
-                            _maxDistanceKm = value.round();
-                          });
-                        },
-                      ),
-                    ),
-                    Text(
-                      _maxDistanceKm == null
-                          ? 'Move the slider to set how far the app should look.'
-                          : 'Anyone further than this won\'t show up in discover.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: AppTheme.compactSectionGap),
-              _ProfileEditSection(
-                icon: Icons.edit_note_rounded,
-                accentColor: _profileSky,
-                title: 'About',
-                description:
-                    'Share the details people connect with after the basics.',
-                child: TextFormField(
-                  controller: _bioController,
-                  minLines: 3,
-                  maxLines: 5,
-                  decoration: const InputDecoration(
-                    labelText: 'Bio',
-                    hintText:
-                        'Share a little about your vibe, interests, or ideal first date',
-                  ),
-                ),
-              ),
-              SizedBox(height: AppTheme.compactSectionGap),
-              _ProfileEditSection(
-                icon: Icons.location_on_outlined,
-                accentColor: _profileMint,
-                title: 'Location',
-                description:
-                    'Keep your area current so nearby matches stay relevant.',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: _profileMint.withValues(
-                              alpha: theme.brightness == Brightness.dark
-                                  ? 0.18
-                                  : 0.10,
-                            ),
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(12),
-                            ),
-                          ),
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.location_on_outlined,
-                              color: _profileMint,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _approximateLocation.trim().isEmpty
-                                ? 'Add the area where you want to meet people.'
-                                : 'Showing people near $_approximateLocation.',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppTheme.cardGap),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _profileMint,
-                          side: BorderSide(
-                            color: _profileMint.withValues(alpha: 0.26),
-                          ),
-                        ),
-                        onPressed: () async {
-                          final resolved = await Navigator.of(context)
-                              .push<ResolvedLocation>(
-                                MaterialPageRoute<ResolvedLocation>(
-                                  builder: (context) =>
-                                      const LocationCompletionScreen(),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: Icon(
+                                    Icons.location_on_outlined,
+                                    color: _profileMint,
+                                    size: 18,
+                                  ),
                                 ),
-                              );
-                          if (!mounted || resolved == null) {
-                            return;
-                          }
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _approximateLocation.trim().isEmpty
+                                      ? 'Add the area where you want to meet people.'
+                                      : 'Showing people near $_approximateLocation.',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppTheme.cardGap),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _profileMint,
+                                side: BorderSide(
+                                  color: _profileMint.withValues(alpha: 0.26),
+                                ),
+                              ),
+                              onPressed: () async {
+                                final resolved = await Navigator.of(context)
+                                    .push<ResolvedLocation>(
+                                      MaterialPageRoute<ResolvedLocation>(
+                                        builder: (context) =>
+                                            const LocationCompletionScreen(),
+                                      ),
+                                    );
+                                if (!mounted || resolved == null) {
+                                  return;
+                                }
 
-                          setState(() {
-                            _approximateLocation = resolved.label;
-                            _resolvedLocation = resolved;
-                          });
-                        },
-                        icon: const Icon(Icons.travel_explore_outlined),
-                        label: Text(
-                          _approximateLocation.trim().isEmpty
-                              ? 'Choose location'
-                              : 'Update location',
+                                setState(() {
+                                  _approximateLocation = resolved.label;
+                                  _resolvedLocation = resolved;
+                                });
+                              },
+                              icon: const Icon(Icons.travel_explore_outlined),
+                              label: Text(
+                                _approximateLocation.trim().isEmpty
+                                    ? 'Choose location'
+                                    : 'Update location',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: AppTheme.sectionSpacing()),
+                    _ProfileEditSection(
+                      icon: Icons.auto_awesome_outlined,
+                      accentColor: _profileLavender,
+                      title: 'Fine-tune matching',
+                      description:
+                          'Optional filters stay here so the main edit flow stays quick.',
+                      child: Theme(
+                        data: theme.copyWith(dividerColor: Colors.transparent),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: _profileLavender.withValues(
+                              alpha: theme.brightness == Brightness.dark
+                                  ? 0.12
+                                  : 0.05,
+                            ),
+                            borderRadius: AppTheme.cardRadius,
+                          ),
+                          child: ExpansionTile(
+                            tilePadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 2,
+                            ),
+                            childrenPadding: const EdgeInsets.fromLTRB(
+                              14,
+                              0,
+                              14,
+                              14,
+                            ),
+                            iconColor: _profileLavender,
+                            collapsedIconColor: _profileSlate,
+                            title: const Text('Age and height filters'),
+                            subtitle: const Text(
+                              'Leave blank to keep these flexible.',
+                            ),
+                            children: [
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _minAgeController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Minimum preferred age',
+                                  hintText: '25',
+                                ),
+                                validator: _validatePositiveInteger,
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _maxAgeController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Maximum preferred age',
+                                  hintText: '35',
+                                ),
+                                validator: (value) => _validateMaxAge(
+                                  value,
+                                  minAgeValue: _minAgeController.text,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _heightController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Height (cm)',
+                                  hintText: '172',
+                                ),
+                                validator: _validatePositiveInteger,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
+                    SizedBox(height: AppTheme.sectionSpacing(compact: true)),
                   ],
                 ),
               ),
-              SizedBox(height: AppTheme.sectionSpacing()),
-              _ProfileEditSection(
-                icon: Icons.auto_awesome_outlined,
-                accentColor: _profileLavender,
-                title: 'Fine-tune matching',
-                description:
-                    'Optional filters stay here so the main edit flow stays quick.',
-                child: Theme(
-                  data: theme.copyWith(dividerColor: Colors.transparent),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: _profileLavender.withValues(
-                        alpha: theme.brightness == Brightness.dark
-                            ? 0.12
-                            : 0.05,
-                      ),
-                      borderRadius: AppTheme.cardRadius,
-                    ),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 2,
-                      ),
-                      childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                      iconColor: _profileLavender,
-                      collapsedIconColor: _profileSlate,
-                      title: const Text('Age and height filters'),
-                      subtitle: const Text(
-                        'Leave blank to keep these flexible.',
-                      ),
-                      children: [
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _minAgeController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Minimum preferred age',
-                            hintText: '25',
-                          ),
-                          validator: _validatePositiveInteger,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _maxAgeController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Maximum preferred age',
-                            hintText: '35',
-                          ),
-                          validator: (value) => _validateMaxAge(
-                            value,
-                            minAgeValue: _minAgeController.text,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _heightController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Height (cm)',
-                            hintText: '172',
-                          ),
-                          validator: _validatePositiveInteger,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
             ],
           ),
         ),
@@ -781,30 +742,11 @@ class _ProfileEditHeader extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(3),
-                    child: photoUrl != null
-                        ? UserAvatar(
-                            name: readOnly.name,
-                            photoUrl: photoUrl,
-                            radius: 24,
-                          )
-                        : Container(
-                            width: 48,
-                            height: 48,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: colorScheme.surface,
-                              borderRadius: const BorderRadius.all(
-                                Radius.circular(15),
-                              ),
-                            ),
-                            child: Text(
-                              _initialFor(readOnly.name),
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                color: _profileSky,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
+                    child: UserAvatar(
+                      name: readOnly.name,
+                      photoUrl: photoUrl,
+                      radius: 24,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -875,11 +817,6 @@ class _ProfileEditHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-String _initialFor(String value) {
-  final trimmed = value.trim();
-  return trimmed.isEmpty ? '?' : trimmed.substring(0, 1).toUpperCase();
 }
 
 class _ProfileEditSection extends StatelessWidget {
@@ -1023,6 +960,91 @@ class _ProfileFieldLabel extends StatelessWidget {
       style: Theme.of(
         context,
       ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+    );
+  }
+}
+
+class _ProfileEditOptionGrid extends StatelessWidget {
+  const _ProfileEditOptionGrid({
+    required this.options,
+    required this.accentColor,
+    required this.selectedOptions,
+    required this.onOptionToggled,
+  });
+
+  final List<String> options;
+  final Color accentColor;
+  final Set<String> selectedOptions;
+  final void Function(String option, bool selected) onOptionToggled;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: options.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: AppTheme.cardGap,
+        mainAxisSpacing: AppTheme.cardGap,
+        mainAxisExtent: 52,
+      ),
+      itemBuilder: (context, index) {
+        final option = options[index];
+        final selected = selectedOptions.contains(option);
+
+        return Material(
+          color: selected
+              ? accentColor.withValues(alpha: isDark ? 0.24 : 0.12)
+              : colorScheme.surface.withValues(alpha: isDark ? 0.72 : 0.9),
+          borderRadius: AppTheme.cardRadius,
+          child: InkWell(
+            borderRadius: AppTheme.cardRadius,
+            onTap: () => onOptionToggled(option, !selected),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: AppTheme.cardRadius,
+                border: Border.all(
+                  color: selected
+                      ? accentColor.withValues(alpha: 0.32)
+                      : colorScheme.outlineVariant.withValues(alpha: 0.28),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      selected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 18,
+                      color: selected
+                          ? accentColor
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        formatDisplayLabel(option),
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: selected ? accentColor : colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

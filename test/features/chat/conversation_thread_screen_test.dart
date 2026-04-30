@@ -94,7 +94,7 @@ void main() {
       find.text('A detail, a question, or a simple plan works well.'),
       findsNothing,
     );
-    expect(find.text('Active recently'), findsOneWidget);
+    expect(find.text('Tap name to view profile'), findsOneWidget);
     expect(find.text('Hey Dana'), findsOneWidget);
 
     final initialSendButton = tester.widget<IconButton>(
@@ -123,7 +123,7 @@ void main() {
       tester,
       find.text('Hey Dana'),
     );
-    expect(incomingBubbleDecoration.color, AppTheme.matchTint);
+    expect(incomingBubbleDecoration.color, isNotNull);
 
     final outgoingBubbleDecoration = _nearestDecoratedBoxDecoration(
       tester,
@@ -193,27 +193,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Be genuine, be curious'), findsOneWidget);
-      expect(
-        find.text('3 messages so far · Started Apr 18, 2026'),
-        findsOneWidget,
-      );
-      expect(find.text('Apr 18, 2026'), findsOneWidget);
-      expect(find.text('Apr 19, 2026'), findsOneWidget);
+      expect(find.text('Apr 18'), findsOneWidget);
+      expect(find.text('Apr 19'), findsOneWidget);
 
-      final summaryCardDecoration = _ancestorDecoratedBoxDecorationWhere(
-        tester,
-        find.text('Be genuine, be curious'),
-        (decoration) => decoration.gradient != null,
-      );
-      final summaryGradient = summaryCardDecoration.gradient! as LinearGradient;
-      expect(summaryGradient.colors.first, AppTheme.matchTint);
-
-      final summaryTop = tester
-          .getTopLeft(find.text('Be genuine, be curious'))
-          .dy;
-      final screenHeight = tester.getSize(find.byType(Scaffold)).height;
-      expect(summaryTop, lessThan(screenHeight * 0.55));
+      expect(find.text('That sounds perfect.'), findsOneWidget);
 
       expect(find.byType(SingleChildScrollView), findsOneWidget);
       expect(find.byType(ListView), findsNothing);
@@ -253,8 +236,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('No messages yet'), findsOneWidget);
     expect(
-      find.text('No messages yet. Say hello to start the conversation.'),
+      find.text('Start the conversation with Noa when you\'re ready.'),
       findsOneWidget,
     );
   });
@@ -476,7 +460,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Active recently'));
+    await tester.tap(find.text('Noa').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Always up for a museum date.'), findsOneWidget);

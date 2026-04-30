@@ -1,16 +1,22 @@
-String formatDateTimeStamp(DateTime value) {
+String formatDateTimeStamp(DateTime value, {DateTime? reference}) {
   final local = value.toLocal();
   final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
   final minute = local.minute.toString().padLeft(2, '0');
   final meridiem = local.hour >= 12 ? 'PM' : 'AM';
 
-  return '${_monthLabel(local.month)} ${local.day}, ${local.year} · $hour:$minute $meridiem';
+  return '${formatShortDate(local, reference: reference)} · $hour:$minute $meridiem';
 }
 
-String formatShortDate(DateTime value) {
+String formatShortDate(DateTime value, {DateTime? reference}) {
   final local = value.toLocal();
+  final current = (reference ?? DateTime.now()).toLocal();
+  final dateLabel = '${_monthLabel(local.month)} ${local.day}';
 
-  return '${_monthLabel(local.month)} ${local.day}, ${local.year}';
+  if (local.year == current.year) {
+    return dateLabel;
+  }
+
+  return '$dateLabel, ${local.year}';
 }
 
 String _monthLabel(int month) {

@@ -5,6 +5,8 @@ import '../../api/api_error.dart';
 import '../../models/pending_liker.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_group_label.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
@@ -25,22 +27,6 @@ class PendingLikersScreen extends ConsumerWidget {
     final controller = ref.read(pendingLikersControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 44,
-        title: Text(
-          'Likes you',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh people who liked you',
-            onPressed: controller.refresh,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: likersState.when(
           data: (likers) => Column(
@@ -49,26 +35,41 @@ class PendingLikersScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppTheme.pagePadding,
-                  0,
+                  8,
                   AppTheme.pagePadding,
-                  10,
+                  8,
                 ),
-                child: _PendingLikersIntroCard(waitingCount: likers.length),
+                child: AppRouteHeader(
+                  title: 'Likes you',
+                  trailing: IconButton(
+                    tooltip: 'Refresh people who liked you',
+                    onPressed: controller.refresh,
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                ),
               ),
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: controller.refresh,
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: AppTheme.screenPadding(),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppTheme.pagePadding,
+                      0,
+                      AppTheme.pagePadding,
+                      AppTheme.pagePadding,
+                    ),
                     children: [
+                      _PendingLikersIntroCard(waitingCount: likers.length),
+                      SizedBox(height: AppTheme.sectionSpacing(compact: true)),
                       if (likers.isEmpty)
                         _PendingLikersEmptyState(onRefresh: controller.refresh)
                       else ...[
-                        _PendingLikersSectionLabel(
+                        AppGroupLabel(
                           title: likers.length == 1
                               ? '1 person waiting'
                               : '${likers.length} people waiting',
+                          accentColor: _pendingRose,
                         ),
                         SizedBox(height: AppTheme.listSpacing(compact: true)),
                         ...likers.map(
@@ -88,17 +89,35 @@ class PendingLikersScreen extends ConsumerWidget {
           ),
           loading: () => Padding(
             padding: AppTheme.screenPadding(),
-            child: const AppAsyncState.loading(
-              message: 'Loading people who liked you…',
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppRouteHeader(title: 'Likes you'),
+                SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.loading(
+                    message: 'Loading people who liked you…',
+                  ),
+                ),
+              ],
             ),
           ),
           error: (error, _) => Padding(
             padding: AppTheme.screenPadding(),
-            child: AppAsyncState.error(
-              message: error is ApiError
-                  ? error.message
-                  : 'Unable to load pending likes right now.',
-              onRetry: controller.refresh,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const AppRouteHeader(title: 'Likes you'),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.error(
+                    message: error is ApiError
+                        ? error.message
+                        : 'Unable to load pending likes right now.',
+                    onRetry: controller.refresh,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -188,57 +207,13 @@ class _PendingLikersIntroCard extends StatelessWidget {
                 ),
                 const _PendingInfoPill(
                   icon: Icons.person_search_rounded,
-                  label: 'Profile first',
+                  label: 'Open profile first',
                   color: _pendingSky,
                 ),
               ],
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _PendingLikersSectionLabel extends StatelessWidget {
-  const _PendingLikersSectionLabel({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 4,
-            decoration: BoxDecoration(
-              color: _pendingRose,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -363,7 +338,7 @@ class _PendingLikerCard extends StatelessWidget {
       ),
     );
     final summary =
-        liker.summaryLine ?? 'Open ${liker.name}’s profile for a closer look.';
+        liker.summaryLine ?? 'Open ${liker.name}’s profile before deciding.';
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(context, color: surfaceColor),

@@ -5,6 +5,8 @@ import '../../api/api_error.dart';
 import '../../models/achievement_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_group_label.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../theme/app_theme.dart';
 import 'achievement_detail_sheet.dart';
 import 'stats_provider.dart';
@@ -52,28 +54,6 @@ class AchievementsScreen extends ConsumerWidget {
     final achievementsState = ref.watch(achievementsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 44,
-        title: Text(
-          'Achievements',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              tooltip: 'Refresh achievements',
-              onPressed: () => ref.invalidate(achievementsProvider),
-              icon: const Icon(Icons.refresh_rounded),
-            ),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: achievementsState.when(
           data: (achievements) {
@@ -92,16 +72,24 @@ class AchievementsScreen extends ConsumerWidget {
             final pending = achievements
                 .where((achievement) => achievement.isUnlocked != true)
                 .toList();
-
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(
                 AppTheme.pagePadding,
-                0,
+                8,
                 AppTheme.pagePadding,
                 AppTheme.pagePadding,
               ),
               children: [
+                AppRouteHeader(
+                  title: 'Achievements',
+                  trailing: IconButton(
+                    tooltip: 'Refresh achievements',
+                    onPressed: () => ref.invalidate(achievementsProvider),
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 if (achievements.isEmpty)
                   AppAsyncState.empty(
                     message:
@@ -118,7 +106,7 @@ class AchievementsScreen extends ConsumerWidget {
                   ),
                   SizedBox(height: AppTheme.sectionSpacing()),
                   if (unlocked.isNotEmpty) ...[
-                    _AchievementSectionLabel(
+                    AppGroupLabel(
                       title: 'Unlocked',
                       accentColor: _achievementAmber,
                       countText: '$unlockedCount',
@@ -133,7 +121,7 @@ class AchievementsScreen extends ConsumerWidget {
                   if (pending.isNotEmpty) ...[
                     if (unlocked.isNotEmpty)
                       SizedBox(height: AppTheme.sectionSpacing()),
-                    _AchievementSectionLabel(
+                    AppGroupLabel(
                       title: 'Still building',
                       accentColor: _achievementViolet,
                       countText: '${pending.length}',
@@ -151,17 +139,35 @@ class AchievementsScreen extends ConsumerWidget {
           },
           loading: () => Padding(
             padding: AppTheme.screenPadding(),
-            child: const AppAsyncState.loading(
-              message: 'Loading achievements…',
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppRouteHeader(title: 'Achievements'),
+                SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.loading(
+                    message: 'Loading achievements…',
+                  ),
+                ),
+              ],
             ),
           ),
           error: (error, stackTrace) => Padding(
             padding: AppTheme.screenPadding(),
-            child: AppAsyncState.error(
-              message: error is ApiError
-                  ? error.message
-                  : 'Unable to load achievements right now.',
-              onRetry: () => ref.invalidate(achievementsProvider),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const AppRouteHeader(title: 'Achievements'),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.error(
+                    message: error is ApiError
+                        ? error.message
+                        : 'Unable to load achievements right now.',
+                    onRetry: () => ref.invalidate(achievementsProvider),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -501,7 +507,8 @@ class _AchievementCard extends StatelessWidget {
                               backgroundColor: spec.statusBackgroundColor,
                               foregroundColor: spec.statusForegroundColor,
                             ),
-                            if (progress != null)
+                            if (progress != null &&
+                                achievement.isUnlocked != true)
                               _AchievementSignalChip(
                                 icon: progressValue != null
                                     ? Icons.insights_rounded
@@ -576,83 +583,6 @@ class _AchievementSummaryPill extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AchievementSectionLabel extends StatelessWidget {
-  const _AchievementSectionLabel({
-    required this.title,
-    required this.accentColor,
-    this.countText,
-  });
-
-  final String title;
-  final Color accentColor;
-  final String? countText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 3,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.85),
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (countText != null) ...[
-            const SizedBox(width: 8),
-            Align(
-              alignment: Alignment.center,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(
-                    alpha: theme.brightness == Brightness.dark ? 0.18 : 0.08,
-                  ),
-                  borderRadius: AppTheme.chipRadius,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    countText!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: accentColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 12),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

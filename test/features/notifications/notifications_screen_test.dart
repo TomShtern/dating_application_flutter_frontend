@@ -10,7 +10,6 @@ import 'package:flutter_dating_application_1/features/notifications/notification
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/notification_item.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
-import 'package:flutter_dating_application_1/shared/widgets/section_intro_card.dart';
 
 Finder notificationsScrollable() {
   return find.descendant(
@@ -76,18 +75,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SectionIntroCard), findsOneWidget);
-      expect(find.text('2 unread • 3 total'), findsOneWidget);
+      expect(find.text('Notifications'), findsWidgets);
+      expect(find.text('2 unread of 3'), findsOneWidget);
       expect(find.text('Unread only'), findsOneWidget);
       expect(find.text('Mark all read'), findsOneWidget);
       expect(find.byTooltip('Refresh'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.byTooltip('Refresh'),
-        ),
-        findsNothing,
-      );
+      expect(find.byType(AppBar), findsNothing);
     },
   );
 
@@ -138,7 +131,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(AppBar, 'Notifications'), findsOneWidget);
+      expect(find.text('Notifications'), findsWidgets);
       expect(find.text('Today'), findsOneWidget);
       expect(find.text('Yesterday'), findsWidgets);
 

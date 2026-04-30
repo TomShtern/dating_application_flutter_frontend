@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/app_config.dart';
-import '../media/media_url.dart';
 import '../../theme/app_theme.dart';
+import '../media/media_url.dart';
+import 'user_avatar.dart';
 
 /// Photo-backed person card with fallback when photo is unavailable.
 /// Shows: photo or gradient monogram fallback, name, age, optional location line.
@@ -151,13 +152,21 @@ class _MonogramFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = appPhotoFallbackPalette(context, name);
+
     return Container(
-      color: colorScheme.surfaceContainerHighest,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [palette.surface, palette.surfaceAlt],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Center(
         child: Text(
-          _initials(name),
+          appPhotoInitials(name),
           style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
+            color: palette.labelForeground,
             fontWeight: FontWeight.w800,
             fontSize: 16,
           ),
@@ -165,18 +174,4 @@ class _MonogramFallback extends StatelessWidget {
       ),
     );
   }
-}
-
-String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList(growable: false);
-  if (parts.isEmpty) return '•';
-  final first = String.fromCharCodes(parts.first.runes.take(1));
-  final second = parts.length > 1
-      ? String.fromCharCodes(parts.last.runes.take(1))
-      : '';
-  return '$first$second'.toUpperCase();
 }

@@ -10,6 +10,7 @@ import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
@@ -103,104 +104,106 @@ class _ConversationThreadScreenState
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 54,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        title: InkWell(
-          onTap: () => _handleConversationMenuAction(
-            _ConversationMenuAction.viewProfile,
-          ),
-          borderRadius: AppTheme.chipRadius,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                UserAvatar(name: widget.conversation.otherUserName, radius: 18),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.conversation.otherUserName,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      if (_showActivityIndicator)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                color: colorScheme.onSurfaceVariant,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                'Status unavailable',
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Text(
-                          'Tap name to view profile',
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          AppOverflowMenuButton<_ConversationMenuAction>(
-            tooltip: 'Conversation options',
-            items: const [
-              PopupMenuItem<_ConversationMenuAction>(
-                value: _ConversationMenuAction.viewProfile,
-                child: Text('View profile'),
-              ),
-              PopupMenuItem<_ConversationMenuAction>(
-                value: _ConversationMenuAction.safetyActions,
-                child: Text('Safety actions'),
-              ),
-              PopupMenuItem<_ConversationMenuAction>(
-                value: _ConversationMenuAction.refresh,
-                child: Text('Refresh messages'),
-              ),
-            ],
-            onSelected: _handleConversationMenuAction,
-          ),
-        ],
-      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              AppRouteHeader(
+                title: 'Conversation',
+                subtitle: 'Back to chats',
+                trailing: AppOverflowMenuButton<_ConversationMenuAction>(
+                  tooltip: 'Conversation options',
+                  items: const [
+                    PopupMenuItem<_ConversationMenuAction>(
+                      value: _ConversationMenuAction.viewProfile,
+                      child: Text('View profile'),
+                    ),
+                    PopupMenuItem<_ConversationMenuAction>(
+                      value: _ConversationMenuAction.safetyActions,
+                      child: Text('Safety actions'),
+                    ),
+                    PopupMenuItem<_ConversationMenuAction>(
+                      value: _ConversationMenuAction.refresh,
+                      child: Text('Refresh messages'),
+                    ),
+                  ],
+                  onSelected: _handleConversationMenuAction,
+                ),
+              ),
+              const SizedBox(height: 6),
+              InkWell(
+                onTap: () => _handleConversationMenuAction(
+                  _ConversationMenuAction.viewProfile,
+                ),
+                borderRadius: AppTheme.cardRadius,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      UserAvatar(
+                        name: widget.conversation.otherUserName,
+                        radius: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.conversation.otherUserName,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            if (_showActivityIndicator)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.onSurfaceVariant,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      'Status unavailable',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              Text(
+                                'Tap name to view profile',
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) => threadState.when(
@@ -477,8 +480,27 @@ class _ConversationThreadScreenState
         return;
       }
 
+      final targetOffset = alignToBottom
+          ? position.maxScrollExtent
+          : position.minScrollExtent;
+
+      if (isInitialAutoScroll) {
+        _messagesScrollController.jumpTo(targetOffset);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_messagesScrollController.hasClients) {
+            return;
+          }
+          _messagesScrollController.jumpTo(
+            alignToBottom
+                ? _messagesScrollController.position.maxScrollExtent
+                : _messagesScrollController.position.minScrollExtent,
+          );
+        });
+        return;
+      }
+
       _messagesScrollController.animateTo(
-        alignToBottom ? position.maxScrollExtent : position.minScrollExtent,
+        targetOffset,
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
       );

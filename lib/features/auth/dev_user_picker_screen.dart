@@ -5,6 +5,7 @@ import '../../api/api_error.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_group_label.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
@@ -69,13 +70,10 @@ class DevUserPickerScreen extends ConsumerWidget {
               selectedUser: selectedUser.asData?.value,
               selectedUserLoading: selectedUser.isLoading,
               availableCount: availableCount,
+              currentUserWidget: currentUserWidget,
             ),
-            const SizedBox(height: AppTheme.cardGap),
-            const BackendHealthBanner(),
-            const SizedBox(height: AppTheme.cardGap),
-            currentUserWidget,
             SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-            _PickerSectionLabel(
+            AppGroupLabel(
               title: 'Available profiles',
               accentColor: _pickerLavender,
               countText: availableCount == null ? null : '$availableCount',
@@ -118,11 +116,13 @@ class _DeveloperIntroCard extends StatelessWidget {
     required this.selectedUser,
     required this.selectedUserLoading,
     required this.availableCount,
+    required this.currentUserWidget,
   });
 
   final UserSummary? selectedUser;
   final bool selectedUserLoading;
   final int? availableCount;
+  final Widget currentUserWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -136,23 +136,32 @@ class _DeveloperIntroCard extends StatelessWidget {
       title: 'Development sign-in',
       description:
           'Pick a seeded profile to preview the app with. This device remembers the active dev profile between launches until you switch it again.',
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _DeveloperStatusPill(
-            icon: selectedUserLoading
-                ? Icons.sync_rounded
-                : Icons.person_outline_rounded,
-            label: selectedLabel,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _DeveloperStatusPill(
+                icon: selectedUserLoading
+                    ? Icons.sync_rounded
+                    : Icons.person_outline_rounded,
+                label: selectedLabel,
+              ),
+              if (availableCount != null)
+                _DeveloperStatusPill(
+                  icon: Icons.group_outlined,
+                  label: availableCount == 1
+                      ? '1 seeded profile'
+                      : '$availableCount seeded profiles',
+                ),
+            ],
           ),
-          if (availableCount != null)
-            _DeveloperStatusPill(
-              icon: Icons.group_outlined,
-              label: availableCount == 1
-                  ? '1 seeded profile'
-                  : '$availableCount seeded profiles',
-            ),
+          const SizedBox(height: 12),
+          currentUserWidget,
+          const SizedBox(height: 12),
+          const BackendHealthBanner(),
         ],
       ),
     );
@@ -193,83 +202,6 @@ class _DeveloperStatusPill extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _PickerSectionLabel extends StatelessWidget {
-  const _PickerSectionLabel({
-    required this.title,
-    required this.accentColor,
-    this.countText,
-  });
-
-  final String title;
-  final Color accentColor;
-  final String? countText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 3,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.85),
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (countText != null) ...[
-            const SizedBox(width: 8),
-            Align(
-              alignment: Alignment.center,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(
-                    alpha: theme.brightness == Brightness.dark ? 0.18 : 0.08,
-                  ),
-                  borderRadius: AppTheme.chipRadius,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    countText!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: accentColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 12),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

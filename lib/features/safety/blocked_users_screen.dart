@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_error.dart';
 import '../../models/blocked_user_summary.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_group_label.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../theme/app_theme.dart';
 import 'blocked_users_provider.dart';
 
@@ -25,21 +27,8 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
   Widget build(BuildContext context) {
     final blockedUsersState = ref.watch(blockedUsersProvider);
     final controller = ref.read(blockedUsersControllerProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 44,
-        title: Text(
-          'Blocked users',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
       body: SafeArea(
         child: blockedUsersState.when(
           data: (users) => RefreshIndicator(
@@ -48,14 +37,16 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(
                 AppTheme.pagePadding,
-                0,
+                8,
                 AppTheme.pagePadding,
                 AppTheme.pagePadding,
               ),
               children: [
+                const AppRouteHeader(title: 'Blocked users'),
+                const SizedBox(height: 8),
                 _BlockedUsersOverviewCard(blockedCount: users.length),
                 SizedBox(height: AppTheme.sectionSpacing()),
-                _BlockedUsersSectionLabel(
+                AppGroupLabel(
                   title: 'Blocked profiles',
                   accentColor: _blockedRose,
                   countText: '${users.length}',
@@ -79,17 +70,35 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
           ),
           loading: () => Padding(
             padding: AppTheme.screenPadding(),
-            child: const AppAsyncState.loading(
-              message: 'Loading blocked users…',
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppRouteHeader(title: 'Blocked users'),
+                SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.loading(
+                    message: 'Loading blocked users…',
+                  ),
+                ),
+              ],
             ),
           ),
           error: (error, _) => Padding(
             padding: AppTheme.screenPadding(),
-            child: AppAsyncState.error(
-              message: error is ApiError
-                  ? error.message
-                  : 'Unable to load blocked users right now.',
-              onRetry: controller.refresh,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const AppRouteHeader(title: 'Blocked users'),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.error(
+                    message: error is ApiError
+                        ? error.message
+                        : 'Unable to load blocked users right now.',
+                    onRetry: controller.refresh,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -190,8 +199,8 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
         ? 'blocked profile'
         : 'blocked profiles';
     final summaryText = blockedCount == 0
-        ? 'People you block will appear here.'
-        : 'Blocked profiles stay hidden until you deliberately unblock them.';
+        ? 'People you block stay hidden from discovery, matches, and chat until you unblock them.'
+        : 'Blocked profiles stay hidden from discovery, matches, and chat until you unblock them.';
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
@@ -347,83 +356,6 @@ class _BlockedUsersEmptyState extends StatelessWidget {
   }
 }
 
-class _BlockedUsersSectionLabel extends StatelessWidget {
-  const _BlockedUsersSectionLabel({
-    required this.title,
-    required this.accentColor,
-    this.countText,
-  });
-
-  final String title;
-  final Color accentColor;
-  final String? countText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 3,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.85),
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (countText != null) ...[
-            const SizedBox(width: 8),
-            Align(
-              alignment: Alignment.center,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(
-                    alpha: theme.brightness == Brightness.dark ? 0.18 : 0.08,
-                  ),
-                  borderRadius: AppTheme.chipRadius,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    countText!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: accentColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 12),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _BlockedLeadingIconChip extends StatelessWidget {
   const _BlockedLeadingIconChip({
     required this.icon,
@@ -574,7 +506,7 @@ class _BlockedUserTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        'Hidden from discovery, matches, and chat.',
+                        'Added to your blocked list.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           height: 1.35,
                         ),
@@ -589,14 +521,6 @@ class _BlockedUserTile extends StatelessWidget {
                             label: user.statusLabel,
                             backgroundColor: statusBackgroundColor,
                             foregroundColor: statusForegroundColor,
-                          ),
-                          _BlockedStatusPill(
-                            icon: Icons.lock_open_rounded,
-                            label: 'Can unblock',
-                            backgroundColor: _blockedSlate.withValues(
-                              alpha: isDark ? 0.16 : 0.07,
-                            ),
-                            foregroundColor: _blockedSlate,
                           ),
                         ],
                       ),

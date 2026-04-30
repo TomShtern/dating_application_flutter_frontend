@@ -8,6 +8,8 @@ import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_group_label.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../theme/app_theme.dart';
 import '../auth/selected_user_provider.dart';
 import '../chat/conversation_thread_screen.dart';
@@ -34,23 +36,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final unreadOnly = ref.watch(notificationsUnreadOnlyProvider);
     final notificationsState = ref.watch(notificationsProvider);
     final referenceTime = widget.now ?? DateTime.now();
-    final canPop = Navigator.of(context).canPop();
-
     return Scaffold(
-      appBar: canPop
-          ? AppBar(
-              toolbarHeight: 44,
-              title: Text(
-                'Notifications',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-            )
-          : null,
       body: SafeArea(
         child: notificationsState.when(
           data: (notifications) {
@@ -64,6 +50,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: AppTheme.screenPadding(),
                 children: [
+                  const AppRouteHeader(title: 'Notifications'),
+                  const SizedBox(height: 8),
                   _NotificationsIntroCard(
                     totalCount: notifications.length,
                     unreadCount: unreadCount,
@@ -95,17 +83,35 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           },
           loading: () => Padding(
             padding: AppTheme.screenPadding(),
-            child: const AppAsyncState.loading(
-              message: 'Loading notifications…',
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppRouteHeader(title: 'Notifications'),
+                SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.loading(
+                    message: 'Loading notifications…',
+                  ),
+                ),
+              ],
             ),
           ),
           error: (error, _) => Padding(
             padding: AppTheme.screenPadding(),
-            child: AppAsyncState.error(
-              message: error is ApiError
-                  ? error.message
-                  : 'Unable to load notifications right now.',
-              onRetry: controller.refresh,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const AppRouteHeader(title: 'Notifications'),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.error(
+                    message: error is ApiError
+                        ? error.message
+                        : 'Unable to load notifications right now.',
+                    onRetry: controller.refresh,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -272,10 +278,7 @@ List<Widget> _buildNotificationSections({
       widgets.add(SizedBox(height: AppTheme.sectionSpacing(compact: true)));
     }
     widgets.add(
-      _NotificationSectionHeader(
-        label: entry.key,
-        countText: '${entry.value.length}',
-      ),
+      AppGroupLabel(title: entry.key, countText: '${entry.value.length}'),
     );
     widgets.add(SizedBox(height: AppTheme.listSpacing(compact: true)));
 
@@ -319,76 +322,6 @@ String _notificationGroupLabel(DateTime? createdAt, {required DateTime now}) {
   return 'Earlier';
 }
 
-class _NotificationSectionHeader extends StatelessWidget {
-  const _NotificationSectionHeader({required this.label, this.countText});
-
-  final String label;
-  final String? countText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 3,
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.85),
-              borderRadius: const BorderRadius.all(Radius.circular(999)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            label,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (countText != null) ...[
-            const SizedBox(width: 8),
-            Align(
-              alignment: Alignment.center,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.08),
-                  borderRadius: AppTheme.chipRadius,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    countText!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 12),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _NotificationTile extends StatelessWidget {
   const _NotificationTile({
     required this.item,
@@ -426,28 +359,16 @@ class _NotificationTile extends StatelessWidget {
       height: 1.36,
     );
     final surfaceColor = _notificationSurfaceColor(context, spec, unread);
-    Widget? buildTrailing() {
-      if (unread) {
-        return _MarkReadButton(
-          spec: spec,
-          isBusy: isBusy,
-          onPressed: onMarkRead,
-        );
-      }
-      if (route != null) {
-        return Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Icon(
-            Icons.chevron_right_rounded,
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        );
-      }
-      return null;
-    }
-
-    final trailing = buildTrailing();
+    final trailing = route == null
+        ? null
+        : Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          );
 
     return Material(
       color: Colors.transparent,
@@ -523,6 +444,14 @@ class _NotificationTile extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            if (unread) ...[
+                              const SizedBox(width: 6),
+                              _MarkReadButton(
+                                spec: spec,
+                                isBusy: isBusy,
+                                onPressed: onMarkRead,
+                              ),
+                            ],
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -779,41 +708,36 @@ class _MarkReadButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: isBusy ? 'Marking read…' : 'Mark read',
-      onPressed: isBusy ? null : onPressed,
-      padding: EdgeInsets.zero,
-      visualDensity: VisualDensity.compact,
-      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-      style: ButtonStyle(
-        backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
-        foregroundColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) {
-            return spec.color.withValues(alpha: 0.38);
-          }
-
-          return spec.color;
-        }),
-        overlayColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.pressed) ||
-              states.contains(WidgetState.hovered) ||
-              states.contains(WidgetState.focused)) {
-            return spec.color.withValues(alpha: 0.10);
-          }
-
-          return Colors.transparent;
-        }),
-        shape: const WidgetStatePropertyAll(CircleBorder()),
+    return Tooltip(
+      message: isBusy ? 'Marking read…' : 'Mark read',
+      child: OutlinedButton.icon(
+        onPressed: isBusy ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 28),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+          visualDensity: VisualDensity.compact,
+          foregroundColor: spec.color,
+          side: BorderSide(color: spec.color.withValues(alpha: 0.24)),
+          backgroundColor: spec.color.withValues(alpha: 0.06),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        icon: isBusy
+            ? SizedBox.square(
+                dimension: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(spec.color),
+                ),
+              )
+            : Icon(Icons.done_rounded, size: 14, color: spec.color),
+        label: Text(
+          'Mark read',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: spec.color,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
-      icon: isBusy
-          ? SizedBox.square(
-              dimension: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(spec.color),
-              ),
-            )
-          : Icon(Icons.done_rounded, size: 18, color: spec.color),
     );
   }
 }
@@ -911,5 +835,5 @@ String _formatFriendlyNotificationTimestamp(DateTime value, {DateTime? now}) {
     return '$calendarDays days ago';
   }
 
-  return formatShortDate(local);
+  return formatShortDate(local, reference: current);
 }

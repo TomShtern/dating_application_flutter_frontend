@@ -44,11 +44,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(AppBar, 'Achievements'), findsOneWidget);
-      expect(find.text("Dana's achievement progress"), findsOneWidget);
-      expect(find.text('Overall progress'), findsOneWidget);
-      expect(find.text('1 of 2 unlocked'), findsOneWidget);
-      expect(find.text('1 still building'), findsOneWidget);
+      expect(find.text('Achievements'), findsWidgets);
+      expect(find.text('Milestones for Dana'), findsOneWidget);
+      expect(find.text('milestone unlocked'), findsOneWidget);
+      expect(find.text('1 unlocked'), findsOneWidget);
+      expect(find.text('Still building'), findsOneWidget);
       expect(find.byIcon(Icons.workspace_premium_rounded), findsWidgets);
       expect(
         find.text('3/5 conversations started', skipOffstage: false),

@@ -5,7 +5,9 @@ import '../../api/api_error.dart';
 import '../../models/standout.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../shared/widgets/person_media_thumbnail.dart';
+import '../../shared/widgets/view_mode_toggle.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import 'standouts_provider.dart';
@@ -43,24 +45,6 @@ class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
     final controller = ref.read(standoutsControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: Navigator.of(context).canPop(),
-        toolbarHeight: 44,
-        title: Text(
-          'Standouts',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        actionsPadding: const EdgeInsets.only(right: AppTheme.pagePadding - 8),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh standouts',
-            onPressed: controller.refresh,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: standoutsState.when(
           data: (snapshot) => LayoutBuilder(
@@ -70,6 +54,22 @@ class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppTheme.pagePadding,
+                      8,
+                      AppTheme.pagePadding,
+                      8,
+                    ),
+                    child: AppRouteHeader(
+                      title: 'Standouts',
+                      trailing: IconButton(
+                        tooltip: 'Refresh standouts',
+                        onPressed: controller.refresh,
+                        icon: const Icon(Icons.refresh_rounded),
+                      ),
+                    ),
+                  ),
                   _StandoutsHero(
                     snapshot: snapshot,
                     viewMode: viewMode,
@@ -108,13 +108,36 @@ class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
               );
             },
           ),
-          loading: () =>
-              const AppAsyncState.loading(message: 'Loading standouts…'),
-          error: (error, _) => AppAsyncState.error(
-            message: error is ApiError
-                ? error.message
-                : 'Unable to load standouts right now.',
-            onRetry: controller.refresh,
+          loading: () => Padding(
+            padding: AppTheme.screenPadding(),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppRouteHeader(title: 'Standouts'),
+                SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.loading(message: 'Loading standouts…'),
+                ),
+              ],
+            ),
+          ),
+          error: (error, _) => Padding(
+            padding: AppTheme.screenPadding(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const AppRouteHeader(title: 'Standouts'),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: AppAsyncState.error(
+                    message: error is ApiError
+                        ? error.message
+                        : 'Unable to load standouts right now.',
+                    onRetry: controller.refresh,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -201,23 +224,15 @@ class _StandoutsHero extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SegmentedButton<_StandoutsViewMode>(
+                  ViewModeToggle(
                     key: const ValueKey('standouts-view-toggle'),
-                    segments: const [
-                      ButtonSegment<_StandoutsViewMode>(
-                        value: _StandoutsViewMode.grid,
-                        icon: Icon(Icons.grid_view_rounded),
-                        label: Text('Grid'),
-                      ),
-                      ButtonSegment<_StandoutsViewMode>(
-                        value: _StandoutsViewMode.list,
-                        icon: Icon(Icons.view_agenda_outlined),
-                        label: Text('List'),
-                      ),
-                    ],
-                    selected: {viewMode},
-                    onSelectionChanged: (selection) {
-                      onViewModeChanged(selection.first);
+                    isGrid: viewMode == _StandoutsViewMode.grid,
+                    onChanged: (isGrid) {
+                      onViewModeChanged(
+                        isGrid
+                            ? _StandoutsViewMode.grid
+                            : _StandoutsViewMode.list,
+                      );
                     },
                   ),
                 ],
@@ -247,7 +262,7 @@ class _StandoutsGrid extends StatelessWidget {
         final availableWidth =
             constraints.maxWidth - (_standoutsCardGap * (crossAxisCount - 1));
         final tileWidth = availableWidth / crossAxisCount;
-        final mainAxisExtent = tileWidth >= 220 ? 252.0 : 242.0;
+        final mainAxisExtent = tileWidth >= 220 ? 276.0 : 268.0;
 
         return GridView.builder(
           key: const ValueKey('standouts-grid'),
@@ -315,7 +330,7 @@ class _StandoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = standout.rank == 1 ? _standoutAmber : _standoutViolet;
+    final accentColor = _standoutAccentColor(standout);
 
     return DecoratedBox(
       key: ValueKey('standout-card-${standout.id}'),
@@ -454,7 +469,7 @@ class _StandoutListContent extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: Icon(
             Icons.chevron_right_rounded,
-            color: _standoutAmber.withValues(alpha: 0.84),
+            color: _standoutAccentColor(standout).withValues(alpha: 0.84),
             size: 22,
           ),
         ),
@@ -477,6 +492,13 @@ class _StandoutGridContent extends StatelessWidget {
     final theme = Theme.of(context);
     final metadata = _standoutFreshness(standout);
     final location = standout.approximateLocation;
+    final primaryContextLabel = location ?? metadata;
+    final primaryContextIcon = location != null && location.isNotEmpty
+        ? Icons.location_on_outlined
+        : Icons.schedule_rounded;
+    final primaryContextColor = location != null && location.isNotEmpty
+        ? _standoutViolet
+        : _standoutRose;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,7 +508,7 @@ class _StandoutGridContent extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: _StandoutRankBadge(standout: standout, compact: true),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         PersonMediaThumbnail(
           key: ValueKey('standout-media-${standout.id}'),
           name: standout.standoutUserName,
@@ -495,10 +517,10 @@ class _StandoutGridContent extends StatelessWidget {
             standout.photoUrls,
           ),
           width: double.infinity,
-          height: 96,
+          height: 84,
           borderRadius: AppTheme.cardRadius,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           _standoutDisplayName(standout),
           maxLines: 1,
@@ -507,45 +529,34 @@ class _StandoutGridContent extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (location != null && location.isNotEmpty)
-              _StandoutInfoPill(
-                icon: Icons.location_on_outlined,
-                label: location,
-                color: _standoutViolet,
-              ),
-            if (metadata != null)
-              _StandoutInfoPill(
-                icon: Icons.schedule_rounded,
-                label: metadata,
-                color: _standoutRose,
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
+        if (primaryContextLabel != null) ...[
+          const SizedBox(height: 6),
+          _StandoutInfoPill(
+            icon: primaryContextIcon,
+            label: primaryContextLabel,
+            color: primaryContextColor,
+          ),
+        ],
+        const SizedBox(height: 6),
         Expanded(
           child: Text(
             _humanizeStandoutReason(standout),
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Align(
           alignment: Alignment.centerRight,
           child: IconButton(
             onPressed: onOpenProfile,
             tooltip: 'Open profile',
             style: IconButton.styleFrom(
-              foregroundColor: _standoutAmber,
-              backgroundColor: _standoutAmber.withValues(
+              foregroundColor: _standoutAccentColor(standout),
+              backgroundColor: _standoutAccentColor(standout).withValues(
                 alpha: Theme.of(context).brightness == Brightness.dark
                     ? 0.18
                     : 0.10,
@@ -723,6 +734,17 @@ String _humanizeStandoutReason(Standout standout) {
   }
 
   return reason;
+}
+
+Color _standoutAccentColor(Standout standout) {
+  if (standout.rank == 1) {
+    return _standoutAmber;
+  }
+  if (standout.interactedAt != null) {
+    return _standoutRose;
+  }
+
+  return _standoutViolet;
 }
 
 String? _primaryPhotoUrl(String? primaryPhotoUrl, List<String> photoUrls) {

@@ -4,6 +4,80 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/app_config.dart';
 import '../media/media_url.dart';
 
+class AppPhotoFallbackPalette {
+  const AppPhotoFallbackPalette({
+    required this.surface,
+    required this.surfaceAlt,
+    required this.accent,
+    required this.accentSoft,
+    required this.labelBackground,
+    required this.labelForeground,
+    required this.outline,
+  });
+
+  final Color surface;
+  final Color surfaceAlt;
+  final Color accent;
+  final Color accentSoft;
+  final Color labelBackground;
+  final Color labelForeground;
+  final Color outline;
+}
+
+AppPhotoFallbackPalette appPhotoFallbackPalette(
+  BuildContext context,
+  String name,
+) {
+  final colorScheme = Theme.of(context).colorScheme;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final hash = name.trim().runes.fold<int>(0, (total, rune) => total + rune);
+  final baseHue = HSLColor.fromColor(colorScheme.primaryContainer).hue;
+  final hue = (baseHue + (hash % 64) - 32 + 360) % 360;
+
+  Color fromHsl(double saturation, double lightness) {
+    return HSLColor.fromAHSL(1, hue, saturation, lightness).toColor();
+  }
+
+  if (isDark) {
+    final accent = fromHsl(0.62, 0.74);
+    return AppPhotoFallbackPalette(
+      surface: fromHsl(0.22, 0.22),
+      surfaceAlt: fromHsl(0.28, 0.28),
+      accent: accent,
+      accentSoft: accent.withValues(alpha: 0.18),
+      labelBackground: colorScheme.surface.withValues(alpha: 0.74),
+      labelForeground: accent,
+      outline: accent.withValues(alpha: 0.16),
+    );
+  }
+
+  final accent = fromHsl(0.56, 0.50);
+  return AppPhotoFallbackPalette(
+    surface: fromHsl(0.34, 0.93),
+    surfaceAlt: fromHsl(0.30, 0.89),
+    accent: accent,
+    accentSoft: accent.withValues(alpha: 0.12),
+    labelBackground: colorScheme.surface.withValues(alpha: 0.88),
+    labelForeground: fromHsl(0.44, 0.38),
+    outline: accent.withValues(alpha: 0.14),
+  );
+}
+
+String appPhotoInitials(String name) {
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList(growable: false);
+  if (parts.isEmpty) {
+    return '•';
+  }
+
+  final first = _firstSymbol(parts.first);
+  final second = parts.length > 1 ? _firstSymbol(parts.last) : '';
+  return '$first$second'.toUpperCase();
+}
+
 class UserAvatar extends ConsumerWidget {
   const UserAvatar({
     super.key,
@@ -18,7 +92,7 @@ class UserAvatar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final palette = appPhotoFallbackPalette(context, name);
     final resolvedPhotoUrl = resolveMediaUrl(
       rawUrl: photoUrl,
       baseUrl: ref.watch(appConfigProvider).baseUrl,
@@ -31,15 +105,12 @@ class UserAvatar extends ConsumerWidget {
       curve: Curves.easeOutCubic,
       width: frameSize,
       height: frameSize,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: colorScheme.outline.withValues(alpha: 0.18),
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: palette.outline),
       padding: EdgeInsets.all(innerPadding),
       child: DecoratedBox(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: colorScheme.surface,
+          color: palette.labelBackground,
         ),
         child: ClipOval(
           child: resolvedPhotoUrl == null
@@ -72,24 +143,23 @@ class _AvatarFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = colorScheme.brightness == Brightness.dark;
-    final colors = _avatarFallbackColors(colorScheme, name);
+    final theme = Theme.of(context);
+    final palette = appPhotoFallbackPalette(context, name);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
-          colors: colors,
+          colors: [palette.surface, palette.surfaceAlt],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
       child: Center(
         child: Text(
-          _initials(name),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: isDark ? const Color(0xFFF8FBFF) : Colors.white,
+          appPhotoInitials(name),
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: palette.labelForeground,
             fontWeight: FontWeight.w800,
             fontSize: radius * 0.72,
             letterSpacing: 0,
@@ -98,45 +168,6 @@ class _AvatarFallback extends StatelessWidget {
       ),
     );
   }
-}
-
-List<Color> _avatarFallbackColors(ColorScheme colorScheme, String name) {
-  if (colorScheme.brightness == Brightness.dark) {
-    return const [Color(0xFF164E63), Color(0xFF355F7E), Color(0xFF705C95)];
-  }
-
-  final hash = name.trim().runes.fold<int>(0, (total, rune) => total + rune);
-  final hueOffset = (hash % 84) - 42;
-
-  Color shifted(Color source, {double saturationBoost = 0}) {
-    final hsl = HSLColor.fromColor(source);
-    return hsl
-        .withHue((hsl.hue + hueOffset) % 360)
-        .withSaturation((hsl.saturation + saturationBoost).clamp(0.46, 0.70))
-        .withLightness(hsl.lightness.clamp(0.46, 0.60))
-        .toColor();
-  }
-
-  return [
-    shifted(colorScheme.primaryContainer, saturationBoost: 0.08),
-    shifted(colorScheme.tertiaryContainer, saturationBoost: 0.04),
-    shifted(colorScheme.secondaryContainer),
-  ];
-}
-
-String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList(growable: false);
-  if (parts.isEmpty) {
-    return '•';
-  }
-
-  final first = _firstSymbol(parts.first);
-  final second = parts.length > 1 ? _firstSymbol(parts.last) : '';
-  return '$first$second'.toUpperCase();
 }
 
 String _firstSymbol(String value) {

@@ -14,7 +14,6 @@ import 'package:flutter_dating_application_1/models/achievement_summary.dart';
 import 'package:flutter_dating_application_1/models/user_stats.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
-import 'package:flutter_dating_application_1/shared/widgets/shell_hero.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -59,33 +58,29 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(AppBar, 'Settings'), findsOneWidget);
+      expect(find.text('Settings'), findsWidgets);
       expect(find.text('Developer only'), findsOneWidget);
-      expect(find.byType(ShellHero), findsNothing);
       expect(find.text('Current session'), findsNothing);
       expect(find.text('Current profile'), findsNothing);
       expect(find.text('Current dev session'), findsOneWidget);
-      expect(find.text('Dana'), findsOneWidget);
-      expect(find.textContaining('Active profile'), findsOneWidget);
+      expect(find.text('Dana'), findsWidgets);
+      expect(find.textContaining('Active profile'), findsWidgets);
       expect(find.text('System sync'), findsNothing);
       expect(find.text('Quick access'), findsOneWidget);
       expect(
         find.text('Jump to the places you are most likely to revisit.'),
         findsNothing,
       );
-      expect(
-        find.widgetWithText(OutlinedButton, 'Switch profile'),
-        findsOneWidget,
-      );
+      expect(find.widgetWithText(OutlinedButton, 'Switch'), findsOneWidget);
       expect(find.text('View stats'), findsOneWidget);
       expect(find.text('View achievements'), findsOneWidget);
       await tester.scrollUntilVisible(
-        find.text('Use system theme'),
+        find.text('Dark'),
         200,
         scrollable: settingsScrollable(),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Use system theme'), findsOneWidget);
+      expect(find.text('System'), findsOneWidget);
       expect(find.text('Light'), findsOneWidget);
       expect(find.text('Dark'), findsOneWidget);
     },
@@ -141,7 +136,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Switch profile'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Switch'));
     await tester.pumpAndSettle();
 
     expect(await selectedUserStore.readSelectedUser(), isNull);
@@ -185,7 +180,7 @@ void main() {
     await tester.tap(statsButton);
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'Stats'), findsOneWidget);
+    expect(find.text('Stats'), findsWidgets);
     await tester.scrollUntilVisible(
       find.text('Matches'),
       200,
@@ -233,7 +228,7 @@ void main() {
     await tester.tap(achievementsButton);
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'Achievements'), findsOneWidget);
+    expect(find.text('Achievements'), findsWidgets);
     await tester.scrollUntilVisible(
       find.text('Conversation Starter'),
       200,

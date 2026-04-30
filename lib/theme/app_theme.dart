@@ -193,18 +193,34 @@ class AppTheme {
         style: ButtonStyle(
           minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return colorScheme.primaryContainer;
+            }
+
+            return colorScheme.surface.withValues(alpha: isDark ? 0.86 : 0.96);
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return colorScheme.onPrimaryContainer;
+            }
+
+            return colorScheme.onSurfaceVariant;
+          }),
           shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(22)),
             ),
           ),
-          side: WidgetStatePropertyAll(
-            BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.42),
-            ),
-          ),
+          side: WidgetStateProperty.resolveWith((states) {
+            return BorderSide(
+              color: states.contains(WidgetState.selected)
+                  ? colorScheme.primary.withValues(alpha: isDark ? 0.22 : 0.18)
+                  : colorScheme.outlineVariant.withValues(alpha: 0.42),
+            );
+          }),
           textStyle: WidgetStatePropertyAll(
             textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),

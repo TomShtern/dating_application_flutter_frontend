@@ -68,15 +68,15 @@ void main() {
 
     expect(find.text('Dana'), findsOneWidget);
     expect(find.text('Basics'), findsOneWidget);
-    expect(find.text('Distance'), findsOneWidget);
-    expect(find.text('Up to 50 km'), findsOneWidget);
-
-    final genderChip = tester.widget<ChoiceChip>(
-      find.widgetWithText(ChoiceChip, 'Female'),
+    await tester.scrollUntilVisible(
+      find.text('Distance'),
+      200,
+      scrollable: find.byType(Scrollable).first,
     );
-    expect(genderChip.selected, isTrue);
-
-    expect(find.widgetWithText(FilterChip, 'Male'), findsOneWidget);
+    expect(find.text('Showing matches within'), findsOneWidget);
+    expect(find.text('50 km'), findsOneWidget);
+    expect(find.text('Female'), findsWidgets);
+    expect(find.text('Male'), findsWidgets);
 
     await tester.scrollUntilVisible(
       find.text('About'),
@@ -98,7 +98,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Age and height filters'));
+    await _expandAgeAndHeightFilters(tester);
     await tester.pumpAndSettle();
 
     expect(_editableTextByValue('25'), findsOneWidget);
@@ -123,11 +123,18 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final slider = tester.widget<Slider>(find.byType(Slider));
+    await tester.scrollUntilVisible(
+      find.byType(Slider),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final sliderFinder = find.byType(Slider);
+    expect(sliderFinder, findsOneWidget);
+    final slider = tester.widget<Slider>(sliderFinder);
     slider.onChanged?.call(80);
     await tester.pumpAndSettle();
 
-    expect(find.text('Up to 80 km'), findsOneWidget);
+    expect(find.text('80 km'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Save changes'));
     await tester.pumpAndSettle();
@@ -153,11 +160,11 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Fine-tune matching'),
+      find.byType(ExpansionTile),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Age and height filters'));
+    await _expandAgeAndHeightFilters(tester);
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -252,10 +259,10 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Open editor'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Non-binary'));
+    await tester.tap(find.text('Non-binary').at(0));
     await tester.pump();
 
-    final interestedInChip = find.widgetWithText(FilterChip, 'Non-binary');
+    final interestedInChip = find.text('Non-binary').at(1);
     await tester.ensureVisible(interestedInChip);
     await tester.pumpAndSettle();
     await tester.tap(interestedInChip);
@@ -334,7 +341,7 @@ void main() {
     expect(find.byType(LocationCompletionScreen), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).first, 'Haifa');
-    await tester.tap(find.widgetWithText(FilledButton, 'Use this location'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save location'));
     await tester.pumpAndSettle();
 
     expect(find.byType(LocationCompletionScreen), findsNothing);
@@ -359,6 +366,25 @@ Finder _editableTextByValue(String value) {
   return find.byWidgetPredicate(
     (widget) => widget is EditableText && widget.controller.text == value,
   );
+}
+
+Future<void> _expandAgeAndHeightFilters(WidgetTester tester) async {
+  final scrollable = find.byType(Scrollable).first;
+
+  await tester.scrollUntilVisible(
+    find.text('Fine-tune matching'),
+    200,
+    scrollable: scrollable,
+  );
+  await tester.drag(scrollable, const Offset(0, -120));
+  await tester.pumpAndSettle();
+
+  final tileFinder = find.byType(ExpansionTile);
+  await tester.ensureVisible(tileFinder);
+  await tester.pumpAndSettle();
+
+  final box = tester.renderObject<RenderBox>(tileFinder);
+  await tester.tapAt(box.localToGlobal(box.size.center(Offset.zero)));
 }
 
 class _FakeProfileApiClient extends ApiClient {

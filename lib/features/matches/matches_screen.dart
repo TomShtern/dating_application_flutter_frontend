@@ -144,11 +144,12 @@ class _MatchesIntroCard extends StatelessWidget {
       0 => 'No matches yet',
       final total => '$total ${total == 1 ? 'match' : 'matches'} ready',
     };
-    final freshnessLabel = switch (newMatchCount) {
-      null => 'Refresh when you want the latest view.',
-      0 => 'Start a conversation with the people you liked back.',
-      final count when count == 1 => '1 new match is waiting to chat.',
-      final count => '$count new matches are waiting to chat.',
+    final summaryLabel = switch ((totalMatches, newMatchCount)) {
+      (null, _) || (_, null) => 'Refresh when you want the latest view.',
+      (0, _) =>
+        'Keep liking people you genuinely connect with and matches will show up here.',
+      (final total, final fresh) =>
+        '$total ${total == 1 ? 'match' : 'matches'} ready · $fresh new today',
     };
 
     return Padding(
@@ -197,7 +198,7 @@ class _MatchesIntroCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          freshnessLabel,
+                          summaryLabel,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -227,7 +228,7 @@ class _MatchesIntroCard extends StatelessWidget {
                     icon: Icons.mark_chat_unread_rounded,
                     label: switch (newMatchCount) {
                       null => 'Live status loading',
-                      0 => 'No new matches yet',
+                      0 => '0 new today',
                       final count when count == 1 => '1 new today',
                       final count => '$count new today',
                     },
@@ -391,13 +392,15 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final selectedColor = selected ? _matchRose : _matchSlate;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+    final selectedColor = selected ? _matchRose : colorScheme.onSurfaceVariant;
 
     return Material(
       color: selected
           ? _matchRose.withValues(alpha: isDark ? 0.18 : 0.10)
-          : Theme.of(context).colorScheme.surface,
+          : colorScheme.surfaceContainerLow,
       borderRadius: AppTheme.chipRadius,
       child: InkWell(
         borderRadius: AppTheme.chipRadius,
@@ -408,9 +411,7 @@ class _FilterChip extends StatelessWidget {
             border: Border.all(
               color: selected
                   ? _matchRose.withValues(alpha: 0.34)
-                  : Theme.of(
-                      context,
-                    ).colorScheme.outlineVariant.withValues(alpha: 0.28),
+                  : colorScheme.outlineVariant.withValues(alpha: 0.42),
             ),
           ),
           child: Padding(
@@ -568,6 +569,7 @@ class _MatchCard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
+                        flex: 6,
                         child: _GradientActionButton(
                           height: _matchActionHeight,
                           icon: Icons.forum_rounded,
@@ -577,6 +579,7 @@ class _MatchCard extends StatelessWidget {
                       ),
                       SizedBox(width: AppTheme.cardGap),
                       Expanded(
+                        flex: 5,
                         child: SizedBox(
                           height: _matchActionHeight,
                           child: OutlinedButton.icon(
@@ -587,20 +590,13 @@ class _MatchCard extends StatelessWidget {
                             ),
                             label: const Text('View profile'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: isDark
-                                  ? const Color(0xFFD6DEE5)
-                                  : _matchSlate,
+                              foregroundColor:
+                                  theme.colorScheme.onSurfaceVariant,
                               side: BorderSide(
-                                color:
-                                    (isDark
-                                            ? const Color(0xFFD6DEE5)
-                                            : _matchSlate)
-                                        .withValues(
-                                          alpha: isDark ? 0.34 : 0.22,
-                                        ),
+                                color: theme.colorScheme.outlineVariant
+                                    .withValues(alpha: isDark ? 0.42 : 0.58),
                               ),
-                              backgroundColor: theme.colorScheme.surface
-                                  .withValues(alpha: isDark ? 0.92 : 0.88),
+                              backgroundColor: Colors.transparent,
                               shape: const RoundedRectangleBorder(
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(999),

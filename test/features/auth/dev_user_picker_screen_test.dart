@@ -48,11 +48,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Developer only'), findsOneWidget);
-    expect(find.text('Current'), findsOneWidget);
+    expect(find.text('Current'), findsNWidgets(2));
     expect(find.text('Continue as Noa'), findsNothing);
-    expect(find.text('Saved on this device right now.'), findsOneWidget);
+    expect(
+      find.text('Used for the next app launch until you switch again.'),
+      findsOneWidget,
+    );
     expect(find.textContaining('Tap anywhere to continue'), findsNothing);
-    expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+    expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
   });
 
   testWidgets('still lets tapping a row switch the selected user', (
@@ -87,7 +90,11 @@ void main() {
 
     expect(find.text('Developer only'), findsOneWidget);
     expect(find.text('Current user updated to Noa.'), findsOneWidget);
-    expect(find.text('Current profile'), findsOneWidget);
-    expect(find.text('Noa • Age 29 • Active profile'), findsOneWidget);
+    expect(find.text('Noa'), findsWidgets);
+    expect(find.text('Age 29 • Active profile'), findsWidgets);
+    expect(
+      find.text('Used for the next app launch until you switch again.'),
+      findsOneWidget,
+    );
   });
 }

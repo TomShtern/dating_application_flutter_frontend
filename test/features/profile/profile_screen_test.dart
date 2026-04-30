@@ -124,11 +124,11 @@ void main() {
       find.text('This profile is within your preferred distance.'),
       findsOneWidget,
     );
-    expect(find.text('No bio added yet.'), findsOneWidget);
+    expect(find.text('No bio shared yet.'), findsOneWidget);
     expect(find.text('Not specified'), findsNWidgets(2));
     expect(find.text('Location not shared'), findsAtLeastNWidgets(1));
     expect(find.text('Distance preference not set'), findsOneWidget);
-    expect(find.text('No photos added yet.'), findsOneWidget);
+    expect(find.text('No photos shared yet.'), findsOneWidget);
   });
 
   testWidgets('prefers the resolved profile name in the app bar title', (
@@ -155,7 +155,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'Dana'), findsOneWidget);
+    expect(find.text("Dana's profile"), findsOneWidget);
   });
 
   testWidgets('shows an error state and retries the current profile load', (
@@ -215,7 +215,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ProfileEditScreen), findsOneWidget);
-    expect(find.widgetWithText(AppBar, 'Edit your profile'), findsOneWidget);
+    expect(find.text('Edit profile'), findsOneWidget);
   });
 
   testWidgets(
@@ -235,8 +235,8 @@ void main() {
       expect(find.text('About Dana'), findsOneWidget);
       expect(find.text('Profile details'), findsOneWidget);
       expect(find.text('Profile ready'), findsOneWidget);
-      expect(find.text('Review details'), findsOneWidget);
-      expect(find.text('Edit profile'), findsNothing);
+      expect(find.text('Review details'), findsNothing);
+      expect(find.text('Edit profile'), findsOneWidget);
       expect(find.text('4 of 4 essentials are filled in.'), findsNothing);
     },
   );

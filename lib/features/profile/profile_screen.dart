@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/app_config.dart';
 import '../../api/api_error.dart';
 import '../../models/profile_presentation_context.dart';
 import '../../models/user_detail.dart';
 import '../../shared/formatting/display_text.dart';
-import '../../shared/media/media_url.dart';
-import '../../shared/widgets/highlight_tag_row.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_group_label.dart';
+import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../location/location_completion_screen.dart';
@@ -54,15 +53,12 @@ class ProfileScreen extends ConsumerWidget {
         top: false,
         child: profileState.when(
           data: (detail) {
-            final readinessLabel = _profileReadiness(detail).label;
-
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
                   padding: AppTheme.screenPadding(compact: true),
                   child: _CurrentUserProfileIntroCard(
-                    readinessLabel: readinessLabel,
                     onEditProfile: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -126,7 +122,9 @@ class ProfileScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: Text(
-          userName == null ? 'Profile' : '$userName\'s profile',
+          userName == null && targetUserName == 'this user'
+              ? 'Profile'
+              : '$targetUserName\'s profile',
           style: Theme.of(
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
@@ -159,6 +157,10 @@ class ProfileScreen extends ConsumerWidget {
               detail: detail,
               isCurrentUser: false,
               presentationContextState: presentationContextState,
+              onPrimaryAction: () =>
+                  _openSafetyActions(context, targetUserName),
+              onSecondaryAction: () =>
+                  controller.refreshOtherUserProfile(userId!),
             ),
           ),
           loading: () => Padding(
@@ -178,16 +180,39 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _openSafetyActions(
+    BuildContext context,
+    String targetUserName,
+  ) async {
+    final outcome = await showModalBottomSheet<SafetyActionOutcome>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafetyActionSheet(
+        targetUserId: userId!,
+        targetUserName: targetUserName,
+      ),
+    );
+
+    if (!context.mounted || outcome == null) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(outcome.message)));
+    if (outcome.removesRelationship) {
+      Navigator.of(context).maybePop();
+    }
+  }
 }
 
 class _CurrentUserProfileIntroCard extends StatelessWidget {
   const _CurrentUserProfileIntroCard({
-    required this.readinessLabel,
     required this.onEditProfile,
     required this.onRefresh,
   });
 
-  final String readinessLabel;
   final VoidCallback onEditProfile;
   final VoidCallback onRefresh;
 
@@ -198,7 +223,7 @@ class _CurrentUserProfileIntroCard extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        color: _profileSurfaceColor(context, _profileRose, prominent: true),
+        color: _profileSurfaceColor(context, _profileSky, prominent: true),
         prominent: true,
       ),
       child: Padding(
@@ -240,12 +265,6 @@ class _CurrentUserProfileIntroCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            _ProfileMetaPill(
-              icon: Icons.tune_rounded,
-              label: readinessLabel,
-              color: _profileRose,
-            ),
           ],
         ),
       ),
@@ -260,6 +279,8 @@ class _ProfileContent extends StatelessWidget {
     this.presentationContextState,
     this.onEditProfile,
     this.onFixLocation,
+    this.onPrimaryAction,
+    this.onSecondaryAction,
   });
 
   final UserDetail detail;
@@ -267,6 +288,8 @@ class _ProfileContent extends StatelessWidget {
   final AsyncValue<ProfilePresentationContext>? presentationContextState;
   final VoidCallback? onEditProfile;
   final VoidCallback? onFixLocation;
+  final VoidCallback? onPrimaryAction;
+  final VoidCallback? onSecondaryAction;
 
   @override
   Widget build(BuildContext context) {
@@ -274,6 +297,31 @@ class _ProfileContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ProfileHeroCard(detail: detail, isCurrentUser: isCurrentUser),
+        SizedBox(height: AppTheme.sectionSpacing()),
+        AppGroupLabel(
+          title: isCurrentUser ? 'Profile sections' : 'Shared sections',
+          accentColor: isCurrentUser ? _profileSky : _profileViolet,
+        ),
+        if (!isCurrentUser && onPrimaryAction != null) ...[
+          SizedBox(height: AppTheme.cardGap),
+          Wrap(
+            spacing: AppTheme.cardGap,
+            runSpacing: AppTheme.cardGap,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: onPrimaryAction,
+                icon: const Icon(Icons.shield_outlined),
+                label: const Text('Safety actions'),
+              ),
+              if (onSecondaryAction != null)
+                OutlinedButton.icon(
+                  onPressed: onSecondaryAction,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Refresh'),
+                ),
+            ],
+          ),
+        ],
         if (!isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
           _PhotoSection(
@@ -379,12 +427,7 @@ class _PresentationContextCard extends StatelessWidget {
             Text(contextData.summary),
             if (contextData.reasonTags.isNotEmpty) ...[
               const SizedBox(height: 12),
-              HighlightTagRow(
-                tags: contextData.reasonTags
-                    .map(formatDisplayLabel)
-                    .toList(growable: false),
-                icon: Icons.sell_outlined,
-              ),
+              _ProfileReasonTagWrap(reasonTags: contextData.reasonTags),
             ],
             if (details.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -426,7 +469,6 @@ class _ProfileHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final readiness = _profileReadiness(detail);
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
@@ -449,9 +491,7 @@ class _ProfileHeroCard extends StatelessWidget {
                 DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: isCurrentUser
-                          ? const [_profileSky, _profileViolet]
-                          : const [_profileRose, _profileViolet],
+                      colors: const [_profileSky, _profileViolet],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -497,7 +537,7 @@ class _ProfileHeroCard extends StatelessWidget {
                           _ProfileMetaPill(
                             icon: Icons.verified_user_outlined,
                             label: _state(detail),
-                            color: _profileRose,
+                            color: _profileViolet,
                           ),
                           _ProfileMetaPill(
                             icon: Icons.location_on_outlined,
@@ -508,7 +548,7 @@ class _ProfileHeroCard extends StatelessWidget {
                             _ProfileMetaPill(
                               icon: Icons.route_outlined,
                               label: _distancePreference(detail),
-                              color: _profileViolet,
+                              color: _profileSky,
                             ),
                         ],
                       ),
@@ -524,26 +564,7 @@ class _ProfileHeroCard extends StatelessWidget {
                   : _heroSummary(detail, isCurrentUser: isCurrentUser),
               style: theme.textTheme.bodyMedium,
             ),
-            if (isCurrentUser) ...[
-              SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-              ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(999)),
-                child: LinearProgressIndicator(
-                  minHeight: 8,
-                  color: _profileSky,
-                  backgroundColor: _profileSky.withValues(alpha: 0.14),
-                  value: readiness.progress,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                readiness.label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ] else ...[
+            if (!isCurrentUser) ...[
               SizedBox(height: AppTheme.sectionSpacing(compact: true)),
             ],
           ],
@@ -1014,11 +1035,12 @@ class _PhotoSection extends StatelessWidget {
                 separatorBuilder: (context, index) => const SizedBox(width: 10),
                 itemBuilder: (context, index) => ClipRRect(
                   borderRadius: BorderRadius.circular(18),
-                  child: UserAvatarPhoto(
+                  child: PersonMediaThumbnail(
                     photoUrl: photoUrls[index],
-                    displayName: displayName,
+                    name: displayName,
                     height: photoHeight,
                     width: photoWidth,
+                    borderRadius: BorderRadius.circular(18),
                   ),
                 ),
               ),
@@ -1030,76 +1052,56 @@ class _PhotoSection extends StatelessWidget {
   }
 }
 
-class _PhotoPlaceholder extends StatelessWidget {
-  const _PhotoPlaceholder({
-    required this.message,
-    required this.displayName,
-    this.height = 220,
-    this.width = double.infinity,
-  });
+class _ProfileReasonTagWrap extends StatelessWidget {
+  const _ProfileReasonTagWrap({required this.reasonTags});
 
-  final String message;
-  final String displayName;
-  final double height;
-  final double width;
+  final List<String> reasonTags;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final tags = reasonTags.map(formatDisplayLabel).toList(growable: false);
+    final visibleTags = tags.take(3).toList(growable: false);
+    final remainingCount = tags.length - visibleTags.length;
 
-    return Container(
-      height: height,
-      width: width,
-      alignment: Alignment.center,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final tag in visibleTags) _ProfileReasonChip(label: tag),
+        if (remainingCount > 0)
+          _ProfileReasonChip(label: '+$remainingCount more', muted: true),
+      ],
+    );
+  }
+}
+
+class _ProfileReasonChip extends StatelessWidget {
+  const _ProfileReasonChip({required this.label, this.muted = false});
+
+  final String label;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = muted ? _profileSky : _profileViolet;
+
+    return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            _profileSky.withValues(alpha: isDark ? 0.22 : 0.10),
-            _profileViolet.withValues(alpha: isDark ? 0.20 : 0.08),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: color.withValues(
+          alpha: Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.08,
         ),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.14)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withValues(alpha: 0.72),
-              shape: BoxShape.circle,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Icon(
-                Icons.photo_camera_back_outlined,
-                color: _profileViolet,
-              ),
-            ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w700,
           ),
-          const SizedBox(height: 8),
-          Text(
-            _initials(displayName),
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurface,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1126,89 +1128,6 @@ class _ProfileIconChip extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ProfileReadiness {
-  const _ProfileReadiness({required this.progress, required this.label});
-
-  final double progress;
-  final String label;
-}
-
-class UserAvatarPhoto extends ConsumerWidget {
-  const UserAvatarPhoto({
-    super.key,
-    required this.photoUrl,
-    required this.displayName,
-    this.height = 200,
-    this.width = double.infinity,
-  });
-
-  final String photoUrl;
-  final String displayName;
-  final double height;
-  final double width;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final resolvedPhotoUrl = resolveMediaUrl(
-      rawUrl: photoUrl,
-      baseUrl: ref.watch(appConfigProvider).baseUrl,
-    );
-
-    if (resolvedPhotoUrl == null) {
-      return _PhotoPlaceholder(
-        message: 'Photo pending',
-        displayName: displayName,
-        height: height,
-        width: width,
-      );
-    }
-
-    return Image.network(
-      resolvedPhotoUrl,
-      height: height,
-      width: width,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) {
-          return child;
-        }
-
-        return _PhotoPlaceholder(
-          message: 'Loading photo…',
-          displayName: displayName,
-          height: height,
-          width: width,
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return _PhotoPlaceholder(
-          message: 'Photo pending',
-          displayName: displayName,
-          height: height,
-          width: width,
-        );
-      },
-    );
-  }
-}
-
-String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList(growable: false);
-  if (parts.isEmpty) {
-    return '•';
-  }
-
-  final first = String.fromCharCodes(parts.first.runes.take(1));
-  final second = parts.length > 1
-      ? String.fromCharCodes(parts.last.runes.take(1))
-      : '';
-  return '$first$second'.toUpperCase();
 }
 
 Color _profileSurfaceColor(
@@ -1264,25 +1183,6 @@ String _heroSummary(UserDetail detail, {required bool isCurrentUser}) {
   return isCurrentUser
       ? 'A quick view of the details other people can currently discover about you.'
       : 'A snapshot of the profile details this person has chosen to share.';
-}
-
-_ProfileReadiness _profileReadiness(UserDetail detail) {
-  final checklist = <bool>[
-    detail.bio.trim().isNotEmpty,
-    detail.interestedIn.isNotEmpty,
-    detail.approximateLocation.trim().isNotEmpty,
-    detail.photoUrls.isNotEmpty,
-  ];
-  final completed = checklist.where((done) => done).length;
-  final total = checklist.length;
-  final progress = total == 0 ? 0.0 : completed / total;
-
-  return _ProfileReadiness(
-    progress: progress,
-    label: completed == total
-        ? 'Profile ready · $completed of $total essentials complete'
-        : '$completed of $total essentials complete',
-  );
 }
 
 String _gender(UserDetail detail) {

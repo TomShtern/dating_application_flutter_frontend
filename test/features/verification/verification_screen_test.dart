@@ -55,7 +55,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'Verification'), findsOneWidget);
+    expect(find.text('Verification'), findsWidgets);
     expect(find.text('Verify your email or phone'), findsNothing);
     expect(find.text('Start verification'), findsOneWidget);
     expect(

@@ -6,6 +6,7 @@ import '../../api/api_error.dart';
 import '../../models/verification_result.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/formatting/display_text.dart';
+import '../../shared/widgets/app_route_header.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/widgets/section_intro_card.dart';
 import '../../shared/widgets/shell_hero.dart';
@@ -55,23 +56,13 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         : 'Step 2 of 2';
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 44,
-        title: Text(
-          'Verification',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
       body: SafeArea(
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: AppTheme.screenPadding(),
           children: [
+            const AppRouteHeader(title: 'Verification'),
+            const SizedBox(height: 8),
             SectionIntroCard(
               icon: Icons.verified_user_rounded,
               title: 'Verify your account',

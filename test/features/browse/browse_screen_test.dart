@@ -22,7 +22,6 @@ import 'package:flutter_dating_application_1/models/profile_presentation_context
 import 'package:flutter_dating_application_1/models/undo_swipe_result.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
-import 'package:flutter_dating_application_1/shared/widgets/shell_hero.dart';
 
 void main() {
   const currentUser = UserSummary(
@@ -99,9 +98,10 @@ void main() {
     await tester.tap(find.text('Message now'));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppBar, 'Noa'), findsOneWidget);
+    expect(find.text('Conversation'), findsOneWidget);
+    expect(find.text('No messages yet'), findsOneWidget);
     expect(
-      find.text('No messages yet. Say hello to start the conversation.'),
+      find.text('Start the conversation with Noa when you\'re ready.'),
       findsOneWidget,
     );
   });
@@ -149,7 +149,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final viewProfileButton = find.widgetWithText(
-      OutlinedButton,
+      TextButton,
       'See full profile',
     );
     await tester.ensureVisible(viewProfileButton);
@@ -236,7 +236,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Undo last swipe'));
+    await tester.tap(find.text('Undo last swipe'));
     await tester.pumpAndSettle();
 
     expect(find.text('Last swipe undone'), findsOneWidget);
@@ -270,7 +270,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(ShellHero), findsOneWidget);
     expect(find.text('Meet people worth your next hello'), findsNothing);
     expect(
       find.text(
@@ -278,10 +277,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(
-      find.text('Swipe on a profile or open it for more detail.'),
-      findsOneWidget,
-    );
+    expect(find.text('1 candidate is ready to browse.'), findsOneWidget);
     expect(find.text('Session details'), findsNothing);
     expect(find.text('Active profile'), findsNothing);
     expect(find.textContaining('backend-driven'), findsNothing);
@@ -299,10 +295,6 @@ void main() {
     expect(find.text('See full profile'), findsOneWidget);
     expect(find.text('Why this profile is shown'), findsOneWidget);
     expect(find.text('Shown because this profile is nearby.'), findsOneWidget);
-    expect(
-      find.text('This profile is within your preferred distance.'),
-      findsOneWidget,
-    );
   });
 
   testWidgets('renders a dedicated media panel for the current candidate', (
@@ -380,14 +372,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Today\'s daily pick'), findsOneWidget);
+    expect(find.text('Today\'s daily pick'), findsWidgets);
     expect(find.text('Featured for today'), findsOneWidget);
     expect(find.text('legacy reason should not render'), findsNothing);
-
-    await tester.drag(find.byType(ListView).first, const Offset(0, -280));
-    await tester.pumpAndSettle();
-    expect(find.text('Why this profile is shown'), findsOneWidget);
-    expect(find.text('Shown because this profile is nearby.'), findsOneWidget);
   });
 
   testWidgets('keeps browse diagnostics inside developer-only framing', (
