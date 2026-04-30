@@ -457,7 +457,7 @@ const blockedUsers = <BlockedUserSummary>[
   BlockedUserSummary(
     userId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
     name: 'Kai',
-    statusLabel: 'Blocked after repeated spam',
+    statusLabel: 'Repeated spam',
   ),
   BlockedUserSummary(
     userId: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
@@ -467,12 +467,12 @@ const blockedUsers = <BlockedUserSummary>[
   BlockedUserSummary(
     userId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
     name: 'Tali',
-    statusLabel: 'Offensive profile content',
+    statusLabel: 'Offensive profile',
   ),
   BlockedUserSummary(
     userId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
     name: 'Adi',
-    statusLabel: 'Blocked after harassment',
+    statusLabel: 'Harassment',
   ),
 ];
 
@@ -519,8 +519,8 @@ final notifications = <NotificationItem>[
   NotificationItem(
     id: 'notif-4',
     type: 'FUTURE_EVENT',
-    title: 'Future event',
-    message: 'Unknown notification types stay display-only.',
+    title: 'Recent update',
+    message: 'A new notification came in. Check back soon for more details.',
     createdAt: DateTime.parse('2026-04-22T15:00:00Z'),
     isRead: true,
     data: const {'conversationId': 'conversation-future'},
@@ -528,8 +528,8 @@ final notifications = <NotificationItem>[
   NotificationItem(
     id: 'notif-5',
     type: 'NEW_MESSAGE',
-    title: 'Incomplete message event',
-    message: 'Known types without required keys stay display-only too.',
+    title: 'Message update',
+    message: 'A message update arrived, but there is nothing else to open yet.',
     createdAt: DateTime.parse('2026-04-21T14:00:00Z'),
     isRead: true,
     data: const {'conversationId': 'conversation-missing-sender'},

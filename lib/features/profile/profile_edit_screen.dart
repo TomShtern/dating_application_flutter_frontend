@@ -233,7 +233,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _ProfileFieldLabel(title: 'Gender'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _ProfileEditOptionGrid(
                             options: _genderOptions,
                             accentColor: _profileLavender,
@@ -244,9 +244,9 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                               });
                             },
                           ),
-                          const SizedBox(height: AppTheme.sectionGap),
+                          const SizedBox(height: AppTheme.compactSectionGap),
                           _ProfileFieldLabel(title: 'Interested in'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _ProfileEditOptionGrid(
                             options: _genderOptions,
                             accentColor: _profileLavender,
@@ -988,9 +988,9 @@ class _ProfileEditOptionGrid extends StatelessWidget {
       itemCount: options.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: AppTheme.cardGap,
-        mainAxisSpacing: AppTheme.cardGap,
-        mainAxisExtent: 52,
+        crossAxisSpacing: AppTheme.compactCardGap,
+        mainAxisSpacing: AppTheme.compactCardGap,
+        mainAxisExtent: 48,
       ),
       itemBuilder: (context, index) {
         final option = options[index];
@@ -1015,8 +1015,8 @@ class _ProfileEditOptionGrid extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+                  horizontal: 10,
+                  vertical: 6,
                 ),
                 child: Row(
                   children: [
@@ -1024,12 +1024,12 @@ class _ProfileEditOptionGrid extends StatelessWidget {
                       selected
                           ? Icons.check_circle_rounded
                           : Icons.radio_button_unchecked_rounded,
-                      size: 18,
+                      size: 17,
                       color: selected
                           ? accentColor
                           : colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 7),
                     Expanded(
                       child: Text(
                         formatDisplayLabel(option),

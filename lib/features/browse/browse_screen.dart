@@ -1067,11 +1067,15 @@ class _CandidateCard extends ConsumerWidget {
                   bottom: 16,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(
-                        alpha: photoUrl == null ? 0.14 : 0.24,
-                      ),
+                      color: photoUrl == null
+                          ? const Color(
+                              0xFF6A7E90,
+                            ).withValues(alpha: isDark ? 0.52 : 0.36)
+                          : Colors.black.withValues(alpha: 0.24),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: Colors.white.withValues(
+                          alpha: photoUrl == null ? 0.18 : 0.12,
+                        ),
                       ),
                       borderRadius: const BorderRadius.all(Radius.circular(22)),
                     ),

@@ -33,6 +33,13 @@ class MatchesScreen extends ConsumerStatefulWidget {
 class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   _MatchFilter _selectedFilter = _MatchFilter.all;
 
+  static const EdgeInsets _matchesListPadding = EdgeInsets.fromLTRB(
+    AppTheme.pagePadding,
+    2,
+    AppTheme.pagePadding,
+    AppTheme.navBarHeight + 8,
+  );
+
   @override
   Widget build(BuildContext context) {
     final matchesState = ref.watch(matchesProvider);
@@ -73,7 +80,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                   if (visibleMatches.isEmpty) {
                     return ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: AppTheme.shellScrollPadding(),
+                      padding: _matchesListPadding,
                       children: [
                         _MatchesEmptyState(
                           filter: _selectedFilter,
@@ -85,10 +92,10 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
 
                   return ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: AppTheme.shellScrollPadding(),
+                    padding: _matchesListPadding,
                     itemCount: visibleMatches.length,
                     separatorBuilder: (_, _) =>
-                        SizedBox(height: AppTheme.cardGap),
+                        SizedBox(height: AppTheme.compactCardGap),
                     itemBuilder: (context, index) => _MatchCard(
                       currentUser: widget.currentUser,
                       match: visibleMatches[index],
@@ -97,14 +104,14 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                 },
                 loading: () => ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: AppTheme.shellScrollPadding(),
+                  padding: _matchesListPadding,
                   children: const [
                     AppAsyncState.loading(message: 'Loading matches...'),
                   ],
                 ),
                 error: (error, stackTrace) => ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: AppTheme.shellScrollPadding(),
+                  padding: _matchesListPadding,
                   children: [
                     AppAsyncState.error(
                       message: error is ApiError
@@ -153,7 +160,12 @@ class _MatchesIntroCard extends StatelessWidget {
     };
 
     return Padding(
-      padding: AppTheme.screenPadding(compact: true),
+      padding: const EdgeInsets.fromLTRB(
+        AppTheme.pagePadding,
+        AppTheme.compactPagePadding,
+        AppTheme.pagePadding,
+        6,
+      ),
       child: DecoratedBox(
         decoration: AppTheme.surfaceDecoration(
           context,
@@ -214,7 +226,7 @@ class _MatchesIntroCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
@@ -266,7 +278,7 @@ class _MatchesInfoPill extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -355,7 +367,7 @@ class _MatchFilterRow extends StatelessWidget {
         AppTheme.pagePadding,
         0,
         AppTheme.pagePadding,
-        8,
+        4,
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -415,7 +427,7 @@ class _FilterChip extends StatelessWidget {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             child: Text(
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -505,7 +517,7 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -565,7 +577,7 @@ class _MatchCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
