@@ -10,6 +10,7 @@ import '../../shared/widgets/app_group_label.dart';
 import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
+import '../browse/browse_provider.dart';
 import '../location/location_completion_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'profile_edit_screen.dart';
@@ -158,9 +159,8 @@ class ProfileScreen extends ConsumerWidget {
               isCurrentUser: false,
               presentationContextState: presentationContextState,
               onPrimaryAction: () =>
-                  _openSafetyActions(context, targetUserName),
-              onSecondaryAction: () =>
-                  controller.refreshOtherUserProfile(userId!),
+                  _handleLikeProfile(context, ref, targetUserName),
+              onSecondaryAction: () => _handlePassProfile(context, ref),
             ),
           ),
           loading: () => Padding(
@@ -181,28 +181,76 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _openSafetyActions(
+  Future<void> _handleLikeProfile(
     BuildContext context,
+    WidgetRef ref,
     String targetUserName,
   ) async {
-    final outcome = await showModalBottomSheet<SafetyActionOutcome>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafetyActionSheet(
-        targetUserId: userId!,
-        targetUserName: targetUserName,
-      ),
-    );
+    try {
+      final result = await ref
+          .read(browseControllerProvider)
+          .likeCandidate(userId!);
 
-    if (!context.mounted || outcome == null) {
-      return;
+      if (!context.mounted) {
+        return;
+      }
+
+      final message = result.isMatch && result.matchedUserName != null
+          ? 'It\'s a match with ${result.matchedUserName}!'
+          : result.message;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } on ApiError catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to like $targetUserName right now.')),
+      );
     }
+  }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(outcome.message)));
-    if (outcome.removesRelationship) {
-      Navigator.of(context).maybePop();
+  Future<void> _handlePassProfile(BuildContext context, WidgetRef ref) async {
+    try {
+      final message = await ref
+          .read(browseControllerProvider)
+          .passCandidate(userId!);
+
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } on ApiError catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to pass on this profile right now.'),
+        ),
+      );
     }
   }
 }
@@ -308,16 +356,16 @@ class _ProfileContent extends StatelessWidget {
             spacing: AppTheme.cardGap,
             runSpacing: AppTheme.cardGap,
             children: [
-              FilledButton.tonalIcon(
+              FilledButton.icon(
                 onPressed: onPrimaryAction,
-                icon: const Icon(Icons.shield_outlined),
-                label: const Text('Safety actions'),
+                icon: const Icon(Icons.favorite_rounded),
+                label: const Text('Like'),
               ),
               if (onSecondaryAction != null)
                 OutlinedButton.icon(
                   onPressed: onSecondaryAction,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Refresh'),
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('Pass for now'),
                 ),
             ],
           ),

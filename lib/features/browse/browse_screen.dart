@@ -9,7 +9,6 @@ import '../../models/daily_pick.dart';
 import '../../models/profile_presentation_context.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
-import '../../shared/widgets/highlight_tag_row.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../theme/app_theme.dart';
@@ -1040,14 +1039,11 @@ class _CandidateCard extends ConsumerWidget {
                     runSpacing: 8,
                     children: [
                       _BrowseQueuePill(
-                        label: 'New for you',
-                        color: _browseRose,
+                        label: remainingCount > 1
+                            ? '1 of $remainingCount ready'
+                            : 'Ready now',
+                        color: _browseSky,
                       ),
-                      if (remainingCount > 1)
-                        _BrowseQueuePill(
-                          label: '1 of $remainingCount ready',
-                          color: _browseSky,
-                        ),
                     ],
                   ),
                 ),
@@ -1059,16 +1055,6 @@ class _CandidateCard extends ConsumerWidget {
                     targetUserName: candidate.name,
                   ),
                 ),
-                if (photoUrl == null)
-                  const Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 100,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: _BrowseMediaNotePill(),
-                    ),
-                  ),
                 Positioned(
                   left: 16,
                   right: 16,
@@ -1145,9 +1131,7 @@ class _CandidateCard extends ConsumerWidget {
                   ),
               ],
             ),
-            SizedBox(height: AppTheme.listSpacing()),
-            _BrowsePresentationContext(state: presentationContextState),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
@@ -1157,6 +1141,8 @@ class _CandidateCard extends ConsumerWidget {
                 label: const Text('See full profile'),
               ),
             ),
+            SizedBox(height: AppTheme.listSpacing(compact: true)),
+            _BrowsePresentationContext(state: presentationContextState),
           ],
         ),
       ),
@@ -1192,38 +1178,6 @@ class _BrowsePresentationContext extends StatelessWidget {
   }
 }
 
-class _BrowseMediaNotePill extends StatelessWidget {
-  const _BrowseMediaNotePill();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.88),
-        borderRadius: AppTheme.chipRadius,
-        border: Border.all(color: _browseSky.withValues(alpha: 0.12)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.photo_library_outlined, size: 14, color: _browseSky),
-            const SizedBox(width: 6),
-            Text(
-              'Photo pending',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: _browseSky,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _BrowsePresentationContextContent extends StatelessWidget {
   const _BrowsePresentationContextContent({required this.contextData});
 
@@ -1231,35 +1185,35 @@ class _BrowsePresentationContextContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tags = contextData.reasonTags
+        .map(formatDisplayLabel)
+        .toList(growable: false);
+    final visibleTags = tags.take(3).toList(growable: false);
+    final remainingTagCount = tags.length - visibleTags.length;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: _browseSky.withValues(
-          alpha: theme.brightness == Brightness.dark ? 0.10 : 0.05,
-        ),
-        borderRadius: AppTheme.cardRadius,
-        border: Border.all(color: _browseSky.withValues(alpha: 0.12)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _BrowseReasonHeader(),
-            const SizedBox(height: 6),
-            Text(contextData.summary),
-            if (contextData.reasonTags.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              HighlightTagRow(
-                tags: contextData.reasonTags
-                    .map(formatDisplayLabel)
-                    .toList(growable: false),
-                icon: Icons.sell_outlined,
-              ),
-            ],
+    return _BrowseInlineReasonSection(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _BrowseReasonHeader(),
+          const SizedBox(height: 6),
+          Text(contextData.summary),
+          if (visibleTags.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final tag in visibleTags) _BrowseReasonTag(label: tag),
+                if (remainingTagCount > 0)
+                  _BrowseReasonTag(
+                    label: '+$remainingTagCount more',
+                    muted: true,
+                  ),
+              ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -1272,27 +1226,40 @@ class _BrowseWhyPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    return _BrowseInlineReasonSection(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _BrowseReasonHeader(),
+          const SizedBox(height: 6),
+          Text(message),
+        ],
+      ),
+    );
+  }
+}
 
-    return DecoratedBox(
+class _BrowseInlineReasonSection extends StatelessWidget {
+  const _BrowseInlineReasonSection({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.only(left: 12, top: 10),
       decoration: BoxDecoration(
-        color: _browseSky.withValues(
-          alpha: theme.brightness == Brightness.dark ? 0.08 : 0.04,
-        ),
-        borderRadius: AppTheme.cardRadius,
-        border: Border.all(color: _browseSky.withValues(alpha: 0.10)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _BrowseReasonHeader(),
-            const SizedBox(height: 6),
-            Text(message),
-          ],
+        border: Border(
+          top: BorderSide(color: _browseSky.withValues(alpha: 0.10)),
+          left: BorderSide(
+            color: _browseSky.withValues(alpha: isDark ? 0.34 : 0.22),
+            width: 3,
+          ),
         ),
       ),
+      child: child,
     );
   }
 }
@@ -1314,6 +1281,37 @@ class _BrowseReasonHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BrowseReasonTag extends StatelessWidget {
+  const _BrowseReasonTag({required this.label, this.muted = false});
+
+  final String label;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = muted ? _browseSlate : _browseSky;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.18 : 0.08),
+        borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 }

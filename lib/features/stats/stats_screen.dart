@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -266,10 +264,9 @@ class _SnapshotStatTile extends StatelessWidget {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(7, 5, 7, 5),
-                              child: _DecorativePulseMarks(
+                              child: _StatDetailBadge(
                                 color: spec.color,
-                                width: 34,
-                                height: 18,
+                                compact: true,
                               ),
                             ),
                           ),
@@ -320,7 +317,6 @@ class _PerformanceStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spec = _StatVisualSpec.forLabel(item.label);
-    final percent = _tryParsePercent(item.value);
 
     return Material(
       color: Colors.transparent,
@@ -379,20 +375,7 @@ class _PerformanceStatCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                if (percent != null)
-                  Tooltip(
-                    message: 'Tap for details',
-                    child: _RadialMetric(value: percent, color: spec.color),
-                  )
-                else
-                  Tooltip(
-                    message: 'Tap for details',
-                    child: _DecorativePulseMarks(
-                      color: spec.color,
-                      width: 52,
-                      height: 36,
-                    ),
-                  ),
+                _StatDetailBadge(color: spec.color),
               ],
             ),
           ),
@@ -708,137 +691,38 @@ class _AnimatedIntText extends StatelessWidget {
   }
 }
 
-class _RadialMetric extends StatelessWidget {
-  const _RadialMetric({required this.value, required this.color});
+class _StatDetailBadge extends StatelessWidget {
+  const _StatDetailBadge({required this.color, this.compact = false});
 
-  final double value;
   final Color color;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: value.clamp(0, 1)),
-      duration: const Duration(milliseconds: 760),
-      curve: Curves.easeOutCubic,
-      builder: (context, animatedValue, child) {
-        return SizedBox.square(
-          dimension: 64,
-          child: CustomPaint(
-            painter: _RadialMetricPainter(value: animatedValue, color: color),
-            child: Center(
-              child: Text(
-                '${(animatedValue * 100).round()}%',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
+    final size = compact ? 18.0 : 42.0;
+    final iconSize = compact ? 14.0 : 22.0;
+
+    return Tooltip(
+      message: 'Tap for details',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: color.withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark
+                ? 0.18
+                : 0.10,
           ),
-        );
-      },
-    );
-  }
-}
-
-class _RadialMetricPainter extends CustomPainter {
-  const _RadialMetricPainter({required this.value, required this.color});
-
-  final double value;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final strokeWidth = 6.0;
-    final rect = Offset.zero & size;
-    final trackPaint = Paint()
-      ..color = color.withValues(alpha: 0.18)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-    final valuePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(
-      rect.deflate(strokeWidth / 2),
-      -math.pi / 2,
-      math.pi * 2,
-      false,
-      trackPaint,
-    );
-    canvas.drawArc(
-      rect.deflate(strokeWidth / 2),
-      -math.pi / 2,
-      math.pi * 2 * value,
-      false,
-      valuePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RadialMetricPainter oldDelegate) {
-    return value != oldDelegate.value || color != oldDelegate.color;
-  }
-}
-
-class _DecorativePulseMarks extends StatelessWidget {
-  const _DecorativePulseMarks({
-    required this.color,
-    this.width = 44,
-    this.height = 28,
-  });
-
-  final Color color;
-  final double width;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    const values = <double>[0.42, 0.68, 0.54];
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 700),
-      curve: Curves.easeOutCubic,
-      builder: (context, progress, child) {
-        return SizedBox(
-          width: width,
-          height: height,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              for (var index = 0; index < values.length; index++) ...[
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: FractionallySizedBox(
-                      heightFactor: values[index] * progress,
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: color.withValues(
-                              alpha: index == values.length - 1 ? 0.92 : 0.58,
-                            ),
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(999),
-                              bottom: Radius.circular(999),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                if (index != values.length - 1) const SizedBox(width: 3),
-              ],
-            ],
+          borderRadius: BorderRadius.all(Radius.circular(compact ? 999 : 16)),
+          border: Border.all(color: color.withValues(alpha: 0.14)),
+        ),
+        child: SizedBox.square(
+          dimension: size,
+          child: Icon(
+            Icons.arrow_outward_rounded,
+            size: iconSize,
+            color: color,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -916,18 +800,4 @@ Color _statSurfaceColor(BuildContext context, _StatVisualSpec spec) {
     spec.color.withValues(alpha: isDark ? 0.08 : 0.035),
     colorScheme.surfaceContainerLow,
   );
-}
-
-double? _tryParsePercent(String value) {
-  final match = RegExp(r'(\d+(?:\.\d+)?)\s*%').firstMatch(value);
-  if (match == null) {
-    return null;
-  }
-
-  final parsed = double.tryParse(match.group(1)!);
-  if (parsed == null) {
-    return null;
-  }
-
-  return parsed / 100;
 }

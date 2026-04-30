@@ -267,6 +267,7 @@ void main() {
 
     expect(find.byTooltip('Edit profile'), findsNothing);
     expect(find.text('Shared details'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Like'), findsOneWidget);
   });
 
   testWidgets('shows safety actions for another user profile', (

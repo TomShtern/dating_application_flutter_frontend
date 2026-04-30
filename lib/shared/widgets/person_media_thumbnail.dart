@@ -92,6 +92,20 @@ class _PhotoFallback extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.15),
+                  radius: 0.85,
+                  colors: [
+                    palette.accentSoft.withValues(alpha: 0.36),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -152,7 +166,7 @@ class _PhotoFallback extends StatelessWidget {
                       const SizedBox(width: 5),
                       Flexible(
                         child: Text(
-                          'Photo pending',
+                          'No photo yet',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,

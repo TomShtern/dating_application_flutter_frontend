@@ -53,12 +53,12 @@ AppPhotoFallbackPalette appPhotoFallbackPalette(
 
   final accent = fromHsl(0.56, 0.50);
   return AppPhotoFallbackPalette(
-    surface: fromHsl(0.34, 0.93),
-    surfaceAlt: fromHsl(0.30, 0.89),
+    surface: fromHsl(0.42, 0.965),
+    surfaceAlt: fromHsl(0.36, 0.92),
     accent: accent,
-    accentSoft: accent.withValues(alpha: 0.12),
-    labelBackground: colorScheme.surface.withValues(alpha: 0.88),
-    labelForeground: fromHsl(0.44, 0.38),
+    accentSoft: accent.withValues(alpha: 0.16),
+    labelBackground: colorScheme.surface.withValues(alpha: 0.82),
+    labelForeground: fromHsl(0.52, 0.34),
     outline: accent.withValues(alpha: 0.14),
   );
 }

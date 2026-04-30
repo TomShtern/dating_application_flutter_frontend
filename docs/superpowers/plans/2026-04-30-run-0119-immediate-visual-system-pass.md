@@ -8,6 +8,18 @@
 
 **Tech Stack:** Flutter 3.41, Dart 3.11, Material 3, Riverpod, Dio, shared_preferences, flutter_test
 
+## Follow-up Status After Screenshot-Led Recheck
+
+The original implementation pass was later treated as only partially complete. A stricter follow-up review rechecked the remaining high-priority misses directly against regenerated screenshots instead of trusting prior checkbox state.
+
+Revalidated in focused follow-up runs:
+
+- `shell_discover__run-0121.png`: flatter reason area, calmer placeholder treatment, and `See full profile` no longer crowding the sticky actions.
+- `profile_other_user__run-0122.png`: a real dating action is visible in the first viewport.
+- `stats__run-0123.png`: faux trend/spark visuals removed in favor of neutral detail affordances.
+- `notifications__run-0124.png` and `notifications_dark__run-0124.png`: row actions simplified into one trailing-action slot.
+- `standouts__run-0125.png`: rank/score treatment reduced from precise points to softer `Top pick` / `Pick #N` labels.
+
 ---
 
 ## Scope Boundaries
@@ -321,6 +333,7 @@ Implementation steps:
   - Improve reason tags with simple consistent color/icon treatment without adding new logic.
   - Match `Pass` and `Like` heights.
   - Add a candidate stack/progress cue using only current list position/count data if it is already available in the provider state; otherwise use a subtle visual stack hint that does not claim a fake count.
+  - Follow-up revalidated in `shell_discover__run-0121.png`.
 - [x] Matches:
   - Make `Message` the primary action and `View profile` secondary.
   - Rewrite hero count/new-copy into one clear signal.
@@ -335,6 +348,7 @@ Implementation steps:
   - Move the Profile hero away from rose-heavy treatment toward lavender or sky blue while keeping warmth.
   - Make profile-detail mini-card tints more intentional or simplify them.
   - Confirm important profile actions remain discoverable.
+  - Follow-up revalidated for other-user action visibility in `profile_other_user__run-0122.png`.
 - [x] Settings:
   - Fix Quick access subtitle truncation with two-line subtitles or shorter copy.
   - Apply shared group label treatment to Quick access.
@@ -377,6 +391,7 @@ Implementation steps:
   - Add route affordance.
   - Make tint/color rules feel explainable for top-ranked, normal, selected, and fallback states.
   - Do not verify or change backend ownership of `rank` and `score` in this pass.
+  - Follow-up revalidated in `standouts__run-0125.png` after de-emphasizing point-like score precision.
 - [x] Pending likers:
   - Add route affordance.
   - Make hero and row copy explain the profile-first flow.
@@ -385,6 +400,7 @@ Implementation steps:
   - Bring the primary action into the first viewport or use a floating/sticky action area if the existing structure supports it cleanly.
   - Let reason chips wrap cleanly or cap visible chips with a clear `+N more` affordance.
   - Treat duplicate placeholders through the shared placeholder system.
+  - Follow-up revalidated in `profile_other_user__run-0122.png`.
 - [x] Profile edit:
   - Add route affordance.
   - Fix gender/interested-in orphaned chip rows with a 2x2 grid, smaller chips, or a clearer option layout.
@@ -399,6 +415,7 @@ Implementation steps:
   - If sparkbars are not backed by real trend data, replace them with a non-data decorative treatment or remove the data-like shape.
   - Improve labels only where current data supports the meaning.
   - Do not invent trend windows or benchmarks.
+  - Follow-up revalidated in `stats__run-0123.png`.
 - [x] Achievements:
   - Reduce redundant completed-progress chips on already-unlocked cards.
   - Keep `Still building`.
@@ -414,6 +431,7 @@ Implementation steps:
 - [x] Notifications:
   - Clarify check, chevron, and row-tap behavior with one consistent trailing action pattern unless two actions are unmistakably communicated.
   - Do not add notification settings.
+  - Follow-up revalidated in `notifications__run-0124.png` and `notifications_dark__run-0124.png`.
 
 Verification:
 
@@ -437,8 +455,8 @@ Implementation steps:
 - [x] Run `flutter analyze`.
 - [x] Run the existing widget tests for screens that were materially changed, using the smallest meaningful set first.
 - [x] Run `flutter test test/visual_inspection/screenshot_test.dart`.
-- [x] Open `visual_review/latest/index.html` and inspect all 19 captures.
-- [x] Confirm the requested visual outcomes:
+- [ ] Open `visual_review/latest/index.html` and inspect all 19 captures.
+- [ ] Confirm the requested visual outcomes:
   - developer sign-in is compact and developer-only
   - large no-photo placeholders are calm
   - route affordances are visible on pushed screens
@@ -447,6 +465,7 @@ Implementation steps:
   - current-year dates and repeated copy are less noisy
   - no text truncates mid-word in Settings
   - no fake backend data or future product behavior was added
+- Focused follow-up evidence is currently limited to Discover (`run-0121`), other-user profile (`run-0122`), Stats (`run-0123`), Notifications light/dark (`run-0124`), and Standouts (`run-0125`).
 - [x] Apply focused fixups only for issues introduced by this plan or obvious misses from the requested pass.
 - [x] Re-run the relevant verification after fixups.
 

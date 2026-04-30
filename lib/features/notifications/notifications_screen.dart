@@ -182,6 +182,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       return;
     }
 
+    if (!item.isRead) {
+      try {
+        await ref.read(notificationsControllerProvider).markRead(item.id);
+      } on ApiError {
+        // Keep navigation responsive even if the read receipt fails.
+      }
+    }
+
     final currentUser = await ref.read(selectedUserProvider.future);
     if (!mounted) {
       return;
@@ -359,16 +367,22 @@ class _NotificationTile extends StatelessWidget {
       height: 1.36,
     );
     final surfaceColor = _notificationSurfaceColor(context, spec, unread);
-    final trailing = route == null
-        ? null
-        : Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(
-              Icons.chevron_right_rounded,
-              size: 20,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          );
+    final trailing = route != null
+        ? _NotificationTrailingAction(
+            tooltip: 'Open notification',
+            icon: Icons.arrow_forward_rounded,
+            color: spec.color,
+            onPressed: onOpenRoute,
+          )
+        : (unread && onMarkRead != null)
+        ? _NotificationTrailingAction(
+            tooltip: isBusy ? 'Marking read…' : 'Mark read',
+            icon: Icons.done_rounded,
+            color: spec.color,
+            isBusy: isBusy,
+            onPressed: onMarkRead,
+          )
+        : null;
 
     return Material(
       color: Colors.transparent,
@@ -444,14 +458,6 @@ class _NotificationTile extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (unread) ...[
-                              const SizedBox(width: 6),
-                              _MarkReadButton(
-                                spec: spec,
-                                isBusy: isBusy,
-                                onPressed: onMarkRead,
-                              ),
-                            ],
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -695,48 +701,46 @@ class _NotificationIconChip extends StatelessWidget {
   }
 }
 
-class _MarkReadButton extends StatelessWidget {
-  const _MarkReadButton({
-    required this.spec,
-    required this.isBusy,
+class _NotificationTrailingAction extends StatelessWidget {
+  const _NotificationTrailingAction({
+    required this.tooltip,
+    required this.icon,
+    required this.color,
     required this.onPressed,
+    this.isBusy = false,
   });
 
-  final _NotificationSpec spec;
+  final String tooltip;
+  final IconData icon;
+  final Color color;
   final bool isBusy;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: isBusy ? 'Marking read…' : 'Mark read',
-      child: OutlinedButton.icon(
+      message: tooltip,
+      child: IconButton(
         onPressed: isBusy ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 28),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-          visualDensity: VisualDensity.compact,
-          foregroundColor: spec.color,
-          side: BorderSide(color: spec.color.withValues(alpha: 0.24)),
-          backgroundColor: spec.color.withValues(alpha: 0.06),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        iconSize: 18,
+        style: IconButton.styleFrom(
+          backgroundColor: color.withValues(
+            alpha: Theme.of(context).brightness == Brightness.dark
+                ? 0.18
+                : 0.08,
+          ),
+          foregroundColor: color,
+          side: BorderSide(color: color.withValues(alpha: 0.18)),
         ),
         icon: isBusy
             ? SizedBox.square(
-                dimension: 12,
+                dimension: 14,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(spec.color),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
               )
-            : Icon(Icons.done_rounded, size: 14, color: spec.color),
-        label: Text(
-          'Mark read',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: spec.color,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+            : Icon(icon, size: 18, color: color),
       ),
     );
   }

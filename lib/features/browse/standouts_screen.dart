@@ -584,26 +584,19 @@ class _StandoutRankBadge extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    final isTopRank = standout.rank == 1;
+    final accent = _standoutAccentColor(standout);
+    final background = _standoutSurfaceColor(
+      context,
+      accent,
+      prominent: standout.rank == 1,
+    );
 
     return DecoratedBox(
       key: ValueKey('standout-rank-${standout.id}'),
       decoration: BoxDecoration(
-        gradient: isTopRank
-            ? const LinearGradient(
-                colors: [_standoutRose, _standoutAmber],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
-        color: isTopRank
-            ? null
-            : _standoutAmber.withValues(
-                alpha: Theme.of(context).brightness == Brightness.dark
-                    ? 0.22
-                    : 0.12,
-              ),
+        color: background,
         borderRadius: AppTheme.chipRadius,
+        border: Border.all(color: accent.withValues(alpha: 0.20)),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -614,15 +607,18 @@ class _StandoutRankBadge extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.auto_awesome_rounded,
+              standout.rank == 1
+                  ? Icons.star_rounded
+                  : Icons.auto_awesome_rounded,
               size: compact ? 14 : 16,
-              color: isTopRank ? Colors.white : _standoutAmber,
+              color: accent,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: isTopRank ? Colors.white : _standoutAmber,
+                color: accent,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -683,14 +679,11 @@ String _standoutDisplayName(Standout standout) {
 }
 
 String? _rankLabel(Standout standout) {
-  if (standout.rank > 0 && standout.score > 0) {
-    return '#${standout.rank} · ${standout.score} pts';
-  }
   if (standout.rank > 0) {
-    return '#${standout.rank}';
+    return standout.rank == 1 ? 'Top pick' : 'Pick #${standout.rank}';
   }
   if (standout.score > 0) {
-    return '${standout.score} pts';
+    return 'Standout';
   }
 
   return null;
@@ -698,10 +691,10 @@ String? _rankLabel(Standout standout) {
 
 String? _compactRankLabel(Standout standout) {
   if (standout.rank > 0) {
-    return '#${standout.rank}';
+    return standout.rank == 1 ? 'Top pick' : 'Pick #${standout.rank}';
   }
   if (standout.score > 0) {
-    return '${standout.score}';
+    return 'Standout';
   }
 
   return null;
