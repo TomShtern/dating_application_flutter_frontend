@@ -29,6 +29,8 @@ flutter test test/visual_inspection/screenshot_test.dart
 - Start with `AGENTS.md` for the verified repo-wide operating rules and constraints.
 - Read `docs/design-language.md` before changing UI structure, visual styling, shared widgets, or any `AppTheme` usage.
 - Use `docs/visual-review-workflow.md` when a task changes appearance or layout.
+- For per-screen design intent (one-pager per screen: hero choice, layout structure, copy tone, do/don't), see `screen-transform-prompts/prompt-<screen-name>.md`. Consult the matching file before redesigning a covered screen.
+- For broader product/visual context, recent visual-lock and design-critique docs live under `docs/` (e.g. `docs/2026-04-30-run-0131-final-visual-lock-review.md`, `docs/design-critique-run-0119.md`).
 
 ## Architecture
 
@@ -90,11 +92,13 @@ The canonical visual reference now lives in `docs/design-language.md`. Treat tha
 
 **Core layout widgets (required on every new screen):**
 
-| Widget             | File                          | Purpose                                            |
-|--------------------|-------------------------------|----------------------------------------------------|
-| `ShellHero`        | `shell_hero.dart`             | Full-width hero header for tab and detail screens  |
-| `SectionIntroCard` | `section_intro_card.dart`     | Framing card for sparse or utility screens         |
-| `AppAsyncState`    | `app_async_state.dart`        | Unified loading / error / empty state renderer     |
+| Widget             | File                          | Purpose                                                            |
+|--------------------|-------------------------------|--------------------------------------------------------------------|
+| `ShellHero`        | `shell_hero.dart`             | Full-width hero header for tab and detail screens                  |
+| `AppRouteHeader`   | `app_route_header.dart`       | Pushed-route header: back affordance + title/subtitle + trailing   |
+| `SectionIntroCard` | `section_intro_card.dart`     | Framing card for sparse or utility screens                         |
+| `AppGroupLabel`    | `app_group_label.dart`        | Sectioned list label with accent rail + optional count/trailing    |
+| `AppAsyncState`    | `app_async_state.dart`        | Unified loading / error / empty state renderer                     |
 
 **Person / media display:**
 
@@ -121,9 +125,11 @@ The canonical visual reference now lives in `docs/design-language.md`. Treat tha
 `AppTheme` in `lib/theme/app_theme.dart` exposes static helpers used throughout the app. Prefer these over inline `BoxDecoration` / `BoxShadow` literals:
 
 - **Gradients**: `heroGradient(context)`, `accentGradient(context)`, `avatarGradient(context)`
+- **Match palette**: `matchAccent(context)`, `matchAccentSecondary(context)`, `matchTintColor(context)`, `activeColor(context)`, `matchTextPrimary/Secondary/Tertiary(context)` — semantic colours for match cards, compatibility, and active states
 - **Shadows**: `softShadow(context)`, `floatingShadow(context)`
 - **Decorations**: `surfaceDecoration(context, {gradient, prominence})`, `glassDecoration(context)`
 - **Spacing**: `screenPadding()`, `sectionPadding()`, `sectionSpacing()`, `listSpacing()` — all have `compact:` variants
+- **Bottom-nav-aware scroll padding**: `shellScrollPadding()` for tab screens (clears the bottom nav so list content is never obscured); `bottomActionScrollPadding()` for screens with a fixed bottom action bar. Use these instead of hand-rolling bottom inset math.
 
 Do not introduce magic spacing, radius, or decoration values when an `AppTheme` token already exists. Follow `docs/design-language.md` for the current token set and intended use.
 
