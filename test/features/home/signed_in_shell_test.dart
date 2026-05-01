@@ -154,9 +154,9 @@ void main() {
     );
     expect(find.byType(NavigationBar), findsOneWidget);
 
-    expect(find.widgetWithText(AppBar, 'Settings'), findsOneWidget);
+    expect(find.text('Settings'), findsAtLeastNWidgets(1));
     expect(
-      find.widgetWithText(OutlinedButton, 'Switch profile'),
+      find.widgetWithText(OutlinedButton, 'Switch'),
       findsOneWidget,
     );
     await tester.scrollUntilVisible(

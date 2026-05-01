@@ -39,6 +39,45 @@ void main() {
     expect(headers.containsKey(ApiHeaders.userIdHeader), isFalse);
   });
 
+  test('attaches Bearer token on protected routes when supplied', () {
+    final headers = ApiHeaders.build(
+      path: ApiEndpoints.userDetail('u-1'),
+      sharedSecret: 'lan-dev-secret',
+      userId: 'u-1',
+      accessToken: 'token-1',
+    );
+    expect(headers[ApiHeaders.authorizationHeader], 'Bearer token-1');
+  });
+
+  test('omits Bearer token on the unauthenticated auth endpoints', () {
+    for (final path in [
+      ApiEndpoints.authSignup,
+      ApiEndpoints.authLogin,
+      ApiEndpoints.authRefresh,
+      ApiEndpoints.authLogout,
+    ]) {
+      final headers = ApiHeaders.build(
+        path: path,
+        sharedSecret: 'lan-dev-secret',
+        accessToken: 'token-1',
+      );
+      expect(
+        headers.containsKey(ApiHeaders.authorizationHeader),
+        isFalse,
+        reason: 'Bearer should not be sent to $path',
+      );
+    }
+  });
+
+  test('attaches Bearer on /api/auth/me (which requires auth)', () {
+    final headers = ApiHeaders.build(
+      path: ApiEndpoints.authMe,
+      sharedSecret: 'lan-dev-secret',
+      accessToken: 'token-1',
+    );
+    expect(headers[ApiHeaders.authorizationHeader], 'Bearer token-1');
+  });
+
   test('attaches both auth headers to conversation message routes', () {
     final headers = ApiHeaders.build(
       path: ApiEndpoints.messages(

@@ -8,6 +8,7 @@ import '../../shared/widgets/app_group_label.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
+import '../auth/auth_controller.dart';
 import '../auth/selected_user_provider.dart';
 import '../notifications/notifications_screen.dart';
 import '../safety/blocked_users_screen.dart';
@@ -50,6 +51,7 @@ class SettingsScreen extends ConsumerWidget {
                 _SettingsSessionCard(
                   currentUser: currentUser,
                   onSwitchUser: () async {
+                    await ref.read(authControllerProvider.notifier).logout();
                     await ref
                         .read(selectUserControllerProvider)
                         .clearSelection();

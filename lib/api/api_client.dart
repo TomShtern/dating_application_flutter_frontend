@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/app_config.dart';
+import '../models/auth_session.dart';
+import '../models/auth_user.dart';
 import '../models/blocked_user_summary.dart';
 import '../models/browse_response.dart';
 import '../models/conversation_summary.dart';
@@ -14,6 +16,7 @@ import '../models/matches_response.dart';
 import '../models/achievement_summary.dart';
 import '../models/notification_item.dart';
 import '../models/pending_liker.dart';
+import '../models/photo_dto.dart';
 import '../models/profile_edit_snapshot.dart';
 import '../models/profile_presentation_context.dart';
 import '../models/profile_update_request.dart';
@@ -26,9 +29,17 @@ import '../models/verification_result.dart';
 import 'api_endpoints.dart';
 import 'api_error.dart';
 import 'api_headers.dart';
+import 'auth_token_holder.dart';
+
+const String _authRetryFlag = '_authRetried';
+
+final authTokenHolderProvider = Provider<AuthTokenHolder>((ref) {
+  return AuthTokenHolder();
+});
 
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
+  final tokenHolder = ref.watch(authTokenHolderProvider);
 
   final dio = Dio(
     BaseOptions(
@@ -49,10 +60,42 @@ final dioProvider = Provider<Dio>((ref) {
             path: options.path,
             sharedSecret: config.lanSharedSecret,
             userId: userId,
+            accessToken: tokenHolder.accessToken,
           ),
         );
 
         handler.next(options);
+      },
+      onError: (error, handler) async {
+        final response = error.response;
+        final options = error.requestOptions;
+
+        // Only handle 401s, only once per request, never on the auth
+        // endpoints themselves (refresh failure must not recurse).
+        final shouldRetry = response?.statusCode == 401 &&
+            options.extra[_authRetryFlag] != true &&
+            options.path != ApiEndpoints.authRefresh &&
+            options.path != ApiEndpoints.authLogin &&
+            options.path != ApiEndpoints.authSignup &&
+            options.path != ApiEndpoints.authLogout;
+
+        if (!shouldRetry) {
+          return handler.next(error);
+        }
+
+        try {
+          final newToken = await tokenHolder.refresh();
+          if (newToken == null || newToken.isEmpty) {
+            return handler.next(error);
+          }
+
+          options.extra[_authRetryFlag] = true;
+          options.headers[ApiHeaders.authorizationHeader] = 'Bearer $newToken';
+          final retried = await dio.fetch<dynamic>(options);
+          return handler.resolve(retried);
+        } catch (_) {
+          return handler.next(error);
+        }
       },
     ),
   );
@@ -671,6 +714,150 @@ class ApiClient {
 
       return MessageDto.fromJson(
         _expectMap(response.data, context: 'sending a message'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  // ── Auth ────────────────────────────────────────────────────────────────
+
+  Future<AuthSession> signup({
+    required String email,
+    required String password,
+    required String dateOfBirth,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.authSignup,
+        data: {
+          'email': email,
+          'password': password,
+          'dateOfBirth': dateOfBirth,
+        },
+      );
+
+      return AuthSession.fromAuthResponse(
+        _expectMap(response.data, context: 'signing up'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<AuthSession> login({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.authLogin,
+        data: {'email': email, 'password': password},
+      );
+
+      return AuthSession.fromAuthResponse(
+        _expectMap(response.data, context: 'logging in'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<AuthSession> refreshSession({required String refreshToken}) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.authRefresh,
+        data: {'refreshToken': refreshToken},
+      );
+
+      return AuthSession.fromAuthResponse(
+        _expectMap(response.data, context: 'refreshing the session'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<void> logout({required String refreshToken}) async {
+    try {
+      await _dio.post<dynamic>(
+        ApiEndpoints.authLogout,
+        data: {'refreshToken': refreshToken},
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<AuthUser> getMe() async {
+    try {
+      final response = await _dio.get<dynamic>(ApiEndpoints.authMe);
+      return AuthUser.fromJson(
+        _expectMap(response.data, context: 'loading the current user'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  // ── Photos ──────────────────────────────────────────────────────────────
+
+  /// Uploads a photo. Caller supplies a `MultipartFile` (built from
+  /// bytes or a file path) so the device-specific image picker can be
+  /// wired in separately without touching the API layer.
+  Future<PhotoUploadResponse> uploadPhoto({
+    required String userId,
+    required MultipartFile photo,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.userPhotos(userId),
+        data: FormData.fromMap({'photo': photo}),
+        options: Options(
+          extra: {'userId': userId},
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      return PhotoUploadResponse.fromJson(
+        _expectMap(response.data, context: 'uploading a photo'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<PhotoListResponse> deletePhoto({
+    required String userId,
+    required String photoId,
+  }) async {
+    try {
+      final response = await _dio.delete<dynamic>(
+        ApiEndpoints.userPhoto(userId, photoId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return PhotoListResponse.fromJson(
+        _expectMap(response.data, context: 'deleting a photo'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<PhotoListResponse> reorderPhotos({
+    required String userId,
+    required List<String> photoIds,
+  }) async {
+    try {
+      final response = await _dio.put<dynamic>(
+        ApiEndpoints.userPhotosOrder(userId),
+        data: {'photoIds': photoIds},
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return PhotoListResponse.fromJson(
+        _expectMap(response.data, context: 'reordering photos'),
       );
     } on DioException catch (error) {
       throw _toApiError(error);

@@ -78,15 +78,15 @@ is post-goal.
 
 Pin these in week zero. They cascade.
 
-| Decision | Recommended default | Reason |
-|---|---|---|
-| Auth method | Email + password, no email verification yet | Cheapest path. Add verification only once it bites. |
-| How does my phone reach the backend? | **Cloudflare Tunnel (free)** pointed at `localhost:7070` | Gets you a public HTTPS URL like `dating-dev.trycloudflare.com` with zero infra, zero certs, zero cost. The laptop just has to be on. |
-| Where do photos live? | **Local filesystem on the laptop, served as static files by the Java backend** | Object storage (S3/R2) is overkill for personal use. A `photos/` directory + an Nginx-style static handler is enough. |
-| Where does Postgres live? | Stay local for now, add `pg_dump` cron | If you and one trusted person are the only users, local Postgres + a nightly dump to your home folder is enough. |
-| Mobile distribution? | **`flutter build apk --release` + sideload** | No Play Store, no $25 fee. Sign with a self-generated keystore, install via USB or share the APK with a trusted person directly. |
-| Backup of the keystore + the DB dump | A second drive or a private cloud folder (Drive / Dropbox / Proton Drive) | The keystore is the one item you cannot regenerate. Back it up the day you create it. |
-| Backend code under version control? | Push to a private GitHub/GitLab repo before phase A1 | Right now the code lives on your laptop only. That's the biggest non-product risk in the project. |
+| Decision                             | Recommended default                                                            | Reason                                                                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth method                          | Email + password, no email verification yet                                    | Cheapest path. Add verification only once it bites.                                                                                   |
+| How does my phone reach the backend? | **Cloudflare Tunnel (free)** pointed at `localhost:7070`                       | Gets you a public HTTPS URL like `dating-dev.trycloudflare.com` with zero infra, zero certs, zero cost. The laptop just has to be on. |
+| Where do photos live?                | **Local filesystem on the laptop, served as static files by the Java backend** | Object storage (S3/R2) is overkill for personal use. A `photos/` directory + an Nginx-style static handler is enough.                 |
+| Where does Postgres live?            | Stay local for now, add `pg_dump` cron                                         | If you and one trusted person are the only users, local Postgres + a nightly dump to your home folder is enough.                      |
+| Mobile distribution?                 | **`flutter build apk --release` + sideload**                                   | No Play Store, no $25 fee. Sign with a self-generated keystore, install via USB or share the APK with a trusted person directly.      |
+| Backup of the keystore + the DB dump | A second drive or a private cloud folder (Drive / Dropbox / Proton Drive)      | The keystore is the one item you cannot regenerate. Back it up the day you create it.                                                 |
+| Backend code under version control?  | Push to a private GitHub/GitLab repo before phase A1                           | Right now the code lives on your laptop only. That's the biggest non-product risk in the project.                                     |
 
 If something pulls you elsewhere, fine — but if you have no opinion, take the
 defaults above.
@@ -306,18 +306,18 @@ do more.
 Only do this if Stage A has been working for a few weeks and you actually
 want to invite a handful of strangers. Don't pre-build it.
 
-| Stage B add-on | Why | Approx effort |
-|---|---|---|
-| Move Postgres to a managed host (Supabase / Neon free tier) | Backups stop being your job | 2–3 days |
-| Move the Java backend to a real host (Hetzner CX22 ~€5/mo, Railway ~$5–10/mo) | Laptop doesn't have to be on | 3–5 days |
-| Move photos to Cloudflare R2 / Backblaze B2 | Object storage scales better than laptop disk; ~$0–1/mo | 3–4 days |
-| Buy a domain (~$12/yr), point it at the backend with a stable HTTPS cert | Tunnel URL stops being a random subdomain | 1 day |
-| Privacy policy + ToS + age-18 gate page | Required by Google Play if you go that route, also basic decency for collecting strangers' data | 1 week incl. drafting |
-| Email verification on signup (free tier of Resend / Postmark / SES) | Reduces fake signups | 2–3 days |
-| Basic content moderation on photo upload (Sightengine / AWS Rekognition pay-per-call) | Prevents the obvious worst-case at upload time | 2–3 days |
-| Sentry on both sides | When testers hit a bug, you see the stack trace | 1–2 days |
-| Google Play developer account ($25 one-time) + closed-track APK upload | One-click install for testers | 1 week first time |
-| Push notifications via FCM | Drops 20s polling, makes chat feel real | 1 week |
+| Stage B add-on                                                                        | Why                                                                                             | Approx effort         |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------- |
+| Move Postgres to a managed host (Supabase / Neon free tier)                           | Backups stop being your job                                                                     | 2–3 days              |
+| Move the Java backend to a real host (Hetzner CX22 ~€5/mo, Railway ~$5–10/mo)         | Laptop doesn't have to be on                                                                    | 3–5 days              |
+| Move photos to Cloudflare R2 / Backblaze B2                                           | Object storage scales better than laptop disk; ~$0–1/mo                                         | 3–4 days              |
+| Buy a domain (~$12/yr), point it at the backend with a stable HTTPS cert              | Tunnel URL stops being a random subdomain                                                       | 1 day                 |
+| Privacy policy + ToS + age-18 gate page                                               | Required by Google Play if you go that route, also basic decency for collecting strangers' data | 1 week incl. drafting |
+| Email verification on signup (free tier of Resend / Postmark / SES)                   | Reduces fake signups                                                                            | 2–3 days              |
+| Basic content moderation on photo upload (Sightengine / AWS Rekognition pay-per-call) | Prevents the obvious worst-case at upload time                                                  | 2–3 days              |
+| Sentry on both sides                                                                  | When testers hit a bug, you see the stack trace                                                 | 1–2 days              |
+| Google Play developer account ($25 one-time) + closed-track APK upload                | One-click install for testers                                                                   | 1 week first time     |
+| Push notifications via FCM                                                            | Drops 20s polling, makes chat feel real                                                         | 1 week                |
 
 Total Stage B: 3–6 weeks of additional work. Total cost: ~$30 first month,
 ~$10/mo running.
@@ -347,15 +347,15 @@ upward).
 
 If you can give this 10–15 hours/week:
 
-| Phase | Weeks |
-|---|---|
-| A0. Decide §3 questions, push backend repo to private GitHub/GitLab | 0–1 |
-| A1. Real authentication | 2–3 |
-| A2. Cloudflare Tunnel + supervisor + Flyway | 0.5 |
-| A3. Photo upload to local disk | 1–2 |
-| A4. Onboarding funnel + remove dev affordance from release | 1 |
-| A5. Account delete + safety endpoint truth check | 1 |
-| **You can use it as a user** | **End ~6–8 weeks** |
+| Phase                                                               | Weeks              |
+| ------------------------------------------------------------------- | ------------------ |
+| A0. Decide §3 questions, push backend repo to private GitHub/GitLab | 0–1                |
+| A1. Real authentication                                             | 2–3                |
+| A2. Cloudflare Tunnel + supervisor + Flyway                         | 0.5                |
+| A3. Photo upload to local disk                                      | 1–2                |
+| A4. Onboarding funnel + remove dev affordance from release          | 1                  |
+| A5. Account delete + safety endpoint truth check                    | 1                  |
+| **You can use it as a user**                                        | **End ~6–8 weeks** |
 
 If you can only give it 5 hours/week, double the timeline.
 

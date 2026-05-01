@@ -15,7 +15,7 @@ void main() {
     expect(find.byType(Chip), findsNothing);
   });
 
-  testWidgets('renders tags in a horizontal scroll view', (tester) async {
+  testWidgets('renders tags in a wrapping row', (tester) async {
     await tester.pumpWidget(
       buildSubject(
         const HighlightTagRow(
@@ -25,7 +25,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
+    expect(find.byType(Wrap), findsOneWidget);
     expect(find.byType(Chip), findsNWidgets(3));
     expect(find.byIcon(Icons.auto_awesome_outlined), findsNWidgets(3));
   });

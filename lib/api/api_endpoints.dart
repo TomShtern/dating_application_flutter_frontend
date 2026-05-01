@@ -3,6 +3,18 @@ class ApiEndpoints {
 
   static const String health = '/api/health';
   static const String users = '/api/users';
+
+  static const String authSignup = '/api/auth/signup';
+  static const String authLogin = '/api/auth/login';
+  static const String authRefresh = '/api/auth/refresh';
+  static const String authLogout = '/api/auth/logout';
+  static const String authMe = '/api/auth/me';
+
+  static String userPhotos(String userId) => '/api/users/$userId/photos';
+  static String userPhoto(String userId, String photoId) =>
+      '/api/users/$userId/photos/$photoId';
+  static String userPhotosOrder(String userId) =>
+      '/api/users/$userId/photos/order';
   static const String locationCountries = '/api/location/countries';
   static const String locationCities = '/api/location/cities';
   static const String resolveLocation = '/api/location/resolve';

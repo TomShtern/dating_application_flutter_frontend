@@ -1,0 +1,72 @@
+/// User identity returned by `/api/auth/login`, `/api/auth/signup`,
+/// `/api/auth/refresh`, and `/api/auth/me`.
+///
+/// This is intentionally narrow — feature screens still call
+/// `getUserDetail` for richer data (age, photos, bio). The auth user
+/// only carries what the JWT establishes.
+class AuthUser {
+  const AuthUser({
+    required this.id,
+    required this.email,
+    required this.displayName,
+    required this.profileCompletionState,
+  });
+
+  final String id;
+  final String email;
+  final String? displayName;
+  final String profileCompletionState;
+
+  /// `complete` means the profile is ready for the main app. Anything
+  /// else (`needs_name`, `needs_dob`, `needs_location`, …) means the
+  /// user should be routed to a completion flow before the shell.
+  bool get isProfileComplete => profileCompletionState == 'complete';
+
+  factory AuthUser.fromJson(Map<String, dynamic> json) {
+    return AuthUser(
+      id: json['id'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      displayName: json['displayName'] as String?,
+      profileCompletionState:
+          json['profileCompletionState'] as String? ?? 'unknown',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'displayName': displayName,
+      'profileCompletionState': profileCompletionState,
+    };
+  }
+
+  AuthUser copyWith({
+    String? id,
+    String? email,
+    String? displayName,
+    String? profileCompletionState,
+  }) {
+    return AuthUser(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      profileCompletionState:
+          profileCompletionState ?? this.profileCompletionState,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is AuthUser &&
+        other.id == id &&
+        other.email == email &&
+        other.displayName == displayName &&
+        other.profileCompletionState == profileCompletionState;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, email, displayName, profileCompletionState);
+}
