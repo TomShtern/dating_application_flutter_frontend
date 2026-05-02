@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/app_config.dart';
@@ -93,7 +94,8 @@ final dioProvider = Provider<Dio>((ref) {
           options.headers[ApiHeaders.authorizationHeader] = 'Bearer $newToken';
           final retried = await dio.fetch<dynamic>(options);
           return handler.resolve(retried);
-        } catch (_) {
+        } catch (refreshError, stackTrace) {
+          debugPrint('Token refresh failed: $refreshError\n$stackTrace');
           return handler.next(error);
         }
       },
@@ -802,6 +804,21 @@ class ApiClient {
 
   // ── Photos ──────────────────────────────────────────────────────────────
 
+  Future<PhotoListResponse> listUserPhotos({required String userId}) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.userPhotos(userId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return PhotoListResponse.fromJson(
+        _expectMap(response.data, context: 'listing photos'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
   /// Uploads a photo. Caller supplies a `MultipartFile` (built from
   /// bytes or a file path) so the device-specific image picker can be
   /// wired in separately without touching the API layer.
@@ -813,10 +830,7 @@ class ApiClient {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.userPhotos(userId),
         data: FormData.fromMap({'photo': photo}),
-        options: Options(
-          extra: {'userId': userId},
-          contentType: 'multipart/form-data',
-        ),
+        options: Options(extra: {'userId': userId}),
       );
 
       return PhotoUploadResponse.fromJson(

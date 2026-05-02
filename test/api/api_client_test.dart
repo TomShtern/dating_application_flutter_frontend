@@ -634,6 +634,95 @@ void main() {
       });
     },
   );
+
+  test(
+    'listUserPhotos GETs the photos endpoint and parses the list response',
+    () async {
+      final recorder = _RequestRecorder();
+      const userId = '11111111-1111-1111-1111-111111111111';
+      final client = ApiClient(
+        dio: _buildTestDio(
+          recorder: recorder,
+          responder: (options) => {
+            'primaryUrl': '/photos/dana-1.jpg',
+            'photos': [
+              {'id': 'photo-1', 'url': '/photos/dana-1.jpg'},
+              {'id': 'photo-2', 'url': '/photos/dana-2.jpg'},
+            ],
+          },
+        ),
+      );
+
+      final list = await client.listUserPhotos(userId: userId);
+
+      expect(list.primaryUrl, '/photos/dana-1.jpg');
+      expect(list.photos.map((p) => p.id), ['photo-1', 'photo-2']);
+      final request = recorder.requests.single;
+      expect(request.method, 'GET');
+      expect(request.path, ApiEndpoints.userPhotos(userId));
+      expect(request.extra['userId'], userId);
+    },
+  );
+
+  test(
+    'deletePhoto DELETEs the user photo route and parses the list response',
+    () async {
+      final recorder = _RequestRecorder();
+      const userId = '11111111-1111-1111-1111-111111111111';
+      const photoId = 'photo-1';
+      final client = ApiClient(
+        dio: _buildTestDio(
+          recorder: recorder,
+          responder: (options) => {
+            'primaryUrl': null,
+            'photos': <Map<String, dynamic>>[],
+          },
+        ),
+      );
+
+      final list = await client.deletePhoto(userId: userId, photoId: photoId);
+
+      expect(list.photos, isEmpty);
+      final request = recorder.requests.single;
+      expect(request.method, 'DELETE');
+      expect(request.path, ApiEndpoints.userPhoto(userId, photoId));
+      expect(request.extra['userId'], userId);
+    },
+  );
+
+  test(
+    'reorderPhotos PUTs the order route with the photo id list',
+    () async {
+      final recorder = _RequestRecorder();
+      const userId = '11111111-1111-1111-1111-111111111111';
+      final client = ApiClient(
+        dio: _buildTestDio(
+          recorder: recorder,
+          responder: (options) => {
+            'primaryUrl': '/photos/dana-2.jpg',
+            'photos': [
+              {'id': 'photo-2', 'url': '/photos/dana-2.jpg'},
+              {'id': 'photo-1', 'url': '/photos/dana-1.jpg'},
+            ],
+          },
+        ),
+      );
+
+      final list = await client.reorderPhotos(
+        userId: userId,
+        photoIds: ['photo-2', 'photo-1'],
+      );
+
+      expect(list.photos.first.id, 'photo-2');
+      final request = recorder.requests.single;
+      expect(request.method, 'PUT');
+      expect(request.path, ApiEndpoints.userPhotosOrder(userId));
+      expect(request.data, {
+        'photoIds': ['photo-2', 'photo-1'],
+      });
+      expect(request.extra['userId'], userId);
+    },
+  );
 }
 
 Dio _buildTestDio({

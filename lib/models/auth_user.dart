@@ -23,9 +23,17 @@ class AuthUser {
   bool get isProfileComplete => profileCompletionState == 'complete';
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
+    final id = json['id'];
+    if (id is! String || id.trim().isEmpty) {
+      throw const FormatException('AuthUser is missing a non-empty id.');
+    }
+    final email = json['email'];
+    if (email is! String || email.trim().isEmpty) {
+      throw const FormatException('AuthUser is missing a non-empty email.');
+    }
     return AuthUser(
-      id: json['id'] as String? ?? '',
-      email: json['email'] as String? ?? '',
+      id: id,
+      email: email,
       displayName: json['displayName'] as String?,
       profileCompletionState:
           json['profileCompletionState'] as String? ?? 'unknown',

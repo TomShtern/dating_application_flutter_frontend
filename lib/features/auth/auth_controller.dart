@@ -67,6 +67,7 @@ class AuthController extends Notifier<AuthState> {
     holder.setAccessToken(session.accessToken);
     state = Authenticated(session);
 
+    final originalSession = session;
     // Best-effort validation. /me will trigger the 401 → refresh path
     // automatically if the access token has expired.
     try {
@@ -79,9 +80,9 @@ class AuthController extends Notifier<AuthState> {
       if (error.statusCode == 401) {
         await _clearAuth();
         state = const Unauthenticated(message: 'Please sign in again.');
+      } else {
+        await _bridgeToSelectedUser(originalSession);
       }
-      // Other errors (network down) — keep the session and let the
-      // user proceed. Subsequent calls will surface the failure.
     }
   }
 
@@ -114,6 +115,8 @@ class AuthController extends Notifier<AuthState> {
       } on ApiError {
         // Best effort — proceed with local cleanup even if the server
         // rejects the refresh token (e.g. already revoked).
+      } catch (_) {
+        // Non-API errors (network, timeout) — proceed with local cleanup.
       }
     }
     await _clearAuth();

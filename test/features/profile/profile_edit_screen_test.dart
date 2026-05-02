@@ -9,6 +9,7 @@ import 'package:flutter_dating_application_1/features/location/location_completi
 import 'package:flutter_dating_application_1/features/profile/profile_edit_screen.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
 import 'package:flutter_dating_application_1/models/location_metadata.dart';
+import 'package:flutter_dating_application_1/models/photo_dto.dart';
 import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
 import 'package:flutter_dating_application_1/models/profile_update_request.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
@@ -67,6 +68,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Dana'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Basics'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Basics'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Distance'),
@@ -259,7 +265,14 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Open editor'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Non-binary').at(0));
+    await tester.scrollUntilVisible(
+      find.text('Non-binary').first,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(find.text('Non-binary').at(0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Non-binary').at(0), warnIfMissed: false);
     await tester.pump();
 
     final interestedInChip = find.text('Non-binary').at(1);
@@ -440,5 +453,10 @@ class _FakeProfileApiClient extends ApiClient {
     bool allowApproximate = false,
   }) async {
     return resolvedLocation;
+  }
+
+  @override
+  Future<PhotoListResponse> listUserPhotos({required String userId}) async {
+    return const PhotoListResponse(primaryUrl: null, photos: []);
   }
 }

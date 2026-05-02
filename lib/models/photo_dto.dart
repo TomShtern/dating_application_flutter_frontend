@@ -9,10 +9,15 @@ class PhotoDto {
   final String url;
 
   factory PhotoDto.fromJson(Map<String, dynamic> json) {
-    return PhotoDto(
-      id: json['id'] as String? ?? '',
-      url: json['url'] as String? ?? '',
-    );
+    final id = json['id'];
+    if (id is! String || id.trim().isEmpty) {
+      throw const FormatException('PhotoDto is missing a non-empty id.');
+    }
+    final url = json['url'];
+    if (url is! String || url.trim().isEmpty) {
+      throw const FormatException('PhotoDto is missing a non-empty url.');
+    }
+    return PhotoDto(id: id, url: url);
   }
 
   Map<String, dynamic> toJson() => {'id': id, 'url': url};

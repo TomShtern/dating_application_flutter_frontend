@@ -18,8 +18,9 @@ class AuthSession {
   final DateTime expiresAt;
   final AuthUser user;
 
-  bool isExpired({Duration skew = const Duration(seconds: 30)}) {
-    return DateTime.now().toUtc().isAfter(expiresAt.subtract(skew));
+  bool isExpired({Duration skew = const Duration(seconds: 30), DateTime? now}) {
+    final effectiveNow = (now ?? DateTime.now()).toUtc();
+    return effectiveNow.isAfter(expiresAt.subtract(skew));
   }
 
   /// Parse the auth response shape:
@@ -61,12 +62,29 @@ class AuthSession {
       throw const FormatException('Stored session is missing the user.');
     }
 
+    final accessToken = _requiredNonBlankString(
+      json['accessToken'],
+      'accessToken',
+    );
+    final refreshToken = _requiredNonBlankString(
+      json['refreshToken'],
+      'refreshToken',
+    );
+    final expiresAtStr = json['expiresAt'] as String?;
+    if (expiresAtStr == null || expiresAtStr.trim().isEmpty) {
+      throw const FormatException('Stored session is missing expiresAt.');
+    }
+    final expiresAt = DateTime.tryParse(expiresAtStr)?.toUtc();
+    if (expiresAt == null) {
+      throw const FormatException(
+        'Stored session has an invalid expiresAt value.',
+      );
+    }
+
     return AuthSession(
-      accessToken: json['accessToken'] as String? ?? '',
-      refreshToken: json['refreshToken'] as String? ?? '',
-      expiresAt:
-          DateTime.tryParse(json['expiresAt'] as String? ?? '')?.toUtc() ??
-          DateTime.now().toUtc(),
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      expiresAt: expiresAt,
       user: AuthUser.fromJson(Map<String, dynamic>.from(userJson)),
     );
   }

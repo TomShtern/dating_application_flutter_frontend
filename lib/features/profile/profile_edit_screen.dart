@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:image_picker/image_picker.dart';
+
 import '../../api/api_error.dart';
 import '../../models/location_metadata.dart';
+import '../../models/photo_dto.dart';
 import '../../models/profile_edit_snapshot.dart';
 import '../../models/profile_update_request.dart';
 import '../../models/user_detail.dart';
 import '../../shared/formatting/display_text.dart';
+import '../../shared/media/media_url.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../../shared/widgets/app_route_header.dart';
+import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
+import '../../app/app_config.dart';
 import '../location/location_completion_screen.dart';
+import 'photo_edit_provider.dart';
 import 'profile_provider.dart';
 
 const _profileLavender = Color(0xFF8E6DE8);
@@ -222,6 +230,8 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                   ),
                   children: [
                     _ProfileEditHeader(snapshot: widget.snapshot),
+                    SizedBox(height: AppTheme.compactSectionGap),
+                    const _PhotoEditSection(),
                     SizedBox(height: AppTheme.compactSectionGap),
                     _ProfileEditSection(
                       icon: Icons.badge_outlined,
@@ -1045,6 +1055,362 @@ class _ProfileEditOptionGrid extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+enum _PhotoTileAction { makePrimary, delete }
+
+class _PhotoEditSection extends ConsumerStatefulWidget {
+  const _PhotoEditSection();
+
+  @override
+  ConsumerState<_PhotoEditSection> createState() => _PhotoEditSectionState();
+}
+
+class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
+  bool _busy = false;
+  String? _busyPhotoId;
+
+  Future<void> _runBusy(
+    Future<void> Function() action, {
+    String? photoId,
+    String? successMessage,
+  }) async {
+    if (_busy) {
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _busyPhotoId = photoId;
+    });
+    try {
+      await action();
+      if (mounted && successMessage != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(successMessage)));
+      }
+    } on ApiError catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Photo action failed. Try again.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _busyPhotoId = null;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleAddPhoto() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from gallery'),
+                onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Take a photo'),
+                onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null || !mounted) {
+      return;
+    }
+
+    final XFile? picked = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 2048,
+    );
+    if (picked == null) {
+      return;
+    }
+
+    await _runBusy(
+      () async {
+        await ref
+            .read(photoEditControllerProvider)
+            .uploadFromXFile(picked);
+      },
+      successMessage: 'Photo added.',
+    );
+  }
+
+  Future<void> _handleMakePrimary(String photoId) async {
+    await _runBusy(
+      () async {
+        await ref.read(photoEditControllerProvider).setPrimary(photoId);
+      },
+      photoId: photoId,
+      successMessage: 'Primary photo updated.',
+    );
+  }
+
+  Future<void> _confirmAndDelete(String photoId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete photo?'),
+          content: const Text(
+            'This photo will be removed from your profile.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    await _runBusy(
+      () async {
+        await ref.read(photoEditControllerProvider).deletePhoto(photoId);
+      },
+      photoId: photoId,
+      successMessage: 'Photo deleted.',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final asyncPhotos = ref.watch(userPhotosProvider);
+
+    return _ProfileEditSection(
+      icon: Icons.photo_library_outlined,
+      accentColor: _profileSky,
+      title: 'Photos',
+      description:
+          'Add up to a few photos. The first one is what people see first.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          asyncPhotos.when(
+            data: (data) => _buildLoadedBody(context, data),
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 18),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (error, _) => AppAsyncState.error(
+              message: error is ApiError
+                  ? error.message
+                  : 'Unable to load your photos right now.',
+              onRetry: () => ref.invalidate(userPhotosProvider),
+            ),
+          ),
+          const SizedBox(height: AppTheme.cardGap),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.tonalIcon(
+              onPressed: _busy ? null : _handleAddPhoto,
+              icon: _busy && _busyPhotoId == null
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add_a_photo_outlined),
+              label: const Text('Add photo'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadedBody(BuildContext context, PhotoListResponse data) {
+    if (data.photos.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(
+          'No photos yet — add one below to start your profile.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    final baseUrl = ref.watch(appConfigProvider).baseUrl;
+    final resolvedPrimary = resolveMediaUrl(
+      rawUrl: data.primaryUrl,
+      baseUrl: baseUrl,
+    );
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        for (final photo in data.photos)
+          _PhotoTile(
+            photo: photo,
+            isPrimary: _isPrimary(photo, resolvedPrimary, baseUrl),
+            isBusy: _busy && _busyPhotoId == photo.id,
+            anyBusy: _busy,
+            onMakePrimary: () => _handleMakePrimary(photo.id),
+            onDelete: () => _confirmAndDelete(photo.id),
+          ),
+      ],
+    );
+  }
+
+  bool _isPrimary(PhotoDto photo, String? resolvedPrimary, String baseUrl) {
+    if (resolvedPrimary == null) {
+      return false;
+    }
+    final resolvedPhoto = resolveMediaUrl(rawUrl: photo.url, baseUrl: baseUrl);
+    return resolvedPhoto != null && resolvedPhoto == resolvedPrimary;
+  }
+}
+
+class _PhotoTile extends StatelessWidget {
+  const _PhotoTile({
+    required this.photo,
+    required this.isPrimary,
+    required this.isBusy,
+    required this.anyBusy,
+    required this.onMakePrimary,
+    required this.onDelete,
+  });
+
+  final PhotoDto photo;
+  final bool isPrimary;
+  final bool isBusy;
+  final bool anyBusy;
+  final VoidCallback onMakePrimary;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 96,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              PersonMediaThumbnail(
+                name: 'Photo',
+                photoUrl: photo.url,
+                width: 96,
+                height: 128,
+              ),
+              if (isBusy)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: const BorderRadius.all(Radius.circular(24)),
+                    ),
+                    child: const Center(
+                      child: SizedBox.square(
+                        dimension: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 2,
+                right: 2,
+                child: Material(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surface.withValues(alpha: 0.85),
+                  shape: const CircleBorder(),
+                  child: AppOverflowMenuButton<_PhotoTileAction>(
+                    items: [
+                      PopupMenuItem(
+                        value: _PhotoTileAction.makePrimary,
+                        enabled: !isPrimary && !anyBusy,
+                        child: const Text('Make primary'),
+                      ),
+                      PopupMenuItem(
+                        value: _PhotoTileAction.delete,
+                        enabled: !anyBusy,
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                    onSelected: (action) {
+                      switch (action) {
+                        case _PhotoTileAction.makePrimary:
+                          onMakePrimary();
+                          break;
+                        case _PhotoTileAction.delete:
+                          onDelete();
+                          break;
+                      }
+                    },
+                  ),
+                ),
+              ),
+              if (isPrimary)
+                Positioned(
+                  left: 4,
+                  bottom: 4,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: _profileMint,
+                      borderRadius: AppTheme.chipRadius,
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      child: Text(
+                        'Primary',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

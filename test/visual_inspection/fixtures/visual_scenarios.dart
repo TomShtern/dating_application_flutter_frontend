@@ -10,7 +10,9 @@ import 'package:flutter_dating_application_1/features/home/backend_health_provid
 import 'package:flutter_dating_application_1/features/location/location_provider.dart';
 import 'package:flutter_dating_application_1/features/matches/matches_provider.dart';
 import 'package:flutter_dating_application_1/features/notifications/notifications_provider.dart';
+import 'package:flutter_dating_application_1/features/profile/photo_edit_provider.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+import 'package:flutter_dating_application_1/models/photo_dto.dart';
 import 'package:flutter_dating_application_1/features/safety/blocked_users_provider.dart';
 import 'package:flutter_dating_application_1/features/stats/stats_provider.dart';
 import 'package:flutter_dating_application_1/models/health_status.dart';
@@ -100,7 +102,16 @@ List baseSignedInOverrides(SharedPreferences preferences) => [
   profileEditSnapshotProvider.overrideWith(
     (ref) async => visualProfileEditSnapshot,
   ),
+  userPhotosProvider.overrideWith((ref) async => _visualPhotoList),
 ];
+
+const _visualPhotoList = PhotoListResponse(
+  primaryUrl: '/photos/dana-1.jpg',
+  photos: [
+    PhotoDto(id: 'photo-dana-1', url: '/photos/dana-1.jpg'),
+    PhotoDto(id: 'photo-dana-2', url: '/photos/dana-2.jpg'),
+  ],
+);
 
 List _presentationContextOverrides(List<String> userIds) {
   return userIds

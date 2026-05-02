@@ -79,7 +79,8 @@ Controllers handle side effects (API calls, `ref.invalidate`). Screens only read
 - Shared secret defaults to `lan-dev-secret`; override via `DATING_APP_SHARED_SECRET` dart-define
 - Android emulator: use `http://10.0.2.2:7070` (not `127.0.0.1`)
 - All request headers (`X-DatingApp-Shared-Secret`, `X-User-Id`) are injected centrally in `lib/api/api_headers.dart` — never add them ad hoc in feature code
-- No real authentication. The "selected user" (stored in SharedPreferences) is injected as `X-User-Id` on every request
+- **Auth model:** `X-User-Id` identifies the currently selected user on user-scoped routes (`/api/users/...`, `/api/conversations/...`); a Bearer access token is added on every protected route. Auth endpoints (`/api/auth/{signup,login,refresh,logout}`) deliberately receive no Bearer header — they carry credentials in the body. Routing logic lives in `api_headers.dart` (`_isUserScoped`, `_acceptsBearer`); never bypass it.
+- **Token lifecycle:** `AuthTokenHolder` (`lib/api/auth_token_holder.dart`) holds the access token and drives single-flight refresh — concurrent 401s share one refresh future, and `clear()` (logout) invalidates any in-flight refresh via a generation counter. The Dio interceptor reads from it; the auth controller writes to it.
 - `ApiError.fromDioException()` produces smart connection error messages that detect loopback URLs and suggest the Android emulator address
 
 When adding new endpoints, use the response parsing helpers in `ApiClient`: `_expectMap()`, `_expectList()`, `_extractWrappedList()`. Never write raw `as Map` / `as List` casts inline.
@@ -151,6 +152,13 @@ Profile edit uses a snapshot / request split:
 - Read: `ApiClient.getProfileEditSnapshot()` → `ProfileEditSnapshot` (read-only + editable fields together)
 - Write: submit only changed fields via `ProfileUpdateRequest` (partial update)
 
+### Photo Edit Pattern
+
+- Mutations go through `PhotoEditController` (`lib/features/profile/photo_edit_provider.dart`) via `ref.read(photoEditControllerProvider)` — it is action-only, not reactive state.
+- **Primary photo = index 0.** There is no dedicated "set primary" endpoint; `setPrimary(id)` reorders the list so the target id is first. Don't add a separate primary endpoint client-side.
+- After any mutation the controller invalidates four providers (`userPhotosProvider`, `profileProvider`, `profileEditSnapshotProvider`, `otherUserProfileProvider`) so all photo-aware views stay in sync. Add new photo-consuming providers to that list rather than re-fetching ad hoc.
+- Uploads accept an `XFile` from `image_picker`; the controller falls back to in-memory bytes if the path is unreadable, so callers don't need to pre-read the file.
+
 ### Testing
 
 **Do not create widget tests, regression tests, or integration tests during frontend/UI/design work.** The default for any task that touches screens, layouts, visual styling, or design is: no new tests. Only write tests when the user explicitly requests them and the frontend is in a finalized, stable state.
@@ -177,8 +185,9 @@ Covered screens: dev-user picker, Discover, Matches, Chats, Profile, Settings, c
 
 ## Key Constraints
 
-- **No real signup/auth** — `DevUserPickerScreen` is the only auth flow; it selects from users already in the backend DB
+- **Two auth entry points** — `DevUserPickerScreen` (dev-only quick-select from existing users) and the phone-alpha auth flow (`/api/auth/signup` + `/api/auth/login` → Bearer token managed by `AuthTokenHolder`). Both result in a `selectedUserProvider` value; downstream code should not branch on which path was taken.
 - **Android first** — primary target platform for development and testing
 - **HTTP cleartext** is allowed for LAN development (configured in Android manifest)
+- **Native media permissions** — camera + photo library usage strings are declared in `ios/Runner/Info.plist`; `READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE` (≤SDK 32), and `CAMERA` are declared in `AndroidManifest.xml`. Cleartext HTTP for LAN dev is enabled via `android/app/src/main/res/xml/network_security_config.xml` — disable that file's permission before any production build.
 - **`selectedUserGuard`** — must be used in any provider that requires an authenticated context (see above)
 - **Design system** — new screens must use the shared widget system and the rules in `docs/design-language.md` to stay visually consistent with the rest of the app

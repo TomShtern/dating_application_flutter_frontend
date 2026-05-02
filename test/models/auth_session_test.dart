@@ -113,11 +113,12 @@ void main() {
     });
 
     test('isExpired honors a clock skew window', () {
-      final almostNow = DateTime.now().toUtc().add(const Duration(seconds: 5));
+      final fixedNow = DateTime.utc(2026, 5, 1, 12, 0, 30);
+      final expiresAt = fixedNow.add(const Duration(seconds: 5));
       final session = AuthSession.fromStorageJson({
         'accessToken': 'a',
         'refreshToken': 'r',
-        'expiresAt': almostNow.toIso8601String(),
+        'expiresAt': expiresAt.toIso8601String(),
         'user': {
           'id': 'u',
           'email': 'e',
@@ -126,11 +127,11 @@ void main() {
         },
       });
 
-      // Default skew is 30s — token expires in 5s, so it's already
-      // considered expired.
-      expect(session.isExpired(), isTrue);
+      // Default skew is 30s — token expires in 5s from fixedNow, so it's
+      // already considered expired.
+      expect(session.isExpired(now: fixedNow), isTrue);
       // With zero skew the token is still valid (expiry hasn't hit).
-      expect(session.isExpired(skew: Duration.zero), isFalse);
+      expect(session.isExpired(skew: Duration.zero, now: fixedNow), isFalse);
     });
   });
 }
