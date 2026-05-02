@@ -18,8 +18,11 @@ import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../../app/app_config.dart';
+import '../auth/auth_controller.dart';
 import '../location/location_completion_screen.dart';
 import 'photo_edit_provider.dart';
+import 'profile_checklist_card.dart';
+import 'profile_completion.dart';
 import 'profile_provider.dart';
 
 const _profileLavender = Color(0xFF8E6DE8);
@@ -39,7 +42,13 @@ class ProfileEditScreen extends ConsumerWidget {
     final snapshotState = ref.watch(profileEditSnapshotProvider);
 
     return snapshotState.when(
-      data: (snapshot) => _ProfileEditForm(snapshot: snapshot),
+      data: (snapshot) {
+        final missingFields = missingFieldsFromInfo(snapshot.completionInfo);
+        return _ProfileEditForm(
+          snapshot: snapshot,
+          missingFields: missingFields,
+        );
+      },
       loading: () => const Scaffold(
         body: SafeArea(
           child: Padding(
@@ -86,9 +95,13 @@ class ProfileEditScreen extends ConsumerWidget {
 }
 
 class _ProfileEditForm extends ConsumerStatefulWidget {
-  const _ProfileEditForm({required this.snapshot});
+  const _ProfileEditForm({
+    required this.snapshot,
+    required this.missingFields,
+  });
 
   final ProfileEditSnapshot snapshot;
+  final List<MissingField> missingFields;
 
   @override
   ConsumerState<_ProfileEditForm> createState() => _ProfileEditScreenState();
@@ -96,11 +109,14 @@ class _ProfileEditForm extends ConsumerStatefulWidget {
 
 class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _bioController;
-  late final TextEditingController _minAgeController;
-  late final TextEditingController _maxAgeController;
-  late final TextEditingController _heightController;
+  final _nameFocusNode = FocusNode();
+  final _bioController = TextEditingController();
+  final _minAgeController = TextEditingController();
+  final _maxAgeController = TextEditingController();
+  final _heightController = TextEditingController();
+  final _nameController = TextEditingController();
   String? _selectedGender;
+  String? _selectedPace;
   late final Set<String> _selectedInterestedIn;
   int? _maxDistanceKm;
   late String _approximateLocation;
@@ -111,8 +127,10 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
   void initState() {
     super.initState();
     final editable = widget.snapshot.editable;
-    _bioController = TextEditingController(text: editable.bio ?? '');
+    _bioController.text = editable.bio ?? '';
+    _nameController.text = editable.name ?? '';
     _selectedGender = _normalizedOrNull(editable.gender ?? '');
+    _selectedPace = editable.pacePreferences;
     _selectedInterestedIn = _orderedInterestedInValues(
       editable.interestedIn,
     ).toSet();
@@ -121,23 +139,19 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
         editable.maxDistanceKm != null && editable.maxDistanceKm! > 0
         ? editable.maxDistanceKm
         : null;
-    _minAgeController = TextEditingController(
-      text: editable.minAge?.toString() ?? '',
-    );
-    _maxAgeController = TextEditingController(
-      text: editable.maxAge?.toString() ?? '',
-    );
-    _heightController = TextEditingController(
-      text: editable.heightCm?.toString() ?? '',
-    );
+    _minAgeController.text = editable.minAge?.toString() ?? '';
+    _maxAgeController.text = editable.maxAge?.toString() ?? '';
+    _heightController.text = editable.heightCm?.toString() ?? '';
   }
 
   @override
   void dispose() {
+    _nameFocusNode.dispose();
     _bioController.dispose();
     _minAgeController.dispose();
     _maxAgeController.dispose();
     _heightController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -229,6 +243,13 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                     AppTheme.navBarHeight + AppTheme.pagePadding,
                   ),
                   children: [
+                    if (widget.missingFields.isNotEmpty) ...[
+                      ProfileChecklistCard(
+                        fields: widget.missingFields,
+                        onFieldTap: _handleChecklistTap,
+                      ),
+                      SizedBox(height: AppTheme.compactSectionGap),
+                    ],
                     _ProfileEditHeader(snapshot: widget.snapshot),
                     SizedBox(height: AppTheme.compactSectionGap),
                     const _PhotoEditSection(),
@@ -242,6 +263,17 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          _ProfileFieldLabel(title: 'Name'),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _nameController,
+                            focusNode: _nameFocusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Your name',
+                              hintText: 'What should people call you?',
+                            ),
+                          ),
+                          const SizedBox(height: AppTheme.compactSectionGap),
                           _ProfileFieldLabel(title: 'Gender'),
                           const SizedBox(height: 6),
                           _ProfileEditOptionGrid(
@@ -268,6 +300,21 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                                 } else {
                                   _selectedInterestedIn.remove(option);
                                 }
+                              });
+                            },
+                          ),
+                          const SizedBox(height: AppTheme.compactSectionGap),
+                          _ProfileFieldLabel(title: 'Pace preference'),
+                          const SizedBox(height: 6),
+                          _ProfileEditOptionGrid(
+                            options: _paceOptions,
+                            accentColor: _profileLavender,
+                            selectedOptions: _selectedPace != null
+                                ? {_selectedPace!}
+                                : const <String>{},
+                            onOptionToggled: (option, selected) {
+                              setState(() {
+                                _selectedPace = selected ? option : null;
                               });
                             },
                           ),
@@ -420,23 +467,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                                   color: _profileMint.withValues(alpha: 0.26),
                                 ),
                               ),
-                              onPressed: () async {
-                                final resolved = await Navigator.of(context)
-                                    .push<ResolvedLocation>(
-                                      MaterialPageRoute<ResolvedLocation>(
-                                        builder: (context) =>
-                                            const LocationCompletionScreen(),
-                                      ),
-                                    );
-                                if (!mounted || resolved == null) {
-                                  return;
-                                }
-
-                                setState(() {
-                                  _approximateLocation = resolved.label;
-                                  _resolvedLocation = resolved;
-                                });
-                              },
+                              onPressed: _pushLocationCompletion,
                               icon: const Icon(Icons.travel_explore_outlined),
                               label: Text(
                                 _approximateLocation.trim().isEmpty
@@ -543,7 +574,10 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
       _isSaving = true;
     });
 
+    final messenger = ScaffoldMessenger.of(context);
+
     final request = ProfileUpdateRequest(
+      name: _trimmedOrNull(_nameController.text),
       bio: _trimmedOrNull(_bioController.text),
       gender: _selectedGender,
       interestedIn: _selectedInterestedIn.isEmpty
@@ -556,10 +590,12 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
       maxAge: _parseOptionalInt(_maxAgeController.text),
       heightCm: _parseOptionalInt(_heightController.text),
       location: _profileLocationRequestFrom(_resolvedLocation),
+      pacePreferences: _selectedPace,
     );
 
     try {
       await ref.read(profileControllerProvider).updateProfile(request);
+      await ref.read(authControllerProvider.notifier).refreshMe();
 
       if (!mounted) {
         return;
@@ -567,21 +603,15 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
 
       Navigator.of(context).pop();
     } on ApiError catch (error) {
-      if (!mounted) {
-        return;
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(error.message)));
       }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
-      if (!mounted) {
-        return;
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Unable to save your profile right now.')),
+        );
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to save your profile right now.')),
-      );
     } finally {
       if (mounted) {
         setState(() {
@@ -589,6 +619,48 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
         });
       }
     }
+  }
+
+  void _handleChecklistTap(String fieldKey) {
+    switch (fieldKey) {
+      case 'name':
+        _nameFocusNode.requestFocus();
+        if (_nameFocusNode.context != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_nameFocusNode.context != null) {
+              Scrollable.ensureVisible(
+                _nameFocusNode.context!,
+                duration: const Duration(milliseconds: 300),
+              );
+            }
+          });
+        }
+      case 'photo':
+        // The photo add action is in _PhotoEditSection which is a separate
+        // widget. Scroll to the photos section instead.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Use the "Add photo" button above to add a photo.'),
+          ),
+        );
+      case 'location':
+        _pushLocationCompletion();
+    }
+  }
+
+  Future<void> _pushLocationCompletion() async {
+    final resolved = await Navigator.of(context).push<ResolvedLocation>(
+      MaterialPageRoute<ResolvedLocation>(
+        builder: (context) => const LocationCompletionScreen(),
+      ),
+    );
+    if (!mounted || resolved == null) {
+      return;
+    }
+    setState(() {
+      _approximateLocation = resolved.label;
+      _resolvedLocation = resolved;
+    });
   }
 
   double get _distanceSliderValue => (_maxDistanceKm ?? 50).toDouble();
@@ -707,6 +779,12 @@ const List<String> _genderOptions = <String>[
   'OTHER',
 ];
 
+const List<String> _paceOptions = <String>[
+  'SLOW',
+  'MODERATE',
+  'FAST',
+];
+
 class _ProfileEditHeader extends StatelessWidget {
   const _ProfileEditHeader({required this.snapshot});
 
@@ -753,7 +831,7 @@ class _ProfileEditHeader extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(3),
                     child: UserAvatar(
-                      name: readOnly.name,
+                      name: readOnly.name.isNotEmpty ? readOnly.name : '?',
                       photoUrl: photoUrl,
                       radius: 24,
                     ),
@@ -765,10 +843,16 @@ class _ProfileEditHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        readOnly.name,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        readOnly.name.isNotEmpty ? readOnly.name : 'No name set',
+                        style: readOnly.name.isNotEmpty
+                            ? theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              )
+                            : theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontStyle: FontStyle.italic,
+                              ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1080,6 +1164,7 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
     if (_busy) {
       return;
     }
+    final messenger = ScaffoldMessenger.of(context);
     setState(() {
       _busy = true;
       _busyPhotoId = photoId;
@@ -1087,19 +1172,15 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
     try {
       await action();
       if (mounted && successMessage != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(successMessage)));
+        messenger.showSnackBar(SnackBar(content: Text(successMessage)));
       }
     } on ApiError catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+        messenger.showSnackBar(SnackBar(content: Text(error.message)));
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Photo action failed. Try again.')),
         );
       }

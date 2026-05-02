@@ -5,6 +5,7 @@
 /// client relies on omitted write-side fields being preserved server-side.
 class ProfileUpdateRequest {
   const ProfileUpdateRequest({
+    this.name,
     this.bio,
     this.gender,
     this.interestedIn,
@@ -13,8 +14,10 @@ class ProfileUpdateRequest {
     this.maxAge,
     this.heightCm,
     this.location,
+    this.pacePreferences,
   });
 
+  final String? name;
   final String? bio;
   final String? gender;
   final List<String>? interestedIn;
@@ -23,10 +26,14 @@ class ProfileUpdateRequest {
   final int? maxAge;
   final int? heightCm;
   final ProfileLocationRequest? location;
+  final String? pacePreferences;
 
   Map<String, dynamic> toJson() {
     final payload = <String, dynamic>{};
 
+    if (name != null) {
+      payload['name'] = name;
+    }
     if (bio != null) {
       payload['bio'] = bio;
     }
@@ -51,6 +58,9 @@ class ProfileUpdateRequest {
     if (location != null) {
       payload['location'] = location!.toJson();
     }
+    if (pacePreferences != null) {
+      payload['pacePreferences'] = pacePreferences;
+    }
 
     return payload;
   }
@@ -62,6 +72,7 @@ class ProfileUpdateRequest {
     }
 
     return other is ProfileUpdateRequest &&
+        other.name == name &&
         other.bio == bio &&
         other.gender == gender &&
         _listEquals(other.interestedIn, interestedIn) &&
@@ -69,11 +80,13 @@ class ProfileUpdateRequest {
         other.minAge == minAge &&
         other.maxAge == maxAge &&
         other.heightCm == heightCm &&
-        other.location == location;
+        other.location == location &&
+        other.pacePreferences == pacePreferences;
   }
 
   @override
   int get hashCode => Object.hash(
+    name,
     bio,
     gender,
     interestedIn == null ? null : Object.hashAll(interestedIn!),
@@ -82,6 +95,7 @@ class ProfileUpdateRequest {
     maxAge,
     heightCm,
     location,
+    pacePreferences,
   );
 }
 

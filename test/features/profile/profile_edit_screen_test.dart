@@ -12,6 +12,7 @@ import 'package:flutter_dating_application_1/models/location_metadata.dart';
 import 'package:flutter_dating_application_1/models/photo_dto.dart';
 import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
 import 'package:flutter_dating_application_1/models/profile_update_request.dart';
+import 'package:flutter_dating_application_1/models/profile_update_response.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 void main() {
@@ -416,11 +417,12 @@ class _FakeProfileApiClient extends ApiClient {
   final ResolvedLocation resolvedLocation;
 
   @override
-  Future<void> updateProfile({
+  Future<ProfileUpdateResponse> updateProfile({
     required String userId,
     required ProfileUpdateRequest request,
   }) async {
     updatedRequests.add(request);
+    return const ProfileUpdateResponse();
   }
 
   @override

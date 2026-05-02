@@ -21,6 +21,7 @@ import '../models/photo_dto.dart';
 import '../models/profile_edit_snapshot.dart';
 import '../models/profile_presentation_context.dart';
 import '../models/profile_update_request.dart';
+import '../models/profile_update_response.dart';
 import '../models/standout.dart';
 import '../models/undo_swipe_result.dart';
 import '../models/user_stats.dart';
@@ -162,15 +163,19 @@ class ApiClient {
     }
   }
 
-  Future<void> updateProfile({
+  Future<ProfileUpdateResponse> updateProfile({
     required String userId,
     required ProfileUpdateRequest request,
   }) async {
     try {
-      await _dio.put<dynamic>(
+      final response = await _dio.put<dynamic>(
         ApiEndpoints.updateProfile(userId),
         data: request.toJson(),
         options: Options(extra: {'userId': userId}),
+      );
+
+      return ProfileUpdateResponse.fromJson(
+        _expectMap(response.data, context: 'updating profile'),
       );
     } on DioException catch (error) {
       throw _toApiError(error);

@@ -1,9 +1,3 @@
-/// User identity returned by `/api/auth/login`, `/api/auth/signup`,
-/// `/api/auth/refresh`, and `/api/auth/me`.
-///
-/// This is intentionally narrow — feature screens still call
-/// `getUserDetail` for richer data (age, photos, bio). The auth user
-/// only carries what the JWT establishes.
 class AuthUser {
   const AuthUser({
     required this.id,
@@ -17,9 +11,6 @@ class AuthUser {
   final String? displayName;
   final String profileCompletionState;
 
-  /// `complete` means the profile is ready for the main app. Anything
-  /// else (`needs_name`, `needs_dob`, `needs_location`, …) means the
-  /// user should be routed to a completion flow before the shell.
   bool get isProfileComplete => profileCompletionState == 'complete';
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {

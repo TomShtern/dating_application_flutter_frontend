@@ -1,5 +1,6 @@
 import 'location_metadata.dart';
 import 'person_summary_fields.dart';
+import 'profile_completion_info.dart';
 import 'profile_update_request.dart';
 
 class ProfileEditSnapshot {
@@ -7,11 +8,13 @@ class ProfileEditSnapshot {
     required this.userId,
     required this.editable,
     required this.readOnly,
+    this.completionInfo = const ProfileCompletionInfo(),
   });
 
   final String userId;
   final ProfileEditEditable editable;
   final ProfileEditReadOnly readOnly;
+  final ProfileCompletionInfo completionInfo;
 
   factory ProfileEditSnapshot.fromJson(Map<String, dynamic> json) {
     return ProfileEditSnapshot(
@@ -22,11 +25,13 @@ class ProfileEditSnapshot {
       readOnly: ProfileEditReadOnly.fromJson(
         Map<String, dynamic>.from(json['readOnly'] as Map? ?? const {}),
       ),
+      completionInfo: ProfileCompletionInfo.fromJson(json),
     );
   }
 
   ProfileUpdateRequest toUpdateRequest() {
     return ProfileUpdateRequest(
+      name: editable.name,
       bio: editable.bio,
       gender: editable.gender,
       interestedIn: editable.interestedIn,
@@ -35,12 +40,14 @@ class ProfileEditSnapshot {
       maxAge: editable.maxAge,
       heightCm: editable.heightCm,
       location: editable.location?.toProfileLocationRequest(),
+      pacePreferences: editable.pacePreferences,
     );
   }
 }
 
 class ProfileEditEditable {
   const ProfileEditEditable({
+    this.name,
     this.bio,
     this.birthDate,
     this.gender,
@@ -62,9 +69,11 @@ class ProfileEditEditable {
       acceptableLookingFor: <String>[],
       acceptableEducation: <String>[],
     ),
+    this.pacePreferences,
     this.location,
   });
 
+  final String? name;
   final String? bio;
   final String? birthDate;
   final String? gender;
@@ -80,10 +89,12 @@ class ProfileEditEditable {
   final String? education;
   final List<String> interests;
   final ProfileEditDealbreakers dealbreakers;
+  final String? pacePreferences;
   final ProfileEditLocation? location;
 
   factory ProfileEditEditable.fromJson(Map<String, dynamic> json) {
     return ProfileEditEditable(
+      name: parseNullableString(json['name']),
       bio: parseNullableString(json['bio']),
       birthDate: parseNullableString(json['birthDate']),
       gender: parseNullableString(json['gender']),
@@ -101,6 +112,7 @@ class ProfileEditEditable {
       dealbreakers: ProfileEditDealbreakers.fromJson(
         Map<String, dynamic>.from(json['dealbreakers'] as Map? ?? const {}),
       ),
+      pacePreferences: parseNullableString(json['pacePreferences']),
       location: json['location'] is Map
           ? ProfileEditLocation.fromJson(
               Map<String, dynamic>.from(json['location'] as Map),
@@ -227,7 +239,7 @@ class ProfileEditReadOnly {
 
   factory ProfileEditReadOnly.fromJson(Map<String, dynamic> json) {
     return ProfileEditReadOnly(
-      name: json['name'] as String? ?? 'Unknown user',
+      name: (json['name'] as String?) ?? '',
       state: json['state'] as String? ?? 'UNKNOWN',
       photoUrls: parseStringList(json['photoUrls']),
       verified: json['verified'] as bool? ?? false,

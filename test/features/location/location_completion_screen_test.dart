@@ -8,6 +8,7 @@ import 'package:flutter_dating_application_1/features/auth/selected_user_provide
 import 'package:flutter_dating_application_1/features/location/location_completion_screen.dart';
 import 'package:flutter_dating_application_1/models/location_metadata.dart';
 import 'package:flutter_dating_application_1/models/profile_update_request.dart';
+import 'package:flutter_dating_application_1/models/profile_update_response.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 const _countries = <LocationCountry>[
@@ -195,10 +196,11 @@ class _FakeLocationApiClient extends ApiClient {
   }
 
   @override
-  Future<void> updateProfile({
+  Future<ProfileUpdateResponse> updateProfile({
     required String userId,
     required ProfileUpdateRequest request,
   }) async {
     updatedRequests.add(request);
+    return const ProfileUpdateResponse();
   }
 }

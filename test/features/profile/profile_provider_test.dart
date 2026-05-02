@@ -8,6 +8,7 @@ import 'package:flutter_dating_application_1/features/profile/profile_provider.d
 import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
 import 'package:flutter_dating_application_1/models/profile_presentation_context.dart';
 import 'package:flutter_dating_application_1/models/profile_update_request.dart';
+import 'package:flutter_dating_application_1/models/profile_update_response.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
@@ -267,7 +268,7 @@ class _FakeProfileApiClient extends ApiClient {
   }
 
   @override
-  Future<void> updateProfile({
+  Future<ProfileUpdateResponse> updateProfile({
     required String userId,
     required ProfileUpdateRequest request,
   }) async {
@@ -287,6 +288,8 @@ class _FakeProfileApiClient extends ApiClient {
       photoUrls: previous.photoUrls,
       state: previous.state,
     );
+
+    return const ProfileUpdateResponse();
   }
 
   @override

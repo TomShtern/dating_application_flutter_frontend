@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
+import 'package:flutter_dating_application_1/models/profile_update_response.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversations_provider.dart';
@@ -294,10 +295,12 @@ class _ReactiveUserApiClient extends ApiClient {
   }
 
   @override
-  Future<void> updateProfile({
+  Future<ProfileUpdateResponse> updateProfile({
     required String userId,
     required ProfileUpdateRequest request,
-  }) async {}
+  }) async {
+    return const ProfileUpdateResponse();
+  }
 }
 
 class _SelectedUserNotifier extends Notifier<UserSummary?> {

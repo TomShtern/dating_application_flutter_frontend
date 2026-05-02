@@ -1,3 +1,5 @@
+import 'profile_completion_info.dart';
+
 /// A single uploaded photo as returned by the backend.
 ///
 /// `url` is an absolute URL ready to display (the backend resolves the
@@ -35,10 +37,15 @@ class PhotoDto {
 /// (upload / delete / reorder). Always returns the canonical photo
 /// list and the current primary URL.
 class PhotoListResponse {
-  const PhotoListResponse({required this.primaryUrl, required this.photos});
+  const PhotoListResponse({
+    required this.primaryUrl,
+    required this.photos,
+    this.completionInfo = const ProfileCompletionInfo(),
+  });
 
   final String? primaryUrl;
   final List<PhotoDto> photos;
+  final ProfileCompletionInfo completionInfo;
 
   factory PhotoListResponse.fromJson(Map<String, dynamic> json) {
     final raw = json['photos'];
@@ -54,6 +61,11 @@ class PhotoListResponse {
     return PhotoListResponse(
       primaryUrl: json['primaryUrl'] as String?,
       photos: photos,
+      completionInfo: ProfileCompletionInfo.fromJson(
+        json['completionInfo'] is Map
+            ? Map<String, dynamic>.from(json['completionInfo'] as Map)
+            : json,
+      ),
     );
   }
 }

@@ -132,7 +132,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ? null
                     : () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => const SignupScreen(),
+                          builder: (_) => SignupScreen(
+                            initialEmail: _emailController.text.trim(),
+                            passwordRetriever: () => _passwordController.text,
+                          ),
                         ),
                       ),
                 child: const Text('Create an account'),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_client.dart';
@@ -8,11 +10,21 @@ import '../../shared/persistence/shared_preferences_provider.dart';
 import 'auth_token_store.dart';
 import 'selected_user_provider.dart';
 
-/// Top-level auth state.
-///
-/// `unknown` is the bootstrap state (we haven't decided yet whether
-/// there is a stored session). The startup screen renders a splash for
-/// this state to avoid flashing the login screen.
+sealed class AuthEvent {
+  const AuthEvent();
+}
+
+class AuthSessionExpired extends AuthEvent {
+  const AuthSessionExpired({this.message});
+  final String? message;
+}
+
+final _authEventController = StreamController<AuthEvent>.broadcast();
+
+final authEventProvider = StreamProvider<AuthEvent>((ref) {
+  return _authEventController.stream;
+});
+
 sealed class AuthState {
   const AuthState();
 }
@@ -53,9 +65,6 @@ class AuthController extends Notifier<AuthState> {
     return const AuthUnknown();
   }
 
-  /// Called from app startup. Reads any persisted session, primes the
-  /// token holder, and calls `/me` to verify the access token still
-  /// works. If the access token is expired we trigger refresh first.
   Future<void> restoreSession() async {
     final session = _store.readSession();
     if (session == null) {
@@ -68,8 +77,6 @@ class AuthController extends Notifier<AuthState> {
     state = Authenticated(session);
 
     final originalSession = session;
-    // Best-effort validation. /me will trigger the 401 → refresh path
-    // automatically if the access token has expired.
     try {
       final user = await _api.getMe();
       final synced = session.copyWith(user: user);
@@ -107,6 +114,21 @@ class AuthController extends Notifier<AuthState> {
     await _acceptSession(session);
   }
 
+  Future<void> refreshMe() async {
+    final current = state;
+    if (current is! Authenticated) return;
+    try {
+      final user = await _api.getMe();
+      final synced = current.session.copyWith(user: user);
+      await _store.saveSession(synced);
+      state = Authenticated(synced);
+    } on ApiError {
+      // Best-effort — do not log out on a background me-refresh failure.
+    } catch (_) {
+      // Non-API errors (network, timeout) — still best-effort, no logout.
+    }
+  }
+
   Future<void> logout() async {
     final current = state;
     if (current is Authenticated) {
@@ -123,8 +145,6 @@ class AuthController extends Notifier<AuthState> {
     state = const Unauthenticated();
   }
 
-  /// Wired into the token holder so the dio interceptor's 401 handler
-  /// can drive a refresh without depending on this controller directly.
   Future<String?> _performRefresh() async {
     final current = state;
     final refreshToken = switch (current) {
@@ -139,9 +159,13 @@ class AuthController extends Notifier<AuthState> {
       return session.accessToken;
     } on ApiError {
       await _clearAuth();
+      const event = AuthSessionExpired(
+        message: 'Session expired. Please sign in again.',
+      );
       state = const Unauthenticated(
         message: 'Session expired. Please sign in again.',
       );
+      _authEventController.add(event);
       return null;
     }
   }
@@ -158,10 +182,6 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  /// Bridge: write the auth user into the legacy SelectedUserStore so
-  /// existing feature providers (which still take a `userId` arg) keep
-  /// working without a sweeping refactor. We try to enrich with the
-  /// real UserDetail; on failure we fall back to a thin placeholder.
   Future<void> _bridgeToSelectedUser(AuthSession session) async {
     final store = ref.read(selectedUserStoreProvider);
     UserSummary summary;

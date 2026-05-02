@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../api/api_client.dart';
 import '../../models/photo_dto.dart';
 import '../../shared/providers/selected_user_guard.dart' as user_guard;
+import '../auth/auth_controller.dart';
 import 'profile_provider.dart';
 
 final userPhotosProvider = FutureProvider<PhotoListResponse>((ref) async {
@@ -70,5 +71,6 @@ class PhotoEditController {
     _ref.invalidate(profileProvider);
     _ref.invalidate(profileEditSnapshotProvider);
     _ref.invalidate(otherUserProfileProvider(userId));
+    _ref.read(authControllerProvider.notifier).refreshMe();
   }
 }

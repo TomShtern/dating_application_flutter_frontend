@@ -4,6 +4,7 @@ import '../../api/api_client.dart';
 import '../../models/profile_edit_snapshot.dart';
 import '../../models/profile_presentation_context.dart';
 import '../../models/profile_update_request.dart';
+import '../../models/profile_update_response.dart';
 import '../../models/user_detail.dart';
 import '../../shared/providers/selected_user_guard.dart' as user_guard;
 
@@ -55,14 +56,21 @@ class ProfileController {
 
   final Ref _ref;
 
-  Future<void> updateProfile(ProfileUpdateRequest request) async {
+  Future<ProfileUpdateResponse> updateProfile(
+    ProfileUpdateRequest request,
+  ) async {
     final currentUser = await user_guard.requireSelectedUser(_ref);
     final apiClient = _ref.read(apiClientProvider);
-    await apiClient.updateProfile(userId: currentUser.id, request: request);
+    final response = await apiClient.updateProfile(
+      userId: currentUser.id,
+      request: request,
+    );
 
     _ref.invalidate(profileProvider);
     _ref.invalidate(profileEditSnapshotProvider);
     _ref.invalidate(otherUserProfileProvider(currentUser.id));
+
+    return response;
   }
 
   void refreshCurrentUserProfile() {

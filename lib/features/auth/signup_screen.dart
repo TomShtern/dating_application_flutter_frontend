@@ -7,7 +7,10 @@ import 'auth_controller.dart';
 
 /// Phone-alpha signup. Email + password + DOB.
 class SignupScreen extends ConsumerStatefulWidget {
-  const SignupScreen({super.key});
+  const SignupScreen({super.key, this.initialEmail, this.passwordRetriever});
+
+  final String? initialEmail;
+  final String Function()? passwordRetriever;
 
   @override
   ConsumerState<SignupScreen> createState() => _SignupScreenState();
@@ -20,6 +23,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   DateTime? _dateOfBirth;
   bool _submitting = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.text = widget.initialEmail ?? '';
+    final prefill = widget.passwordRetriever?.call();
+    if (prefill != null && prefill.isNotEmpty) {
+      _passwordController.text = prefill;
+    }
+  }
 
   @override
   void dispose() {

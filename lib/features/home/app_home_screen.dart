@@ -5,7 +5,6 @@ import '../../shared/widgets/app_async_state.dart';
 import '../auth/auth_controller.dart';
 import '../auth/login_screen.dart';
 import '../auth/selected_user_provider.dart';
-import '../location/location_completion_screen.dart';
 import 'signed_in_shell.dart';
 
 class AppHomeScreen extends ConsumerStatefulWidget {
@@ -19,12 +18,28 @@ class _AppHomeScreenState extends ConsumerState<AppHomeScreen> {
   bool _bootstrapped = false;
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
 
+    // Listen for session-expired events dispatched after forced logout.
+    ref.listen<AsyncValue<AuthEvent>>(authEventProvider, (_, next) {
+      next.whenData((event) {
+        if (event is AuthSessionExpired && mounted) {
+          final message = event.message ?? 'Session expired.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message)),
+          );
+        }
+      });
+    });
+
     if (!_bootstrapped && authState is AuthUnknown) {
       _bootstrapped = true;
-      // Schedule after the build to avoid mutating providers during build.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(authControllerProvider.notifier).restoreSession();
       });
@@ -35,26 +50,16 @@ class _AppHomeScreenState extends ConsumerState<AppHomeScreen> {
           body: AppAsyncState.loading(message: 'Restoring your session…'),
         ),
       Unauthenticated(:final message) => LoginScreen(infoMessage: message),
-      Authenticated(:final session) => _buildAuthenticated(session.user.id, session.user.profileCompletionState),
+      Authenticated() => _buildAuthenticated(),
     };
   }
 
-  Widget _buildAuthenticated(String userId, String completionState) {
-    // Need the bridged UserSummary for SignedInShell. Watch it.
+  Widget _buildAuthenticated() {
     final selectedUser = ref.watch(selectedUserProvider);
-
-    // Routing by completion state. Only `needs_location` has a
-    // dedicated screen today; everything else falls through to the
-    // shell, where the user can edit their profile to fill gaps.
-    if (completionState == 'needs_location') {
-      return const LocationCompletionScreen();
-    }
 
     return selectedUser.when(
       data: (user) {
         if (user == null) {
-          // Should not normally happen — auth bridges into the store.
-          // Surface a recoverable error instead of silently looping.
           return Scaffold(
             body: AppAsyncState.error(
               message: 'Could not load your profile.',

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Last reviewed and updated from verified repository and local-toolchain facts on 2026-04-24.
+Last reviewed and updated from verified repository and local-toolchain facts on 2026-05-03.
 
 This file is the operating guide for AI coding agents working in this Flutter frontend. Keep it factual. If code, docs, SDKs, or dependencies move, verify the new state before updating this file.
 
@@ -38,7 +38,7 @@ Read the smallest relevant set before editing:
 
 ## Verified Toolchain And Environment
 
-These values were verified from project files, local SDK metadata, or direct commands on 2026-04-23.
+These values were verified from project files, local SDK metadata, or direct commands on 2026-05-03.
 
 | Item                          | Version / Value                                     | Verification source                                                  |
 |-------------------------------|-----------------------------------------------------|----------------------------------------------------------------------|
@@ -107,6 +107,7 @@ Direct dependencies from `pubspec.yaml` and exact locked versions from `pubspec.
 | `cupertino_icons`    | `1.0.9`        | icon font                                   |
 | `flutter_riverpod`   | `3.3.1`        | app state and dependency injection          |
 | `dio`                | `5.9.2`        | HTTP client                                 |
+| `image_picker`       | `1.2.2`        | photo selection and camera capture          |
 | `shared_preferences` | `2.5.5`        | local selected-user and preferences storage |
 | `flutter_test`       | SDK package    | tests                                       |
 | `flutter_lints`      | `6.0.0`        | analyzer lint set                           |
@@ -115,6 +116,13 @@ Important transitive/platform packages currently locked:
 
 - `riverpod` `3.2.1`
 - `dio_web_adapter` `2.1.2`
+- `image_picker_android` `0.8.13+17`
+- `image_picker_for_web` `3.1.1`
+- `image_picker_ios` `0.8.13+6`
+- `image_picker_linux` `0.2.2`
+- `image_picker_macos` `0.2.2+1`
+- `image_picker_platform_interface` `2.11.1`
+- `image_picker_windows` `0.2.2`
 - `shared_preferences_android` `2.4.23`
 - `shared_preferences_foundation` `2.5.6`
 - `shared_preferences_linux` `2.4.1`
@@ -136,7 +144,7 @@ Runtime config is centralized:
 
 - `lib/app/env.dart` reads Dart defines.
 - `lib/app/app_config.dart` exposes `appConfigProvider`.
-- `.env` contains local values and is not auto-loaded by Flutter.
+- `.env` contains local values and is not auto-loaded by Flutter. Currently configured for Android emulator (`DATING_APP_API_BASE_URL=http://10.0.2.2:7070`). For Windows desktop, switch to `http://127.0.0.1:7070`.
 - Verified `.env` keys: `DATING_APP_API_BASE_URL`, `DATING_APP_SHARED_SECRET`.
 - Default base URL in code: `http://127.0.0.1:7070`.
 - Default shared secret in code: `lan-dev-secret`.
@@ -166,16 +174,16 @@ Current source layout:
 lib/
   main.dart
   app/                  app root, Env, AppConfig
-  api/                  Dio client, endpoints, headers, API errors
+  api/                  Dio client, endpoints, headers, API errors, auth token holder
   features/
-    auth/               dev-user picker and selected-user provider/store
+    auth/               signup, login, token refresh, dev-user picker, auth state
     browse/             discover, undo, standouts, pending likers
     chat/               conversations and thread
     home/               startup routing, health banner, signed-in shell
     location/           location completion and location providers
     matches/            matches list
     notifications/      notifications list/actions
-    profile/            profile view/edit
+    profile/            profile view/edit, photo management
     safety/             block/report/unmatch/blocked users
     settings/           theme mode and settings
     stats/              stats and achievements
@@ -219,25 +227,35 @@ The API layer is centralized:
 - Header rules: `lib/api/api_headers.dart`
 - HTTP calls and JSON parsing: `lib/api/api_client.dart`
 - Error mapping: `lib/api/api_error.dart`
+- Auth token management: `lib/api/auth_token_holder.dart`
 
 Header behavior currently implemented:
 
 - `GET /api/health` does not receive `X-DatingApp-Shared-Secret`.
 - Every other path receives `X-DatingApp-Shared-Secret`.
 - `X-User-Id` is added when `Options.extra['userId']` is set and the path starts with `/api/users/` or `/api/conversations/`.
+- `Authorization: Bearer <token>` is added to all requests except health and auth endpoints (signup, login, refresh, logout). Token comes from `AuthTokenHolder`, which supports single-flight refresh.
 - Do not add these headers manually in screen or feature code.
 
 Current endpoint builders in `ApiEndpoints`:
 
 - `GET /api/health`
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
 - `GET /api/users`
 - `GET /api/users/{id}`
 - `PUT /api/users/{id}/profile`
+- `GET /api/users/{id}/profile-edit-snapshot`
+- `GET /api/users/{viewerId}/presentation-context/{targetId}`
 - `GET /api/users/{id}/browse`
 - `POST /api/users/{id}/like/{targetId}`
 - `POST /api/users/{id}/pass/{targetId}`
 - `POST /api/users/{id}/undo`
 - `GET /api/users/{id}/matches`
+- `GET /api/users/{id}/match-quality/{matchId}`
 - `GET /api/users/{id}/conversations`
 - `GET /api/conversations/{conversationId}/messages`
 - `POST /api/conversations/{conversationId}/messages`
@@ -253,6 +271,10 @@ Current endpoint builders in `ApiEndpoints`:
 - `DELETE /api/users/{id}/block/{targetId}`
 - `POST /api/users/{id}/report/{targetId}`
 - `POST /api/users/{id}/relationships/{targetId}/unmatch`
+- `GET /api/users/{id}/photos`
+- `POST /api/users/{id}/photos`
+- `DELETE /api/users/{id}/photos/{photoId}`
+- `PUT /api/users/{id}/photos/order`
 - `GET /api/location/countries`
 - `GET /api/location/cities`
 - `POST /api/location/resolve`
@@ -261,10 +283,12 @@ Current endpoint builders in `ApiEndpoints`:
 
 Known product/API constraints from current docs and code:
 
-- Dev login is a user picker backed by `GET /api/users`.
-- No signup, JWT, BCrypt login, WebSocket chat, push notifications, or offline-first sync exists in this frontend.
+- Signup and login (email+password+DOB signup, email+password login) are now implemented as full screens in the frontend. JWT access/refresh tokens are managed via `AuthTokenHolder` with single-flight refresh.
+- Dev login (user picker backed by `GET /api/users`) coexists with the real signup/login flow.
+- No WebSocket chat, push notifications, or offline-first sync exists in this frontend.
 - Chat is conversation-scoped. Do not invent nested user-scoped message routes.
 - Poll chat gently. `ConversationThreadScreen` defaults to a 20-second refresh interval while visible.
+- Photo management (list, upload, delete, reorder) is now wired through `image_picker` and the photo API endpoints.
 - Location UX should be server-driven through the location endpoints.
 - If the backend response shape is unclear, add/adjust DTO tests before broad UI changes.
 
@@ -272,12 +296,14 @@ Known product/API constraints from current docs and code:
 
 Implemented frontend surfaces include:
 
+- Signup and login (email+password+DOB signup, email+password login, token refresh, logout)
 - Dev-user picker
 - Discover/browse with like, pass, daily pick, undo, pending likers, and standouts
 - Matches
 - Conversations and conversation thread with send-message
 - Current-user and other-user profile views
 - Profile editing
+- Photo management (list, upload, delete, reorder)
 - Location completion
 - Settings with persisted theme mode
 - Notifications with read actions
@@ -301,6 +327,17 @@ Shared UI primitives:
 - `SectionIntroCard` - `lib/shared/widgets/section_intro_card.dart`
 - `AppAsyncState` - `lib/shared/widgets/app_async_state.dart`
 - `UserAvatar` - `lib/shared/widgets/user_avatar.dart`
+- `AppGroupLabel` - `lib/shared/widgets/app_group_label.dart`
+- `AppOverflowMenuButton` - `lib/shared/widgets/app_overflow_menu_button.dart`
+- `AppRouteHeader` - `lib/shared/widgets/app_route_header.dart`
+- `CompactContextStrip` - `lib/shared/widgets/compact_context_strip.dart`
+- `CompactSummaryHeader` - `lib/shared/widgets/compact_summary_header.dart`
+- `CompatibilityMeter` - `lib/shared/widgets/compatibility_meter.dart`
+- `DeveloperOnlyCalloutCard` - `lib/shared/widgets/developer_only_callout_card.dart`
+- `HighlightTagRow` - `lib/shared/widgets/highlight_tag_row.dart`
+- `PersonMediaThumbnail` - `lib/shared/widgets/person_media_thumbnail.dart`
+- `PersonPhotoCard` - `lib/shared/widgets/person_photo_card.dart`
+- `ViewModeToggle` - `lib/shared/widgets/view_mode_toggle.dart`
 
 Use these where they fit, but follow the active design brief when changing UI. The 2026-04-23 UI overhaul brief specifically calls for:
 
