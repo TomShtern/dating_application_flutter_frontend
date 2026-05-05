@@ -1333,23 +1333,12 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
   }
 
   Widget _buildLoadedBody(BuildContext context, PhotoListResponse data) {
-    if (data.photos.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(
-          'No photos yet — add one below to start your profile.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    }
-
     final baseUrl = ref.watch(appConfigProvider).baseUrl;
     final resolvedPrimary = resolveMediaUrl(
       rawUrl: data.primaryUrl,
       baseUrl: baseUrl,
     );
+    final emptySlots = 4 - data.photos.length;
 
     return Wrap(
       spacing: 12,
@@ -1364,6 +1353,7 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
             onMakePrimary: () => _handleMakePrimary(photo.id),
             onDelete: () => _confirmAndDelete(photo.id),
           ),
+        for (var i = 0; i < emptySlots; i++) const _PhotoEmptySlot(),
       ],
     );
   }
@@ -1403,11 +1393,19 @@ class _PhotoTile extends StatelessWidget {
         children: [
           Stack(
             children: [
-              PersonMediaThumbnail(
-                name: 'Photo',
-                photoUrl: photo.url,
-                width: 96,
-                height: 128,
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(Radius.circular(24)),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: PersonMediaThumbnail(
+                  name: 'Photo',
+                  photoUrl: photo.url,
+                  width: 96,
+                  height: 128,
+                ),
               ),
               if (isBusy)
                 Positioned.fill(
@@ -1491,6 +1489,37 @@ class _PhotoTile extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PhotoEmptySlot extends StatelessWidget {
+  const _PhotoEmptySlot();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SizedBox(
+      width: 96,
+      height: 128,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: _profileSky.withValues(alpha: isDark ? 0.10 : 0.05),
+          borderRadius: const BorderRadius.all(Radius.circular(24)),
+          border: Border.all(
+            color: _profileSky.withValues(alpha: isDark ? 0.28 : 0.18),
+            width: 1.5,
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.add_rounded,
+            size: 32,
+            color: _profileSky.withValues(alpha: 0.65),
+          ),
+        ),
       ),
     );
   }

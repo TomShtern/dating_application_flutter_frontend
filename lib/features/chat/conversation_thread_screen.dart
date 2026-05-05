@@ -267,63 +267,78 @@ class _ConversationThreadScreenState
                   ),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _messageController,
-                            minLines: 1,
-                            maxLines: 3,
-                            textInputAction: TextInputAction.send,
-                            onChanged: (_) => setState(() {}),
-                            onSubmitted: (_) => _handleSend(),
-                            decoration: InputDecoration(
-                              hintText:
-                                  'Message ${widget.conversation.otherUserName}',
-                              isDense: true,
-                              filled: false,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 8,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            tooltip: 'Attachments (coming soon)',
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Media attachments coming soon.'),
+                                ),
+                              );
+                            },
+                            icon: Icon(
+                              Icons.add_rounded,
+                              color: _threadTeal.withValues(alpha: 0.78),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              minLines: 1,
+                              maxLines: 3,
+                              textInputAction: TextInputAction.send,
+                              onChanged: (_) => setState(() {}),
+                              onSubmitted: (_) => _handleSend(),
+                              decoration: InputDecoration(
+                                hintText:
+                                    'Message ${widget.conversation.otherUserName}',
+                                isDense: true,
+                                filled: false,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 8,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton.filled(
-                          tooltip: _isSending
-                              ? 'Sending message…'
-                              : 'Send message',
-                          onPressed: trimmedMessage.isEmpty || _isSending
-                              ? null
-                              : _handleSend,
-                          style: IconButton.styleFrom(
-                            backgroundColor: _threadTeal,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                                colorScheme.surfaceContainerHighest,
-                            disabledForegroundColor: colorScheme
-                                .onSurfaceVariant
-                                .withValues(alpha: 0.62),
-                          ),
-                          icon: _isSending
-                              ? const SizedBox.square(
-                                  dimension: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
+                          const SizedBox(width: 8),
+                          IconButton.filled(
+                            tooltip: _isSending
+                                ? 'Sending message…'
+                                : 'Send message',
+                            onPressed: trimmedMessage.isEmpty || _isSending
+                                ? null
+                                : _handleSend,
+                            style: IconButton.styleFrom(
+                              backgroundColor: _threadTeal,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor:
+                                  colorScheme.surfaceContainerHighest,
+                              disabledForegroundColor: colorScheme
+                                  .onSurfaceVariant
+                                  .withValues(alpha: 0.62),
+                            ),
+                            icon: _isSending
+                                ? const SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                     ),
-                                  ),
-                                )
-                              : const Icon(Icons.arrow_upward_rounded),
-                        ),
-                      ],
-                    ),
+                                  )
+                                : const Icon(Icons.arrow_upward_rounded),
+                          ),
+                        ],
+                      ),
                   ),
                 ),
               ),
@@ -748,8 +763,8 @@ class _MessageBubble extends StatelessWidget {
         ? BoxDecoration(
             gradient: LinearGradient(
               colors: isDark
-                  ? const [Color(0xFF0E3C41), Color(0xFF145058)]
-                  : const [Color(0xFFD8F5F1), Color(0xFFC8EFE9)],
+                  ? const [Color(0xFF0A4A4F), Color(0xFF126A72)]
+                  : const [Color(0xFFA8E0D8), Color(0xFF90D5CB)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

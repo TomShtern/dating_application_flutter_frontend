@@ -22,16 +22,21 @@ const _profileMint = Color(0xFF16A871);
 const _profileSky = Color(0xFF188DC8);
 
 class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen.currentUser({super.key}) : userId = null, userName = null;
+  const ProfileScreen.currentUser({super.key})
+      : userId = null,
+        userName = null,
+        showPresentationContext = true;
 
   const ProfileScreen.otherUser({
     super.key,
     required this.userId,
     required this.userName,
+    this.showPresentationContext = true,
   });
 
   final String? userId;
   final String? userName;
+  final bool showPresentationContext;
 
   bool get _isCurrentUser => userId == null;
 
@@ -158,6 +163,7 @@ class ProfileScreen extends ConsumerWidget {
               detail: detail,
               isCurrentUser: false,
               presentationContextState: presentationContextState,
+              showPresentationContext: showPresentationContext,
             ),
           ),
           loading: () => Padding(
@@ -249,6 +255,7 @@ class _ProfileContent extends StatelessWidget {
     required this.detail,
     required this.isCurrentUser,
     this.presentationContextState,
+    this.showPresentationContext = true,
     this.onEditProfile,
     this.onFixLocation,
   });
@@ -256,6 +263,7 @@ class _ProfileContent extends StatelessWidget {
   final UserDetail detail;
   final bool isCurrentUser;
   final AsyncValue<ProfilePresentationContext>? presentationContextState;
+  final bool showPresentationContext;
   final VoidCallback? onEditProfile;
   final VoidCallback? onFixLocation;
 
@@ -287,7 +295,7 @@ class _ProfileContent extends StatelessWidget {
             displayName: _displayName(detail),
           ),
         ],
-        if (!isCurrentUser && presentationContextState != null) ...[
+        if (!isCurrentUser && presentationContextState != null && showPresentationContext) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
           _PresentationContextSection(state: presentationContextState!),
         ],
@@ -814,7 +822,7 @@ class _ProfileDetailsCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         isCurrentUser
-                            ? 'The signals currently shaping discovery.'
+                            ?                              'Discovery preferences.'
                             : 'The basics this person has chosen to share.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
@@ -824,42 +832,55 @@ class _ProfileDetailsCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _ProfileFactTile(
-                  icon: Icons.person_outline_rounded,
-                  title: 'Gender',
-                  value: _gender(detail),
-                  color: _profileSky,
-                ),
-                _ProfileFactTile(
-                  icon: Icons.favorite_outline_rounded,
-                  title: 'Interested in',
-                  value: _interestedIn(detail),
-                  color: _profileRose,
-                ),
-                _ProfileFactTile(
-                  icon: Icons.location_on_outlined,
-                  title: 'Location',
-                  value: _approximateLocation(detail),
-                  color: _profileMint,
-                ),
-                _ProfileFactTile(
-                  icon: Icons.route_outlined,
-                  title: 'Distance',
-                  value: _distancePreference(detail),
-                  color: _profileViolet,
-                ),
-                _ProfileFactTile(
-                  icon: Icons.verified_user_outlined,
-                  title: 'Status',
-                  value: _state(detail),
-                  color: _profileSky,
-                ),
-              ],
-            ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final crossAxisCount = constraints.maxWidth >= 400 ? 3 : 2;
+                  final items = [
+                    _ProfileFactTile(
+                      icon: Icons.person_outline_rounded,
+                      title: 'Gender',
+                      value: _gender(detail),
+                      color: _profileSky,
+                    ),
+                    _ProfileFactTile(
+                      icon: Icons.favorite_outline_rounded,
+                      title: 'Interested in',
+                      value: _interestedIn(detail),
+                      color: _profileRose,
+                    ),
+                    _ProfileFactTile(
+                      icon: Icons.location_on_outlined,
+                      title: 'Location',
+                      value: _approximateLocation(detail),
+                      color: _profileMint,
+                    ),
+                    _ProfileFactTile(
+                      icon: Icons.route_outlined,
+                      title: 'Distance',
+                      value: _distancePreference(detail),
+                      color: _profileViolet,
+                    ),
+                    _ProfileFactTile(
+                      icon: Icons.verified_user_outlined,
+                      title: 'Status',
+                      value: _state(detail),
+                      color: _profileSky,
+                    ),
+                  ];
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: items.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      mainAxisExtent: 120,
+                    ),
+                    itemBuilder: (context, index) => items[index],
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -885,7 +906,7 @@ class _ProfileFactTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 142, maxWidth: 168),
+      constraints: const BoxConstraints(minWidth: 142),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: color.withValues(alpha: isDark ? 0.14 : 0.06),

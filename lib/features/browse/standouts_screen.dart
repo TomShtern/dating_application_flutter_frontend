@@ -17,7 +17,6 @@ enum _StandoutsViewMode { grid, list }
 enum _StandoutCardMode { grid, list }
 
 const double _standoutsCardGap = 16;
-const double _standoutsPhoneListBreakpoint = 520;
 const _standoutAmber = Color(0xFFD98914);
 const _standoutViolet = Color(0xFF8E6DE8);
 const _standoutRose = Color(0xFFD95F84);
@@ -33,10 +32,7 @@ class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
   _StandoutsViewMode? _viewModeOverride;
 
   _StandoutsViewMode _resolveViewMode(double width) {
-    return _viewModeOverride ??
-        (width < _standoutsPhoneListBreakpoint
-            ? _StandoutsViewMode.list
-            : _StandoutsViewMode.grid);
+    return _viewModeOverride ?? _StandoutsViewMode.grid;
   }
 
   @override
@@ -458,9 +454,9 @@ class _StandoutListContent extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           _humanizeStandoutReason(standout),
-          maxLines: 3,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyLarge?.copyWith(
+          style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),

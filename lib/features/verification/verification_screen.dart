@@ -49,12 +49,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
         : startResult == null
         ? 0.5
         : 0.82;
-    final currentStep = confirmResult?.verified == true
-        ? 'Verified ✓'
-        : startResult == null
-        ? 'Step 1 of 2'
-        : 'Step 2 of 2';
-
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -68,7 +62,6 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               title: 'Verify your account',
               description:
                   'Confirm your email or phone. Verified profiles get a badge and build more trust with matches.',
-              trailing: _VerificationStepPill(currentStep: currentStep),
               iconBackgroundColor: _verificationTrust.withValues(alpha: 0.12),
               iconColor: _verificationTrust,
               badges: const [
@@ -131,6 +124,15 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                       hintText: _method == 'EMAIL'
                           ? 'you@example.com'
                           : '+1 555 555 5555',
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(22),
+                        ),
+                        borderSide: BorderSide(
+                          color: _verificationTrust,
+                          width: 1.5,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppTheme.cardGap),
@@ -183,8 +185,17 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                     const SizedBox(height: AppTheme.cardGap),
                     TextField(
                       controller: _codeController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Verification code',
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(22),
+                          ),
+                          borderSide: BorderSide(
+                            color: _verificationTrust,
+                            width: 1.5,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppTheme.cardGap),
@@ -335,27 +346,7 @@ ButtonStyle _verificationButtonStyle(BuildContext context) {
   );
 }
 
-class _VerificationStepPill extends StatelessWidget {
-  const _VerificationStepPill({required this.currentStep});
 
-  final String currentStep;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Theme(
-      data: theme.copyWith(
-        textTheme: theme.textTheme.copyWith(
-          labelLarge: theme.textTheme.labelLarge?.copyWith(
-            color: _verificationTrust,
-          ),
-        ),
-      ),
-      child: ShellHeroPill(label: currentStep),
-    );
-  }
-}
 
 class _VerificationProgressBar extends StatelessWidget {
   const _VerificationProgressBar({required this.value, required this.color});

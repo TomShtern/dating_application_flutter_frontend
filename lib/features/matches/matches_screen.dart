@@ -443,8 +443,6 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _MatchCard extends StatelessWidget {
-  static const double _matchActionHeight = 38;
-
   const _MatchCard({required this.currentUser, required this.match});
 
   final UserSummary currentUser;
@@ -496,137 +494,102 @@ class _MatchCard extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: AppTheme.cardRadius,
-      child: DecoratedBox(
-        decoration: AppTheme.surfaceDecoration(
-          context,
-          color: cardColor,
-          prominent: isNew,
-        ),
-        child: Stack(
-          children: [
-            if (isNew)
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: _matchPrimaryGradient(context),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey('match-profile-${match.matchId}'),
+          borderRadius: AppTheme.cardRadius,
+          onTap: () => _openProfile(context),
+          child: DecoratedBox(
+            decoration: AppTheme.surfaceDecoration(
+              context,
+              color: cardColor,
+              prominent: isNew,
+            ),
+            child: Stack(
+              children: [
+                if (isNew)
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: _matchPrimaryGradient(context),
+                        ),
+                        child: const SizedBox(width: 4),
+                      ),
                     ),
-                    child: const SizedBox(width: 4),
                   ),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _MatchAvatar(
+                        match: match,
+                        photoUrl: photoUrl,
+                        isActive: isActive,
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            key: ValueKey('match-profile-${match.matchId}'),
-                            borderRadius: BorderRadius.circular(18),
-                            onTap: () => _openProfile(context),
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _MatchAvatar(
-                                    match: match,
-                                    photoUrl: photoUrl,
-                                    isActive: isActive,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _MatchSummaryBlock(
-                                      match: match,
-                                      isActive: isActive,
-                                      isNew: isNew,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        child: _MatchSummaryBlock(
+                          match: match,
+                          isActive: isActive,
+                          isNew: isNew,
                         ),
                       ),
-                      SizedBox.square(
-                        dimension: 36,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surface.withValues(
-                              alpha: isDark ? 0.72 : 0.92,
-                            ),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: theme.colorScheme.outlineVariant
-                                  .withValues(alpha: 0.18),
-                            ),
-                          ),
-                          child: SafetyActionsButton(
-                            targetUserId: match.otherUserId,
-                            targetUserName: match.otherUserName,
-                            canUnmatch: true,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 6,
-                        child: _GradientActionButton(
-                          height: _matchActionHeight,
-                          icon: Icons.forum_rounded,
-                          label: 'Message',
-                          onTap: () => _openConversation(context),
-                        ),
-                      ),
-                      SizedBox(width: AppTheme.cardGap),
-                      Expanded(
-                        flex: 5,
-                        child: SizedBox(
-                          height: _matchActionHeight,
-                          child: OutlinedButton.icon(
-                            onPressed: () => _openProfile(context),
-                            icon: const Icon(
-                              Icons.person_outline_rounded,
-                              size: 18,
-                            ),
-                            label: const Text('View profile'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor:
-                                  theme.colorScheme.onSurfaceVariant,
-                              side: BorderSide(
-                                color: theme.colorScheme.outlineVariant
-                                    .withValues(alpha: isDark ? 0.42 : 0.58),
-                              ),
-                              backgroundColor: Colors.transparent,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(999),
+                      const SizedBox(width: 8),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox.square(
+                            dimension: 36,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface.withValues(
+                                  alpha: isDark ? 0.72 : 0.92,
+                                ),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: theme.colorScheme.outlineVariant
+                                      .withValues(alpha: 0.18),
                                 ),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                              child: SafetyActionsButton(
+                                targetUserId: match.otherUserId,
+                                targetUserName: match.otherUserName,
+                                canUnmatch: true,
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 8),
+                          SizedBox.square(
+                            dimension: 36,
+                            child: IconButton(
+                              tooltip: 'Message ${match.otherUserName}',
+                              onPressed: () => _openConversation(context),
+                              style: IconButton.styleFrom(
+                                backgroundColor: _matchViolet.withValues(
+                                  alpha: isDark ? 0.18 : 0.10,
+                                ),
+                                foregroundColor: isDark
+                                    ? const Color(0xFFC5CCFF)
+                                    : _matchViolet,
+                              ),
+                              icon: const Icon(
+                                Icons.forum_rounded,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -839,66 +802,6 @@ class _MatchSignalPill extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GradientActionButton extends StatelessWidget {
-  const _GradientActionButton({
-    required this.height,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final double height;
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: _matchPrimaryGradient(context),
-        borderRadius: AppTheme.chipRadius,
-        boxShadow: [
-          BoxShadow(
-            color: _matchRose.withValues(alpha: 0.20),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: AppTheme.chipRadius,
-          onTap: onTap,
-          child: SizedBox(
-            height: height,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

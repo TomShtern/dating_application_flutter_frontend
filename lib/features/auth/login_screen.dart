@@ -8,6 +8,9 @@ import 'auth_controller.dart';
 import 'dev_user_picker_screen.dart';
 import 'signup_screen.dart';
 
+const _loginRose = Color(0xFFD95F84);
+const _loginViolet = Color(0xFF8E6DE8);
+
 /// Phone-alpha login screen. Email + password only.
 ///
 /// Intentionally minimal — design polish is out of scope for this pass.
@@ -61,100 +64,197 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: AppTheme.screenPadding(),
-            children: [
-              const SizedBox(height: 24),
-              Text(
-                'Sign in',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Use your email and password to continue.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              if (widget.infoMessage != null) ...[
-                const SizedBox(height: 12),
-                _InfoBanner(message: widget.infoMessage!),
-              ],
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                textInputAction: TextInputAction.next,
-                validator: (value) {
-                  final v = value?.trim() ?? '';
-                  if (v.isEmpty) return 'Email is required.';
-                  if (!v.contains('@')) return 'Enter a valid email address.';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _submit(),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password is required.';
-                  }
-                  return null;
-                },
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 12),
-                _ErrorBanner(message: _errorMessage!),
-              ],
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Sign in'),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: _submitting
-                    ? null
-                    : () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => SignupScreen(
-                            initialEmail: _emailController.text.trim(),
-                            passwordRetriever: () => _passwordController.text,
-                          ),
-                        ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [
+                    Color(0xFF1A1520),
+                    Color(0xFF1E1A2E),
+                    Color(0xFF162028),
+                  ]
+                : const [
+                    Color(0xFFFFF5F7),
+                    Color(0xFFF8F5FF),
+                    Color(0xFFF0F8FF),
+                  ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: AppTheme.screenPadding(),
+              children: [
+                const SizedBox(height: 32),
+                Center(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? const [Color(0xFF8E6DE8), Color(0xFFD95F84)]
+                            : const [_loginRose, _loginViolet],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                child: const Text('Create an account'),
-              ),
-              if (kDebugMode) ...[
-                const Divider(height: 32),
-                TextButton.icon(
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Icon(
+                        Icons.favorite_rounded,
+                        color: Colors.white,
+                        size: 36,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Welcome back',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Sign in to continue meeting people.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (widget.infoMessage != null) ...[
+                  const SizedBox(height: 16),
+                  _InfoBanner(message: widget.infoMessage!),
+                ],
+                const SizedBox(height: 28),
+                TextFormField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    filled: true,
+                    fillColor: isDark
+                        ? colorScheme.surfaceContainerHigh.withValues(
+                            alpha: 0.72,
+                          )
+                        : colorScheme.surface,
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.next,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return 'Email is required.';
+                    if (!v.contains('@')) return 'Enter a valid email address.';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    filled: true,
+                    fillColor: isDark
+                        ? colorScheme.surfaceContainerHigh.withValues(
+                            alpha: 0.72,
+                          )
+                        : colorScheme.surface,
+                  ),
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Password is required.';
+                    }
+                    return null;
+                  },
+                ),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  _ErrorBanner(message: _errorMessage!),
+                ],
+                const SizedBox(height: 24),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? const [Color(0xFF8E6DE8), Color(0xFFD95F84)]
+                          : const [_loginRose, _loginViolet],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: const BorderRadius.all(Radius.circular(24)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _loginRose.withValues(alpha: 0.22),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: FilledButton(
+                    onPressed: _submitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      elevation: 0,
+                    ),
+                    child: _submitting
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text('Sign in'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
                   onPressed: _submitting
                       ? null
                       : () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => const DevUserPickerScreen(),
+                            builder: (_) => SignupScreen(
+                              initialEmail: _emailController.text.trim(),
+                              passwordRetriever: () => _passwordController.text,
+                            ),
                           ),
                         ),
-                  icon: const Icon(Icons.developer_mode_rounded),
-                  label: const Text('Dev: pick a seeded user'),
+                  child: const Text('Create an account'),
                 ),
+                if (kDebugMode) ...[
+                  const Divider(height: 32),
+                  TextButton.icon(
+                    onPressed: _submitting
+                        ? null
+                        : () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const DevUserPickerScreen(),
+                            ),
+                          ),
+                    icon: const Icon(Icons.developer_mode_rounded),
+                    label: const Text('Dev: pick a seeded user'),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

@@ -205,17 +205,16 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        gradient: LinearGradient(
-          colors: isDark
-              ? const [Color(0xFF2B2026), Color(0xFF28232B), Color(0xFF232A33)]
-              : const [Color(0xFFF7E8E8), Color(0xFFF3ECEE), Color(0xFFECF1F6)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: Color.alphaBlend(
+          _blockedRose.withValues(alpha: isDark ? 0.12 : 0.04),
+          Color.alphaBlend(
+            _blockedCoral.withValues(alpha: isDark ? 0.08 : 0.03),
+            colorScheme.surfaceContainerLow,
+          ),
         ),
-        prominent: true,
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(15, 14, 15, 13),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -225,19 +224,19 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
                 children: [
                   Text(
                     'Safety controls',
-                    style: theme.textTheme.titleLarge?.copyWith(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       color: titleColor,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     summaryText,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: subtitleColor,
                     ),
                   ),
-                  const SizedBox(height: 9),
+                  const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -247,7 +246,7 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
                         curve: Curves.easeOutCubic,
                         builder: (context, value, _) => Text(
                           '$value',
-                          style: theme.textTheme.displaySmall?.copyWith(
+                          style: theme.textTheme.headlineSmall?.copyWith(
                             color: countColor,
                             fontWeight: FontWeight.w800,
                             height: 0.95,
@@ -256,10 +255,10 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.only(bottom: 3),
                         child: Text(
                           countLabel,
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          style: theme.textTheme.bodySmall?.copyWith(
                             color: titleColor,
                           ),
                         ),
@@ -269,17 +268,17 @@ class _BlockedUsersOverviewCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             DecoratedBox(
               decoration: AppTheme.glassDecoration(
                 context,
               ).copyWith(borderRadius: AppTheme.cardRadius),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 child: Icon(
                   Icons.shield_outlined,
                   color: isDark ? const Color(0xFFF0C6BE) : _blockedCoral,
-                  size: 30,
+                  size: 24,
                 ),
               ),
             ),
@@ -517,7 +516,7 @@ class _BlockedUserTile extends StatelessWidget {
                         runSpacing: 8,
                         children: [
                           _BlockedStatusPill(
-                            icon: Icons.shield_outlined,
+                            icon: Icons.block_rounded,
                             label: user.statusLabel,
                             backgroundColor: statusBackgroundColor,
                             foregroundColor: statusForegroundColor,

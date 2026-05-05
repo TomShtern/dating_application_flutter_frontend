@@ -73,10 +73,10 @@ void main() {
     expect(find.text('ACTIVE'), findsNothing);
     expect(find.text('For Dana'), findsNothing);
     expect(find.text('Ready to message'), findsNothing);
-    expect(find.text('Message'), findsOneWidget);
+    expect(find.byIcon(Icons.forum_rounded), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'View profile'), findsNothing);
 
-    await tester.tap(find.text('Message').first);
+    await tester.tap(find.byIcon(Icons.forum_rounded).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Conversation'), findsOneWidget);

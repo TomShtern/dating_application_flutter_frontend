@@ -156,8 +156,13 @@ class _PendingLikersIntroCard extends StatelessWidget {
               children: [
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: _pendingRose.withValues(alpha: isDark ? 0.22 : 0.12),
+                    color: isDark
+                        ? const Color(0xFF4A2230)
+                        : const Color(0xFFFFF0F3),
                     borderRadius: const BorderRadius.all(Radius.circular(14)),
+                    border: Border.all(
+                      color: _pendingRose.withValues(alpha: 0.35),
+                    ),
                   ),
                   child: const Padding(
                     padding: EdgeInsets.all(10),

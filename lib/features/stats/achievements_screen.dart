@@ -233,8 +233,8 @@ class _AchievementsOverviewCard extends StatelessWidget {
         context,
         gradient: LinearGradient(
           colors: isDark
-              ? const [Color(0xFF3B2B67), Color(0xFF3E4474), Color(0xFF5A4320)]
-              : const [Color(0xFFD2C3FF), Color(0xFFC7D4FF), Color(0xFFFFD9A8)],
+              ? const [Color(0xFF2E2348), Color(0xFF2D3358), Color(0xFF4A3A28)]
+              : const [Color(0xFFE8DFF7), Color(0xFFDDE4F7), Color(0xFFF5E3C8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -688,67 +688,76 @@ class _AchievementVisualSpec {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
+    final categoryHint = achievement.title.toLowerCase();
+    final categoryColor = switch (categoryHint) {
+      _ when categoryHint.contains('message') || categoryHint.contains('chat') || categoryHint.contains('conversation') => const Color(0xFF009688),
+      _ when categoryHint.contains('match') || categoryHint.contains('like') || categoryHint.contains('heart') => const Color(0xFFD95F84),
+      _ when categoryHint.contains('active') || categoryHint.contains('login') || categoryHint.contains('day') || categoryHint.contains('streak') => const Color(0xFF16A871),
+      _ when categoryHint.contains('photo') || categoryHint.contains('profile') || categoryHint.contains('bio') => const Color(0xFF188DC8),
+      _ => _achievementAmber,
+    };
+
     if (achievement.isUnlocked == true) {
       final successColor = AppTheme.activeColor(context);
       return _AchievementVisualSpec(
         icon: Icons.workspace_premium_rounded,
-        accentColor: _achievementAmber,
+        accentColor: categoryColor,
         surfaceColor: Color.alphaBlend(
-          _achievementViolet.withValues(alpha: isDark ? 0.12 : 0.045),
+          categoryColor.withValues(alpha: isDark ? 0.12 : 0.045),
           Color.alphaBlend(
             _achievementAmber.withValues(alpha: isDark ? 0.14 : 0.05),
             colorScheme.surfaceContainerLow,
           ),
         ),
-        iconBackgroundColor: _achievementAmber.withValues(
+        iconBackgroundColor: categoryColor.withValues(
           alpha: isDark ? 0.22 : 0.14,
         ),
-        iconColor: isDark ? const Color(0xFFF5C56C) : _achievementAmber,
+        iconColor: isDark ? Color.alphaBlend(Colors.white.withValues(alpha: 0.22), categoryColor) : categoryColor,
         statusBackgroundColor: successColor.withValues(
           alpha: isDark ? 0.22 : 0.14,
         ),
         statusForegroundColor: successColor,
-        progressBackgroundColor: _achievementAmber.withValues(
+        progressBackgroundColor: categoryColor.withValues(
           alpha: isDark ? 0.18 : 0.10,
         ),
         progressColor: isDark
-            ? const Color(0xFFF5C56C)
-            : const Color(0xFF9A6500),
-        progressTrackColor: _achievementAmber.withValues(
+            ? Color.alphaBlend(Colors.white.withValues(alpha: 0.22), categoryColor)
+            : categoryColor,
+        progressTrackColor: categoryColor.withValues(
           alpha: isDark ? 0.24 : 0.12,
         ),
-        progressBarColor: _achievementAmber,
+        progressBarColor: categoryColor,
       );
     }
 
     if (achievement.isUnlocked == false) {
       return _AchievementVisualSpec(
         icon: Icons.workspace_premium_outlined,
-        accentColor: _achievementViolet,
+        accentColor: categoryColor,
         surfaceColor: Color.alphaBlend(
-          _achievementViolet.withValues(alpha: isDark ? 0.18 : 0.065),
+          categoryColor.withValues(alpha: isDark ? 0.18 : 0.065),
           colorScheme.surfaceContainerLow,
         ),
-        iconBackgroundColor: _achievementViolet.withValues(
+        iconBackgroundColor: categoryColor.withValues(
           alpha: isDark ? 0.26 : 0.14,
         ),
-        iconColor: isDark ? const Color(0xFFD4CCFF) : _achievementViolet,
+        iconColor: isDark ? Color.alphaBlend(Colors.white.withValues(alpha: 0.22), categoryColor) : categoryColor,
         statusBackgroundColor: _achievementPeriwinkle.withValues(
           alpha: isDark ? 0.22 : 0.12,
         ),
         statusForegroundColor: isDark
             ? const Color(0xFFC5CCFF)
             : _achievementPeriwinkle,
-        progressBackgroundColor: _achievementAmber.withValues(
+        progressBackgroundColor: categoryColor.withValues(
           alpha: isDark ? 0.18 : 0.10,
         ),
         progressColor: isDark
-            ? const Color(0xFFF5C56C)
-            : const Color(0xFF9A6500),
-        progressTrackColor: _achievementViolet.withValues(
+            ? Color.alphaBlend(Colors.white.withValues(alpha: 0.22), categoryColor)
+            : categoryColor,
+        progressTrackColor: categoryColor.withValues(
           alpha: isDark ? 0.24 : 0.12,
         ),
-        progressBarColor: _achievementViolet,
+        progressBarColor: categoryColor,
       );
     }
 

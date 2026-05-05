@@ -608,7 +608,7 @@ String _conversationPreview(ConversationSummary summary) {
   return switch (summary.messageCount) {
     0 => 'Send the first message when you are ready.',
     1 => 'Conversation started.',
-    final count => '$count messages so far.',
+    _ => 'Tap to continue the conversation.',
   };
 }
 

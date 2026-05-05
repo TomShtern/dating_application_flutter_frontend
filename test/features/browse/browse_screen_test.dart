@@ -148,13 +148,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final viewProfileButton = find.widgetWithText(
-      TextButton,
-      'See full profile',
+    await tester.scrollUntilVisible(
+      find.text('Noa'),
+      200,
+      scrollable: find.byType(Scrollable).first,
     );
-    await tester.ensureVisible(viewProfileButton);
-    await tester.pumpAndSettle();
-    await tester.tap(viewProfileButton);
+    await tester.tap(find.text('Noa'));
     await tester.pumpAndSettle();
 
     expect(find.text('Always up for a museum date.'), findsOneWidget);
@@ -236,7 +235,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Undo last swipe'));
+    await tester.tap(find.byTooltip('Undo last swipe'));
     await tester.pumpAndSettle();
 
     expect(find.text('Last swipe undone'), findsOneWidget);
@@ -277,7 +276,7 @@ void main() {
       ),
       findsNothing,
     );
-    expect(find.text('1 candidate is ready to browse.'), findsOneWidget);
+    expect(find.text('1 ready'), findsOneWidget);
     expect(find.text('Session details'), findsNothing);
     expect(find.text('Active profile'), findsNothing);
     expect(find.textContaining('backend-driven'), findsNothing);
@@ -291,8 +290,8 @@ void main() {
       ),
       findsNothing,
     );
-    expect(find.textContaining('Browsing as Dana'), findsOneWidget);
-    expect(find.text('See full profile'), findsOneWidget);
+    expect(find.text('Discover'), findsOneWidget);
+    expect(find.byType(InkWell), findsWidgets);
     expect(find.text('Why this profile is shown'), findsOneWidget);
     expect(find.text('Shown because this profile is nearby.'), findsOneWidget);
   });

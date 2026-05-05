@@ -73,11 +73,6 @@ class SettingsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Open the essentials faster.',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: AppTheme.cardGap),
                         Column(
                           children: [
                             _SettingsLinkTile(

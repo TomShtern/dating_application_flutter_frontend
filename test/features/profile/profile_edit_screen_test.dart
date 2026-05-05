@@ -217,7 +217,7 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       await tester.enterText(
-        find.byType(TextFormField).first,
+        find.byType(TextFormField).at(1),
         'A short bio for a sparse profile.',
       );
       await tester.tap(find.widgetWithText(FilledButton, 'Save changes'));
@@ -267,7 +267,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Non-binary').first,
+      find.text('Basics'),
       200,
       scrollable: find.byType(Scrollable).first,
     );

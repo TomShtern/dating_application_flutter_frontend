@@ -156,11 +156,45 @@ class _LocationCompletionScreenState
                             key: ValueKey<String?>(_countryCode),
                             initialValue: _countryCode,
                             isExpanded: true,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Country',
-                              contentPadding: EdgeInsets.symmetric(
+                              filled: true,
+                              fillColor: isDark
+                                  ? colorScheme.surfaceContainerHigh
+                                      .withValues(alpha: 0.72)
+                                  : colorScheme.surface,
+                              contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 18,
                                 vertical: 14,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(22),
+                                ),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(22),
+                                ),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(22),
+                                ),
+                                borderSide: BorderSide(
+                                  color: _locationSky,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                             items: availableCountries
@@ -194,9 +228,43 @@ class _LocationCompletionScreenState
                           const SizedBox(height: AppTheme.compactCardGap),
                           TextField(
                             controller: _cityController,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'City',
                               hintText: 'Start typing your city',
+                              filled: true,
+                              fillColor: isDark
+                                  ? colorScheme.surfaceContainerHigh
+                                      .withValues(alpha: 0.72)
+                                  : colorScheme.surface,
+                              border: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(22),
+                                ),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(22),
+                                ),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(22),
+                                ),
+                                borderSide: BorderSide(
+                                  color: _locationSky,
+                                  width: 1.5,
+                                ),
+                              ),
                             ),
                             onChanged: (_) {
                               setState(() {
@@ -207,8 +275,42 @@ class _LocationCompletionScreenState
                           const SizedBox(height: AppTheme.compactCardGap),
                           TextField(
                             controller: _zipController,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'ZIP code (optional)',
+                              filled: true,
+                              fillColor: isDark
+                                  ? colorScheme.surfaceContainerHigh
+                                      .withValues(alpha: 0.72)
+                                  : colorScheme.surface,
+                              border: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(22),
+                                ),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(22),
+                                ),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(22),
+                                ),
+                                borderSide: BorderSide(
+                                  color: _locationSky,
+                                  width: 1.5,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -245,8 +347,16 @@ class _LocationCompletionScreenState
                             height: 48,
                             child: FilledButton.icon(
                               style: FilledButton.styleFrom(
-                                backgroundColor: _locationSky,
-                                foregroundColor: Colors.white,
+                                backgroundColor: _locationSky.withValues(
+                                  alpha: isDark ? 0.22 : 0.12,
+                                ),
+                                foregroundColor: isDark
+                                    ? const Color(0xFF9FD2EF)
+                                    : _locationSky,
+                                side: BorderSide(
+                                  color: _locationSky.withValues(alpha: 0.32),
+                                ),
+                                elevation: 0,
                               ),
                               onPressed: _saving
                                   ? null
@@ -258,11 +368,18 @@ class _LocationCompletionScreenState
                                         strokeWidth: 2,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                              colorScheme.onPrimary,
+                                              isDark
+                                                  ? const Color(0xFF9FD2EF)
+                                                  : _locationSky,
                                             ),
                                       ),
                                     )
-                                  : const Icon(Icons.location_on_outlined),
+                                  : Icon(
+                                      Icons.location_on_outlined,
+                                      color: isDark
+                                          ? const Color(0xFF9FD2EF)
+                                          : _locationSky,
+                                    ),
                               label: Text(
                                 _saving ? 'Saving…' : 'Save location',
                               ),

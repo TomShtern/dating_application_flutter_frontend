@@ -4,14 +4,18 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/profile/photo_edit_provider.dart';
 import 'package:flutter_dating_application_1/models/photo_dto.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
+import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   const userId = '11111111-1111-1111-1111-111111111111';
   const seededUser = UserSummary(
     id: userId,
@@ -20,11 +24,15 @@ void main() {
     state: 'ACTIVE',
   );
 
-  ProviderContainer makeContainer(_FakeApiClient apiClient) {
+  ProviderContainer makeContainer(
+    _FakeApiClient apiClient,
+    SharedPreferences preferences,
+  ) {
     final container = ProviderContainer(
       overrides: [
         apiClientProvider.overrideWithValue(apiClient),
         selectedUserProvider.overrideWith((ref) async => seededUser),
+        sharedPreferencesProvider.overrideWithValue(preferences),
       ],
     );
     addTearDown(container.dispose);
@@ -33,6 +41,8 @@ void main() {
 
   test('userPhotosProvider fetches the photo list for the selected user',
       () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
     final apiClient = _FakeApiClient(
       listResponses: const [
         PhotoListResponse(
@@ -44,7 +54,7 @@ void main() {
         ),
       ],
     );
-    final container = makeContainer(apiClient);
+    final container = makeContainer(apiClient, preferences);
 
     final list = await container.read(userPhotosProvider.future);
 
@@ -54,6 +64,8 @@ void main() {
 
   test('deletePhoto calls the API and invalidates the photos provider',
       () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
     final apiClient = _FakeApiClient(
       listResponses: const [
         PhotoListResponse(
@@ -77,7 +89,7 @@ void main() {
         ],
       ),
     );
-    final container = makeContainer(apiClient);
+    final container = makeContainer(apiClient, preferences);
 
     await container.read(userPhotosProvider.future);
     await container.read(photoEditControllerProvider).deletePhoto('photo-1');
@@ -92,6 +104,8 @@ void main() {
 
   test('setPrimary moves the chosen photo to index 0 via reorderPhotos',
       () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
     final apiClient = _FakeApiClient(
       listResponses: const [
         PhotoListResponse(
@@ -112,7 +126,7 @@ void main() {
         ],
       ),
     );
-    final container = makeContainer(apiClient);
+    final container = makeContainer(apiClient, preferences);
 
     await container.read(photoEditControllerProvider).setPrimary('photo-3');
 
@@ -125,6 +139,8 @@ void main() {
   test(
     'uploadFromXFile builds a MultipartFile and calls uploadPhoto',
     () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
       final apiClient = _FakeApiClient(
         listResponses: const [
           PhotoListResponse(primaryUrl: null, photos: []),
@@ -137,10 +153,8 @@ void main() {
           ),
         ),
       );
-      final container = makeContainer(apiClient);
+      final container = makeContainer(apiClient, preferences);
 
-      // XFile from raw bytes — no real file on disk, controller falls back to
-      // MultipartFile.fromBytes.
       final picked = XFile.fromData(
         Uint8List.fromList(<int>[0, 0, 0, 0]),
         name: 'avatar.jpg',
