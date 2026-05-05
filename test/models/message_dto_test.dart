@@ -21,5 +21,27 @@ void main() {
     expect(message.senderId, '11111111-1111-1111-1111-111111111111');
     expect(message.content, 'Hey there');
     expect(message.sentAt, DateTime.parse('2026-04-18T14:20:00Z'));
+    expect(message.localState, MessageLocalState.none);
+  });
+
+  test('creates local sending messages that can move into a failed state', () {
+    final localMessage = MessageDto.localSending(
+      conversationId:
+          '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
+      senderId: '11111111-1111-1111-1111-111111111111',
+      content: 'Hey there',
+      sentAt: DateTime.parse('2026-04-18T14:20:00Z'),
+    );
+
+    expect(localMessage.localId, isNotEmpty);
+    expect(localMessage.localState, MessageLocalState.sending);
+    expect(localMessage.content, 'Hey there');
+
+    final failedMessage = localMessage.copyWith(
+      localState: MessageLocalState.failed,
+    );
+
+    expect(failedMessage.localId, localMessage.localId);
+    expect(failedMessage.localState, MessageLocalState.failed);
   });
 }

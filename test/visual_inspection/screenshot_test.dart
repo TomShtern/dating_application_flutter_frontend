@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -109,6 +110,20 @@ const _expectedVisualReviewScenarios = [
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('plugins.flutter.io/path_provider'),
+    (MethodCall methodCall) async {
+      if (methodCall.method == 'getTemporaryDirectory') {
+        return '.';
+      }
+      if (methodCall.method == 'getApplicationSupportDirectory') {
+        return '.';
+      }
+      return null;
+    },
+  );
 
   final GoldenFileComparator previousComparator = goldenFileComparator;
   final ScreenshotWriter screenshotWriter = ScreenshotWriter(

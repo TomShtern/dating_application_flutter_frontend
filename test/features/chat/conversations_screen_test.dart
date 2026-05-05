@@ -23,6 +23,20 @@ void main() {
     otherUserName: 'Noa',
     messageCount: 5,
     lastMessageAt: DateTime.parse('2026-04-18T14:20:00Z'),
+    lastMessagePreview: 'You were right about the coffee spot.',
+    unreadCount: 2,
+    lastSenderId: currentUser.id,
+  );
+
+  final secondSummary = ConversationSummary(
+    id: 'conversation-2',
+    otherUserId: '33333333-3333-3333-3333-333333333333',
+    otherUserName: 'Maya',
+    messageCount: 2,
+    lastMessageAt: DateTime.parse('2026-04-18T16:40:00Z'),
+    lastMessagePreview: 'Want to try the museum on Sunday?',
+    unreadCount: 2,
+    lastSenderId: '33333333-3333-3333-3333-333333333333',
   );
 
   testWidgets('opens a conversation thread from the primary card action', (
@@ -31,7 +45,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          conversationsProvider.overrideWith((ref) async => [summary]),
+          conversationsProvider.overrideWith(
+            (ref) async => [summary, secondSummary],
+          ),
           conversationThreadProvider(summary.id).overrideWith(
             (ref) async => [
               MessageDto(
@@ -51,20 +67,24 @@ void main() {
 
     expect(find.text('Open conversations'), findsOneWidget);
     expect(find.text('Noa'), findsOneWidget);
-    expect(find.text('1 conversation ready to pick back up.'), findsOneWidget);
-    expect(find.text('5 messages'), findsOneWidget);
-    expect(find.text('Tap to continue the conversation.'), findsOneWidget);
-    expect(find.text('Updated Apr 18, 2026'), findsNothing);
-    expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
-    expect(find.text('Open'), findsOneWidget);
-
-    final conversationCard = find.ancestor(
-      of: find.text('Noa'),
-      matching: find.byType(InkWell),
+    expect(find.text('2 conversations ready to pick back up.'), findsOneWidget);
+    expect(
+      find.text('You: You were right about the coffee spot.'),
+      findsOneWidget,
     );
-    await tester.scrollUntilVisible(conversationCard, 200);
+    expect(find.text('2 unread'), findsNWidgets(4));
+    expect(find.text('Maya'), findsOneWidget);
+    expect(find.text('Updated Apr 18, 2026'), findsNothing);
+    expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
+    expect(find.text('Open'), findsNWidgets(2));
+
+    await tester.enterText(find.byType(TextField), 'coffee');
     await tester.pumpAndSettle();
-    await tester.tap(conversationCard);
+
+    expect(find.text('Noa'), findsOneWidget);
+    expect(find.text('Maya'), findsNothing);
+
+    await tester.tap(find.text('Noa').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Conversation'), findsOneWidget);

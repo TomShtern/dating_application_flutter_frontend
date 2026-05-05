@@ -21,6 +21,8 @@ import '../../app/app_config.dart';
 import '../auth/auth_controller.dart';
 import '../location/location_completion_screen.dart';
 import 'photo_edit_provider.dart';
+import 'photo_upload_provider.dart';
+import 'upload_state.dart';
 import 'profile_checklist_card.dart';
 import 'profile_completion.dart';
 import 'profile_provider.dart';
@@ -1229,9 +1231,7 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
       return;
     }
 
-    await _runBusy(() async {
-      await ref.read(photoEditControllerProvider).uploadFromXFile(picked);
-    }, successMessage: 'Photo added.');
+    await ref.read(photoUploadProvider.notifier).startUpload(picked);
   }
 
   Future<void> _handleMakePrimary(String photoId) async {
@@ -1281,6 +1281,7 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
   @override
   Widget build(BuildContext context) {
     final asyncPhotos = ref.watch(userPhotosProvider);
+    final uploads = ref.watch(photoUploadProvider);
 
     return _ProfileEditSection(
       icon: Icons.photo_library_outlined,
@@ -1291,7 +1292,7 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           asyncPhotos.when(
-            data: (data) => _buildLoadedBody(context, data),
+            data: (data) => _buildLoadedBody(context, data, uploads),
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: 18),
               child: Center(child: CircularProgressIndicator()),
@@ -1303,6 +1304,7 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
               onRetry: () => ref.invalidate(userPhotosProvider),
             ),
           ),
+          ..._buildUploadTiles(context, uploads),
           const SizedBox(height: AppTheme.cardGap),
           Align(
             alignment: Alignment.centerLeft,
@@ -1322,13 +1324,37 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
     );
   }
 
-  Widget _buildLoadedBody(BuildContext context, PhotoListResponse data) {
+  List<Widget> _buildUploadTiles(
+    BuildContext context,
+    Map<String, PhotoUploadEntry> uploads,
+  ) {
+    if (uploads.isEmpty) return const [];
+    final tiles = <Widget>[];
+    for (final entry in uploads.values) {
+      if (entry.status == PhotoUploadStatus.succeeded) continue;
+      tiles.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: _UploadProgressTile(entry: entry),
+        ),
+      );
+    }
+    return tiles;
+  }
+
+  Widget _buildLoadedBody(
+    BuildContext context,
+    PhotoListResponse data,
+    Map<String, PhotoUploadEntry> uploads,
+  ) {
     final baseUrl = ref.watch(appConfigProvider).baseUrl;
     final resolvedPrimary = resolveMediaUrl(
       rawUrl: data.primaryUrl,
       baseUrl: baseUrl,
     );
-    final emptySlots = 4 - data.photos.length;
+    final effectiveCount = data.photos.length +
+        uploads.values.where((e) => e.status != PhotoUploadStatus.succeeded).length;
+    final emptySlots = effectiveCount >= 4 ? 0 : 4 - effectiveCount;
 
     return Wrap(
       spacing: 10,
@@ -1357,7 +1383,125 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
   }
 }
 
-class _PhotoTile extends StatelessWidget {
+class _UploadProgressTile extends ConsumerWidget {
+  const _UploadProgressTile({required this.entry});
+
+  final PhotoUploadEntry entry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isUploading = entry.status == PhotoUploadStatus.uploading ||
+        entry.status == PhotoUploadStatus.preparing;
+    final isFailed = entry.status == PhotoUploadStatus.failed;
+    final isRejected = entry.status == PhotoUploadStatus.rejected;
+
+    final accentColor = isRejected
+        ? const Color(0xFFD95F84)
+        : isFailed
+            ? const Color(0xFFFF7043)
+            : _profileSky;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: isDark ? 0.12 : 0.06),
+        borderRadius: const BorderRadius.all(Radius.circular(14)),
+        border: Border.all(
+          color: accentColor.withValues(alpha: isDark ? 0.30 : 0.20),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            if (isUploading)
+              SizedBox.square(
+                dimension: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  value: entry.status == PhotoUploadStatus.preparing
+                      ? null
+                      : entry.progress,
+                  valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                ),
+              )
+            else
+              Icon(
+                isRejected ? Icons.block_rounded : Icons.error_outline_rounded,
+                size: 22,
+                color: accentColor,
+              ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isUploading
+                        ? (entry.status == PhotoUploadStatus.preparing
+                            ? 'Preparing photo\u2026'
+                            : 'Uploading\u2026 ${(entry.progress * 100).round()}%')
+                        : isRejected
+                            ? 'Photo not accepted'
+                            : 'Upload failed',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                    ),
+                  ),
+                  if (isRejected && entry.rejectionReason != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      entry.rejectionReason!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  if (isFailed && entry.errorMessage != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      entry.errorMessage!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (isUploading)
+              TextButton(
+                onPressed: () =>
+                    ref.read(photoUploadProvider.notifier).dismissUpload(entry.localId),
+                child: const Text('Cancel'),
+              ),
+            if (isFailed || isRejected)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () => ref
+                        .read(photoUploadProvider.notifier)
+                        .retryUpload(entry.localId),
+                    child: const Text('Retry'),
+                  ),
+                  TextButton(
+                    onPressed: () => ref
+                        .read(photoUploadProvider.notifier)
+                        .dismissUpload(entry.localId),
+                    child: const Text('Dismiss'),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoTile extends ConsumerWidget {
   const _PhotoTile({
     required this.photo,
     required this.isPrimary,
@@ -1375,7 +1519,10 @@ class _PhotoTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isRejected = photo.moderationStatus == PhotoModerationStatus.rejected;
+    final isPending = photo.moderationStatus == PhotoModerationStatus.pending;
+
     return SizedBox(
       width: 88,
       child: Column(
@@ -1387,9 +1534,14 @@ class _PhotoTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.all(Radius.circular(22)),
                   border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outlineVariant.withValues(alpha: 0.35),
+                    color: isRejected
+                        ? const Color(0xFFD95F84).withValues(alpha: 0.55)
+                        : isPending
+                            ? const Color(0xFFD98914).withValues(alpha: 0.45)
+                            : Theme.of(context)
+                                .colorScheme
+                                .outlineVariant
+                                .withValues(alpha: 0.35),
                   ),
                 ),
                 child: PersonMediaThumbnail(
@@ -1415,6 +1567,74 @@ class _PhotoTile extends StatelessWidget {
                             Colors.white,
                           ),
                         ),
+                      ),
+                    ),
+                  ),
+                ),
+              if (isRejected)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.38),
+                      borderRadius: const BorderRadius.all(Radius.circular(22)),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.block_rounded,
+                            color: const Color(0xFFD95F84),
+                            size: 20,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Rejected',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              if (isPending && !isRejected && !isBusy)
+                Positioned(
+                  top: 3,
+                  left: 3,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD98914).withValues(alpha: 0.92),
+                      borderRadius: AppTheme.chipRadius,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.hourglass_bottom_rounded,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            'Review',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1477,6 +1697,19 @@ class _PhotoTile extends StatelessWidget {
                 ),
             ],
           ),
+          if (isRejected && photo.rejectionReason != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Text(
+                photo.rejectionReason!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: const Color(0xFFD95F84),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
         ],
       ),
     );

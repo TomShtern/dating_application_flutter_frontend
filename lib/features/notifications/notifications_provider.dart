@@ -21,6 +21,16 @@ final notificationsProvider = FutureProvider<List<NotificationItem>>((
   );
 });
 
+final notificationsUnreadCountProvider = FutureProvider<int>((ref) async {
+  final apiClient = ref.watch(apiClientProvider);
+  final currentUser = await user_guard.watchSelectedUser(ref);
+  final unreadNotifications = await apiClient.getNotifications(
+    userId: currentUser.id,
+    unreadOnly: true,
+  );
+  return unreadNotifications.length;
+});
+
 final notificationsControllerProvider = Provider<NotificationsController>((
   ref,
 ) {
@@ -40,6 +50,7 @@ class NotificationsController {
       notificationId: notificationId,
     );
     _ref.invalidate(notificationsProvider);
+    _ref.invalidate(notificationsUnreadCountProvider);
   }
 
   Future<int> markAllRead() async {
@@ -49,10 +60,12 @@ class NotificationsController {
       userId: currentUser.id,
     );
     _ref.invalidate(notificationsProvider);
+    _ref.invalidate(notificationsUnreadCountProvider);
     return updatedCount;
   }
 
   Future<void> refresh() {
+    _ref.invalidate(notificationsUnreadCountProvider);
     return _ref.refresh(notificationsProvider.future);
   }
 

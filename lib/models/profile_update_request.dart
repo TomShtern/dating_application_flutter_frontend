@@ -1,3 +1,5 @@
+import 'profile_edit_snapshot.dart';
+
 /// A partial profile update payload built from the fields currently surfaced
 /// by the mobile read model.
 ///
@@ -15,6 +17,14 @@ class ProfileUpdateRequest {
     this.heightCm,
     this.location,
     this.pacePreferences,
+    this.birthDate,
+    this.smoking,
+    this.drinking,
+    this.wantsKids,
+    this.lookingFor,
+    this.education,
+    this.interests,
+    this.dealbreakers,
   });
 
   final String? name;
@@ -27,6 +37,14 @@ class ProfileUpdateRequest {
   final int? heightCm;
   final ProfileLocationRequest? location;
   final String? pacePreferences;
+  final String? birthDate;
+  final String? smoking;
+  final String? drinking;
+  final String? wantsKids;
+  final String? lookingFor;
+  final String? education;
+  final List<String>? interests;
+  final ProfileEditDealbreakers? dealbreakers;
 
   Map<String, dynamic> toJson() {
     final payload = <String, dynamic>{};
@@ -61,6 +79,42 @@ class ProfileUpdateRequest {
     if (pacePreferences != null) {
       payload['pacePreferences'] = pacePreferences;
     }
+    if (birthDate != null) {
+      payload['birthDate'] = birthDate;
+    }
+    if (smoking != null) {
+      payload['smoking'] = smoking;
+    }
+    if (drinking != null) {
+      payload['drinking'] = drinking;
+    }
+    if (wantsKids != null) {
+      payload['wantsKids'] = wantsKids;
+    }
+    if (lookingFor != null) {
+      payload['lookingFor'] = lookingFor;
+    }
+    if (education != null) {
+      payload['education'] = education;
+    }
+    if (interests != null) {
+      payload['interests'] = List<String>.of(interests!, growable: false);
+    }
+    if (dealbreakers != null) {
+      payload['dealbreakers'] = <String, dynamic>{
+        'acceptableSmoking': dealbreakers!.acceptableSmoking,
+        'acceptableDrinking': dealbreakers!.acceptableDrinking,
+        'acceptableKidsStance': dealbreakers!.acceptableKidsStance,
+        'acceptableLookingFor': dealbreakers!.acceptableLookingFor,
+        'acceptableEducation': dealbreakers!.acceptableEducation,
+        if (dealbreakers!.minHeightCm != null)
+          'minHeightCm': dealbreakers!.minHeightCm,
+        if (dealbreakers!.maxHeightCm != null)
+          'maxHeightCm': dealbreakers!.maxHeightCm,
+        if (dealbreakers!.maxAgeDifference != null)
+          'maxAgeDifference': dealbreakers!.maxAgeDifference,
+      };
+    }
 
     return payload;
   }
@@ -81,7 +135,15 @@ class ProfileUpdateRequest {
         other.maxAge == maxAge &&
         other.heightCm == heightCm &&
         other.location == location &&
-        other.pacePreferences == pacePreferences;
+        other.pacePreferences == pacePreferences &&
+        other.birthDate == birthDate &&
+        other.smoking == smoking &&
+        other.drinking == drinking &&
+        other.wantsKids == wantsKids &&
+        other.lookingFor == lookingFor &&
+        other.education == education &&
+        _listEquals(other.interests, interests) &&
+        other.dealbreakers == dealbreakers;
   }
 
   @override
@@ -96,6 +158,14 @@ class ProfileUpdateRequest {
     heightCm,
     location,
     pacePreferences,
+    birthDate,
+    smoking,
+    drinking,
+    wantsKids,
+    lookingFor,
+    education,
+    interests == null ? null : Object.hashAll(interests!),
+    dealbreakers,
   );
 }
 

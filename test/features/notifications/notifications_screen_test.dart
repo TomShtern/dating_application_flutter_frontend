@@ -5,11 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_screen.dart';
+import 'package:flutter_dating_application_1/features/notifications/notification_platform_service.dart';
+import 'package:flutter_dating_application_1/features/notifications/notification_preferences_store.dart';
 import 'package:flutter_dating_application_1/features/notifications/notifications_provider.dart';
 import 'package:flutter_dating_application_1/features/notifications/notifications_screen.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/notification_item.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
+import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Finder notificationsScrollable() {
   return find.descendant(
@@ -20,12 +24,20 @@ Finder notificationsScrollable() {
 
 final DateTime _referenceNow = DateTime.utc(2026, 4, 23, 12);
 
+Future<SharedPreferences> _createPreferences([
+  Map<String, Object> values = const <String, Object>{},
+]) async {
+  SharedPreferences.setMockInitialValues(values);
+  return SharedPreferences.getInstance();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
     'shows a notifications intro card summary and keeps refresh out of the app bar',
     (WidgetTester tester) async {
+      final preferences = await _createPreferences();
       final now = _referenceNow.toLocal();
       final notifications = [
         NotificationItem(
@@ -68,6 +80,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(preferences),
             notificationsProvider.overrideWith((ref) async => notifications),
           ],
           child: MaterialApp(home: NotificationsScreen(now: _referenceNow)),
@@ -87,6 +100,7 @@ void main() {
   testWidgets(
     'groups notifications by Today, Yesterday, and Earlier without inline status badges',
     (WidgetTester tester) async {
+      final preferences = await _createPreferences();
       final now = _referenceNow.toLocal();
       final startOfToday = DateTime(now.year, now.month, now.day);
       final notifications = [
@@ -124,6 +138,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(preferences),
             notificationsProvider.overrideWith((ref) async => notifications),
           ],
           child: MaterialApp(home: NotificationsScreen(now: _referenceNow)),
@@ -132,8 +147,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Notifications'), findsWidgets);
-      expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Yesterday'), findsWidgets);
+      await tester.scrollUntilVisible(
+        find.text('Today update'),
+        200,
+        scrollable: notificationsScrollable(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Today update'), findsOneWidget);
+      expect(find.text('Yesterday', skipOffstage: false), findsWidgets);
 
       await tester.scrollUntilVisible(
         find.text('Earlier update'),
@@ -154,6 +176,7 @@ void main() {
   testWidgets(
     'opens routed notifications from the row and keeps incomplete or unknown items display only',
     (WidgetTester tester) async {
+      final preferences = await _createPreferences();
       final now = _referenceNow.toLocal();
       final notifications = [
         NotificationItem(
@@ -218,6 +241,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(preferences),
             selectedUserProvider.overrideWith(
               (ref) async => const UserSummary(
                 id: 'user-1',
@@ -268,4 +292,70 @@ void main() {
       expect(find.byType(ConversationThreadScreen), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'shows delivery controls with backend badge count and permission flow',
+    (WidgetTester tester) async {
+      final preferences = await _createPreferences({
+        NotificationPreferencesStore.storageKey:
+            '{"messages":true,"matchesActivity":true,"safetyAccount":true,"marketingProduct":false}',
+      });
+      final platformService = _FakeNotificationPlatformService(
+        NotificationPermissionStatus.denied,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            notificationPlatformServiceProvider.overrideWithValue(
+              platformService,
+            ),
+            notificationsProvider.overrideWith((ref) async => const []),
+            notificationsUnreadCountProvider.overrideWith((ref) async => 4),
+          ],
+          child: const MaterialApp(home: NotificationsScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Push delivery'), findsOneWidget);
+      expect(find.text('4 unread from backend'), findsOneWidget);
+      expect(find.text('Messages'), findsOneWidget);
+      expect(find.text('Matches & activity'), findsOneWidget);
+      expect(find.text('Safety & account'), findsOneWidget);
+      expect(find.text('Marketing & product'), findsOneWidget);
+      expect(find.textContaining('backend endpoint'), findsOneWidget);
+      expect(find.text('Allow notifications'), findsOneWidget);
+
+      await tester.tap(find.text('Allow notifications'));
+      await tester.pumpAndSettle();
+
+      expect(platformService.requestCalls, 1);
+      expect(
+        find.text('Notifications are allowed on this device.'),
+        findsOneWidget,
+      );
+    },
+  );
+}
+
+class _FakeNotificationPlatformService implements NotificationPlatformService {
+  _FakeNotificationPlatformService(this._status);
+
+  NotificationPermissionStatus _status;
+  int requestCalls = 0;
+
+  @override
+  Future<void> ensureInitialized() async {}
+
+  @override
+  Future<NotificationPermissionStatus> getPermissionStatus() async => _status;
+
+  @override
+  Future<NotificationPermissionStatus> requestPermission() async {
+    requestCalls += 1;
+    _status = NotificationPermissionStatus.granted;
+    return _status;
+  }
 }

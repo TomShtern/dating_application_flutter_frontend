@@ -20,6 +20,7 @@ import '../location/location_completion_screen.dart';
 import '../profile/profile_screen.dart';
 import '../profile/profile_provider.dart';
 import '../safety/safety_action_sheet.dart';
+import 'discovery_preferences_screen.dart';
 import 'pending_likers_screen.dart';
 import 'browse_provider.dart';
 import 'standouts_screen.dart';
@@ -67,6 +68,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                     onUndo: _handleUndo,
                     onRefresh: () =>
                         ref.read(browseControllerProvider).refresh(),
+                    onOpenDiscoveryPreferences: _openDiscoveryPreferences,
                     actionsDisabled: _isSubmitting,
                   ),
                   SizedBox(height: sectionSpacing),
@@ -293,6 +295,14 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       ),
     );
   }
+
+  Future<void> _openDiscoveryPreferences() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => const DiscoveryPreferencesScreen(),
+      ),
+    );
+  }
 }
 
 class _BrowseIntroCard extends StatelessWidget {
@@ -303,6 +313,7 @@ class _BrowseIntroCard extends StatelessWidget {
     required this.locationMissing,
     required this.onUndo,
     required this.onRefresh,
+    required this.onOpenDiscoveryPreferences,
     required this.actionsDisabled,
   });
 
@@ -312,6 +323,7 @@ class _BrowseIntroCard extends StatelessWidget {
   final bool locationMissing;
   final VoidCallback onUndo;
   final VoidCallback onRefresh;
+  final VoidCallback onOpenDiscoveryPreferences;
   final bool actionsDisabled;
 
   @override
@@ -385,6 +397,11 @@ class _BrowseIntroCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                 ],
+                IconButton(
+                  tooltip: 'Discovery preferences',
+                  onPressed: actionsDisabled ? null : onOpenDiscoveryPreferences,
+                  icon: const Icon(Icons.tune_rounded, size: 20),
+                ),
                 IconButton(
                   tooltip: 'Undo last swipe',
                   onPressed: actionsDisabled ? null : onUndo,

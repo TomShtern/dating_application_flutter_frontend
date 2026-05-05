@@ -524,6 +524,7 @@ class _FakeConversationThreadApiClient extends ApiClient {
   final MessageDto sentMessage;
   int getMessagesCalls = 0;
   String? lastSentContent;
+  final List<String> sentContents = <String>[];
 
   @override
   Future<List<MessageDto>> getMessages({
@@ -546,6 +547,7 @@ class _FakeConversationThreadApiClient extends ApiClient {
     required String content,
   }) async {
     lastSentContent = content;
+    sentContents.add(content);
     return sentMessage;
   }
 }

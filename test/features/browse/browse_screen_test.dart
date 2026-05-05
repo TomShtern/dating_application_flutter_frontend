@@ -18,7 +18,11 @@ import 'package:flutter_dating_application_1/models/daily_pick.dart';
 import 'package:flutter_dating_application_1/models/health_status.dart';
 import 'package:flutter_dating_application_1/models/like_result.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
+import 'package:flutter_dating_application_1/models/profile_completion_info.dart';
+import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
+import 'package:flutter_dating_application_1/models/profile_update_request.dart';
 import 'package:flutter_dating_application_1/models/profile_presentation_context.dart';
+import 'package:flutter_dating_application_1/models/profile_update_response.dart';
 import 'package:flutter_dating_application_1/models/undo_swipe_result.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
@@ -480,6 +484,61 @@ void main() {
     expect(find.text('Passed'), findsOneWidget);
     expect(apiClient.passCalls, 1);
   });
+
+  testWidgets('opens discovery preferences from browse', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
+    final apiClient = _FakeBrowseApiClient(
+      browseResponse: browseResponse,
+      likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
+          backendHealthProvider.overrideWith(
+            (ref) async =>
+                HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
+          ),
+          profileEditSnapshotProvider.overrideWith(
+            (ref) async => ProfileEditSnapshot.fromJson({
+              'userId': currentUser.id,
+              'editable': {
+                'minAge': 25,
+                'maxAge': 35,
+                'maxDistanceKm': 42,
+                'interestedIn': ['MALE'],
+                'dealbreakers': {
+                  'acceptableSmoking': [],
+                  'acceptableDrinking': [],
+                  'acceptableKidsStance': [],
+                  'acceptableLookingFor': [],
+                  'acceptableEducation': [],
+                },
+              },
+              'readOnly': {'name': 'Dana', 'state': 'ACTIVE', 'photoUrls': []},
+            }),
+          ),
+        ],
+        child: const MaterialApp(home: BrowseScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Discovery preferences'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Discovery preferences'), findsOneWidget);
+    expect(find.text('Age range'), findsOneWidget);
+    expect(find.text('Distance'), findsOneWidget);
+  });
 }
 
 class _FakeBrowseApiClient extends ApiClient {
@@ -538,5 +597,36 @@ class _FakeBrowseApiClient extends ApiClient {
       details: ['This profile is within your preferred distance.'],
       generatedAt: '2026-05-08T10:15:00Z',
     );
+  }
+
+  @override
+  Future<ProfileEditSnapshot> getProfileEditSnapshot({
+    required String userId,
+  }) async {
+    return ProfileEditSnapshot.fromJson({
+      'userId': userId,
+      'editable': {
+        'minAge': 25,
+        'maxAge': 35,
+        'maxDistanceKm': 42,
+        'interestedIn': ['MALE'],
+        'dealbreakers': {
+          'acceptableSmoking': [],
+          'acceptableDrinking': [],
+          'acceptableKidsStance': [],
+          'acceptableLookingFor': [],
+          'acceptableEducation': [],
+        },
+      },
+      'readOnly': {'name': 'Dana', 'state': 'ACTIVE', 'photoUrls': []},
+    });
+  }
+
+  @override
+  Future<ProfileUpdateResponse> updateProfile({
+    required String userId,
+    required ProfileUpdateRequest request,
+  }) async {
+    return const ProfileUpdateResponse(completionInfo: ProfileCompletionInfo());
   }
 }

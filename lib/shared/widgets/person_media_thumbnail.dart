@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/app_config.dart';
+import 'app_network_image.dart';
 import 'user_avatar.dart';
 import '../media/media_url.dart';
 
@@ -28,35 +29,27 @@ class PersonMediaThumbnail extends ConsumerWidget {
       baseUrl: ref.watch(appConfigProvider).baseUrl,
     );
 
+    final fallback = _PhotoFallback(name: name, width: width, height: height);
+
+    if (resolvedPhotoUrl == null) {
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: SizedBox(width: width, height: height, child: fallback),
+      );
+    }
+
     return ClipRRect(
       borderRadius: borderRadius,
       child: SizedBox(
         width: width,
         height: height,
-        child: resolvedPhotoUrl == null
-            ? _PhotoFallback(name: name, width: width, height: height)
-            : Image.network(
-                resolvedPhotoUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return _PhotoFallback(
-                    name: name,
-                    width: width,
-                    height: height,
-                  );
-                },
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) {
-                    return child;
-                  }
-
-                  return _PhotoFallback(
-                    name: name,
-                    width: width,
-                    height: height,
-                  );
-                },
-              ),
+        child: AppNetworkImage(
+          url: resolvedPhotoUrl,
+          width: width,
+          height: height,
+          borderRadius: borderRadius,
+          fallbackBuilder: (_) => fallback,
+        ),
       ),
     );
   }

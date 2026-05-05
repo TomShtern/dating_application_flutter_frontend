@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/app_config.dart';
+import 'app_network_image.dart';
 import '../media/media_url.dart';
 
 class AppPhotoFallbackPalette {
@@ -70,7 +71,7 @@ String appPhotoInitials(String name) {
       .where((part) => part.isNotEmpty)
       .toList(growable: false);
   if (parts.isEmpty) {
-    return '•';
+    return '\u2022';
   }
 
   final first = _firstSymbol(parts.first);
@@ -115,19 +116,12 @@ class UserAvatar extends ConsumerWidget {
         child: ClipOval(
           child: resolvedPhotoUrl == null
               ? _AvatarFallback(name: name, radius: radius)
-              : Image.network(
-                  resolvedPhotoUrl,
+              : AppNetworkImage(
+                  url: resolvedPhotoUrl,
+                  width: frameSize - innerPadding * 2,
+                  height: frameSize - innerPadding * 2,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _AvatarFallback(name: name, radius: radius);
-                  },
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) {
-                      return child;
-                    }
-
-                    return _AvatarFallback(name: name, radius: radius);
-                  },
+                  fallbackBuilder: (_) => _AvatarFallback(name: name, radius: radius),
                 ),
         ),
       ),

@@ -1,14 +1,37 @@
 import 'profile_completion_info.dart';
 
-/// A single uploaded photo as returned by the backend.
-///
-/// `url` is an absolute URL ready to display (the backend resolves the
-/// internal `/photos/...` path to a public URL before sending it).
+enum PhotoModerationStatus {
+  pending,
+  approved,
+  rejected;
+
+  static PhotoModerationStatus? fromJson(dynamic value) {
+    if (value is! String) return null;
+    return switch (value.toUpperCase()) {
+      'PENDING' => pending,
+      'APPROVED' => approved,
+      'REJECTED' => rejected,
+      _ => null,
+    };
+  }
+}
+
 class PhotoDto {
-  const PhotoDto({required this.id, required this.url});
+  const PhotoDto({
+    required this.id,
+    required this.url,
+    this.thumbnailUrl,
+    this.mediumUrl,
+    this.moderationStatus,
+    this.rejectionReason,
+  });
 
   final String id;
   final String url;
+  final String? thumbnailUrl;
+  final String? mediumUrl;
+  final PhotoModerationStatus? moderationStatus;
+  final String? rejectionReason;
 
   factory PhotoDto.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
@@ -19,23 +42,48 @@ class PhotoDto {
     if (url is! String || url.trim().isEmpty) {
       throw const FormatException('PhotoDto is missing a non-empty url.');
     }
-    return PhotoDto(id: id, url: url);
+    return PhotoDto(
+      id: id,
+      url: url,
+      thumbnailUrl: json['thumbnailUrl'] as String?,
+      mediumUrl: json['mediumUrl'] as String?,
+      moderationStatus: PhotoModerationStatus.fromJson(json['moderationStatus']),
+      rejectionReason: json['rejectionReason'] as String?,
+    );
   }
 
-  Map<String, dynamic> toJson() => {'id': id, 'url': url};
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'url': url,
+    if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
+    if (mediumUrl != null) 'mediumUrl': mediumUrl,
+    if (moderationStatus != null)
+      'moderationStatus': moderationStatus!.name.toUpperCase(),
+    if (rejectionReason != null) 'rejectionReason': rejectionReason,
+  };
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is PhotoDto && other.id == id && other.url == url);
+      (other is PhotoDto &&
+          other.id == id &&
+          other.url == url &&
+          other.thumbnailUrl == thumbnailUrl &&
+          other.mediumUrl == mediumUrl &&
+          other.moderationStatus == moderationStatus &&
+          other.rejectionReason == rejectionReason);
 
   @override
-  int get hashCode => Object.hash(id, url);
+  int get hashCode => Object.hash(
+        id,
+        url,
+        thumbnailUrl,
+        mediumUrl,
+        moderationStatus,
+        rejectionReason,
+      );
 }
 
-/// Standard response shape for any photo mutation endpoint
-/// (upload / delete / reorder). Always returns the canonical photo
-/// list and the current primary URL.
 class PhotoListResponse {
   const PhotoListResponse({
     required this.primaryUrl,
@@ -70,9 +118,6 @@ class PhotoListResponse {
   }
 }
 
-/// Upload responses include the newly created photo in addition to the
-/// full list. We reuse `PhotoListResponse` but also expose the new one
-/// so callers can highlight it without diffing.
 class PhotoUploadResponse {
   const PhotoUploadResponse({
     required this.photo,

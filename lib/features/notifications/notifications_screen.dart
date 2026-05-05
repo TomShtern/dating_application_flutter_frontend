@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../../api/api_error.dart';
 import '../../models/conversation_summary.dart';
@@ -14,6 +15,9 @@ import '../../theme/app_theme.dart';
 import '../auth/selected_user_provider.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../profile/profile_screen.dart';
+import 'notification_platform_service.dart';
+import 'notification_preferences.dart';
+import 'notification_preferences_provider.dart';
 import 'notifications_provider.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -28,21 +32,27 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   bool _markingAllRead = false;
+  bool _requestingPermission = false;
   String? _busyNotificationId;
 
   @override
   Widget build(BuildContext context) {
     final controller = ref.read(notificationsControllerProvider);
     final unreadOnly = ref.watch(notificationsUnreadOnlyProvider);
+    final notificationPreferences = ref.watch(notificationPreferencesProvider);
+    final permissionState = ref.watch(notificationPermissionStatusProvider);
     final notificationsState = ref.watch(notificationsProvider);
+    final unreadCountState = ref.watch(notificationsUnreadCountProvider);
     final referenceTime = widget.now ?? DateTime.now();
     return Scaffold(
       body: SafeArea(
         child: notificationsState.when(
           data: (notifications) {
-            final unreadCount = notifications
+            final localUnreadCount = notifications
                 .where((notification) => !notification.isRead)
                 .length;
+            final backendUnreadCount = unreadCountState.asData?.value;
+            final unreadCount = backendUnreadCount ?? localUnreadCount;
 
             return RefreshIndicator(
               onRefresh: controller.refresh,
@@ -55,11 +65,24 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   _NotificationsIntroCard(
                     totalCount: notifications.length,
                     unreadCount: unreadCount,
+                    backendUnreadCount: backendUnreadCount,
                     unreadOnly: unreadOnly,
                     markingAllRead: _markingAllRead,
                     onRefresh: controller.refresh,
                     onUnreadOnlyChanged: controller.setUnreadOnly,
                     onMarkAllRead: _handleMarkAllRead,
+                  ),
+                  SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+                  _NotificationDeliveryCard(
+                    permissionState: permissionState,
+                    unreadCountState: unreadCountState,
+                    requestingPermission: _requestingPermission,
+                    onRequestPermission: _handleRequestPermission,
+                  ),
+                  SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+                  _NotificationPreferencesCard(
+                    preferences: notificationPreferences,
+                    onCategoryChanged: _handleCategoryChanged,
                   ),
                   SizedBox(height: AppTheme.sectionSpacing(compact: true)),
                   if (notifications.isEmpty)
@@ -151,6 +174,51 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         });
       }
     }
+  }
+
+  Future<void> _handleRequestPermission() async {
+    setState(() {
+      _requestingPermission = true;
+    });
+
+    try {
+      await ref
+          .read(notificationPlatformControllerProvider)
+          .requestPermission();
+    } on PlatformException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error.message ?? 'Unable to request notifications right now.',
+          ),
+        ),
+      );
+    } on Exception catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to request notifications: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _requestingPermission = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleCategoryChanged(
+    NotificationPreferenceCategory category,
+    bool enabled,
+  ) {
+    return ref
+        .read(notificationPreferencesControllerProvider)
+        .setCategoryEnabled(category, enabled);
   }
 
   Future<void> _handleMarkRead(NotificationItem item) async {
@@ -489,6 +557,7 @@ class _NotificationsIntroCard extends StatelessWidget {
   const _NotificationsIntroCard({
     required this.totalCount,
     required this.unreadCount,
+    required this.backendUnreadCount,
     required this.unreadOnly,
     required this.markingAllRead,
     required this.onRefresh,
@@ -498,6 +567,7 @@ class _NotificationsIntroCard extends StatelessWidget {
 
   final int totalCount;
   final int unreadCount;
+  final int? backendUnreadCount;
   final bool unreadOnly;
   final bool markingAllRead;
   final Future<void> Function() onRefresh;
@@ -555,7 +625,40 @@ class _NotificationsIntroCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Notifications', style: theme.textTheme.titleLarge),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Notifications',
+                              style: theme.textTheme.titleLarge,
+                            ),
+                          ),
+                          if ((backendUnreadCount ?? 0) > 0)
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: introAccent.withValues(
+                                  alpha: theme.brightness == Brightness.dark
+                                      ? 0.24
+                                      : 0.14,
+                                ),
+                                borderRadius: AppTheme.chipRadius,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                child: Text(
+                                  '$backendUnreadCount',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: introAccent,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                       const SizedBox(height: 4),
                       Text(description, style: theme.textTheme.bodyMedium),
                     ],
@@ -655,6 +758,303 @@ class _NotificationsIntroCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _NotificationDeliveryCard extends StatelessWidget {
+  const _NotificationDeliveryCard({
+    required this.permissionState,
+    required this.unreadCountState,
+    required this.requestingPermission,
+    required this.onRequestPermission,
+  });
+
+  final AsyncValue<NotificationPermissionStatus> permissionState;
+  final AsyncValue<int> unreadCountState;
+  final bool requestingPermission;
+  final Future<void> Function() onRequestPermission;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accent = const Color(0xFF188DC8);
+    final surface = Color.alphaBlend(
+      accent.withValues(
+        alpha: theme.brightness == Brightness.dark ? 0.12 : 0.05,
+      ),
+      colorScheme.surfaceContainerLow,
+    );
+    final NotificationPermissionStatus? permissionStatus =
+        permissionState.asData?.value;
+    final permissionMessage = switch (permissionStatus) {
+      NotificationPermissionStatus.granted =>
+        'Notifications are allowed on this device.',
+      NotificationPermissionStatus.denied =>
+        'Allow notifications so new matches and replies can reach you.',
+      NotificationPermissionStatus.unsupported =>
+        'Push permission controls are available on Android once the plugin is active.',
+      null => 'Checking whether this device can receive notifications…',
+    };
+    final showPermissionButton =
+        permissionStatus == NotificationPermissionStatus.denied;
+    final badgeCountLabel = unreadCountState.when(
+      data: (count) => '$count unread from backend',
+      loading: () => 'Checking backend unread count…',
+      error: (_, _) => 'Unread sync unavailable right now',
+    );
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(context, color: surface),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: accent.withValues(
+                      alpha: theme.brightness == Brightness.dark ? 0.22 : 0.12,
+                    ),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.notifications_active_outlined,
+                      color: Color(0xFF188DC8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Push delivery', style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 4),
+                      Text(
+                        permissionMessage,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (showPermissionButton) ...[
+              const SizedBox(height: 12),
+              FilledButton.tonalIcon(
+                onPressed: requestingPermission ? null : onRequestPermission,
+                icon: requestingPermission
+                    ? SizedBox.square(
+                        dimension: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(accent),
+                        ),
+                      )
+                    : const Icon(Icons.notifications_outlined, size: 18),
+                label: const Text('Allow notifications'),
+              ),
+            ],
+            const SizedBox(height: 14),
+            _NotificationMetaRow(title: 'Badge count', value: badgeCountLabel),
+            const SizedBox(height: 8),
+            const _NotificationMetaRow(
+              title: 'Device token',
+              value:
+                  'Waiting on a backend endpoint before device-token registration can start.',
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Android channels',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: notificationChannelDefinitions
+                  .map(
+                    (definition) => DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: accent.withValues(
+                          alpha: theme.brightness == Brightness.dark
+                              ? 0.18
+                              : 0.08,
+                        ),
+                        borderRadius: AppTheme.chipRadius,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        child: Text(
+                          definition.name,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: accent,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Only known notifications with complete payloads open routes. Unknown or incomplete payloads stay display-only.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationPreferencesCard extends StatelessWidget {
+  const _NotificationPreferencesCard({
+    required this.preferences,
+    required this.onCategoryChanged,
+  });
+
+  final NotificationPreferences preferences;
+  final Future<void> Function(
+    NotificationPreferenceCategory category,
+    bool enabled,
+  )
+  onCategoryChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = const Color(0xFF7C4DFF);
+    final surface = Color.alphaBlend(
+      accent.withValues(
+        alpha: theme.brightness == Brightness.dark ? 0.12 : 0.05,
+      ),
+      theme.colorScheme.surfaceContainerLow,
+    );
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(context, color: surface),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Delivery categories', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'These preferences are stored on this device until backend preference sync lands.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final category in NotificationPreferenceCategory.values) ...[
+              _NotificationPreferenceTile(
+                title: _notificationCategoryTitle(category),
+                subtitle: _notificationCategorySubtitle(category),
+                value: preferences.isEnabled(category),
+                onChanged: (value) => onCategoryChanged(category, value),
+              ),
+              if (category != NotificationPreferenceCategory.values.last)
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.3,
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationPreferenceTile extends StatelessWidget {
+  const _NotificationPreferenceTile({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      value: value,
+      onChanged: onChanged,
+      title: Text(
+        title,
+        style: Theme.of(
+          context,
+        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(subtitle),
+    );
+  }
+}
+
+class _NotificationMetaRow extends StatelessWidget {
+  const _NotificationMetaRow({required this.title, required this.value});
+
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 94,
+          child: Text(
+            title,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -811,6 +1211,28 @@ String _routePersonName(NotificationItem item) {
   }
 
   return 'Profile';
+}
+
+String _notificationCategoryTitle(NotificationPreferenceCategory category) {
+  return switch (category) {
+    NotificationPreferenceCategory.messages => 'Messages',
+    NotificationPreferenceCategory.matchesActivity => 'Matches & activity',
+    NotificationPreferenceCategory.safetyAccount => 'Safety & account',
+    NotificationPreferenceCategory.marketingProduct => 'Marketing & product',
+  };
+}
+
+String _notificationCategorySubtitle(NotificationPreferenceCategory category) {
+  return switch (category) {
+    NotificationPreferenceCategory.messages =>
+      'Replies, conversation nudges, and message alerts.',
+    NotificationPreferenceCategory.matchesActivity =>
+      'Matches, likes, standouts, and broader activity updates.',
+    NotificationPreferenceCategory.safetyAccount =>
+      'Verification, moderation, account health, and safety notices.',
+    NotificationPreferenceCategory.marketingProduct =>
+      'Product launches, promos, and non-essential announcements.',
+  };
 }
 
 String _formatFriendlyNotificationTimestamp(DateTime value, {DateTime? now}) {

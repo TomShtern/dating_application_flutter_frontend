@@ -92,7 +92,7 @@ class _ConversationThreadScreenState
   @override
   Widget build(BuildContext context) {
     final threadState = ref.watch(
-      conversationThreadProvider(widget.conversation.id),
+      conversationThreadMessagesProvider(widget.conversation.id),
     );
     final threadController = ref.read(
       conversationThreadControllerProvider(widget.conversation.id),
@@ -143,12 +143,14 @@ class _ConversationThreadScreenState
                               currentUserId: widget.currentUser.id,
                               viewportHeight: constraints.maxHeight,
                               onRefresh: threadController.refresh,
+                              onRetryFailedMessage: _handleRetryMessage,
                             )
                           : _MessageList(
                               scrollController: _messagesScrollController,
                               messages: messages,
                               currentUserId: widget.currentUser.id,
                               onRefresh: threadController.refresh,
+                              onRetryFailedMessage: _handleRetryMessage,
                             );
                     },
                     loading: () => const AppAsyncState.loading(
@@ -298,6 +300,8 @@ class _ConversationThreadScreenState
       return;
     }
 
+    _messageController.clear();
+
     setState(() {
       _isSending = true;
     });
@@ -311,8 +315,6 @@ class _ConversationThreadScreenState
         return;
       }
 
-      _messageController.clear();
-      FocusScope.of(context).unfocus();
       setState(() {});
     } on ApiError catch (error) {
       if (!mounted) {
@@ -329,6 +331,44 @@ class _ConversationThreadScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to send the message right now.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleRetryMessage(MessageDto message) async {
+    if (_isSending) {
+      return;
+    }
+
+    setState(() {
+      _isSending = true;
+    });
+
+    try {
+      await ref
+          .read(conversationThreadControllerProvider(widget.conversation.id))
+          .retryMessage(message);
+    } on ApiError catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to retry the message right now.')),
       );
     } finally {
       if (mounted) {
@@ -632,12 +672,14 @@ class _MessageList extends StatelessWidget {
     required this.messages,
     required this.currentUserId,
     required this.onRefresh,
+    required this.onRetryFailedMessage,
   });
 
   final ScrollController scrollController;
   final List<MessageDto> messages;
   final String currentUserId;
   final Future<void> Function() onRefresh;
+  final ValueChanged<MessageDto> onRetryFailedMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -659,7 +701,10 @@ class _MessageList extends StatelessWidget {
             padding: EdgeInsets.only(top: entry.topSpacing),
             child: entry.isDayDivider
                 ? _MessageDayDivider(label: entry.dayLabel!)
-                : _MessageBubble(entry: entry),
+                : _MessageBubble(
+                    entry: entry,
+                    onRetryFailedMessage: onRetryFailedMessage,
+                  ),
           );
         },
       ),
@@ -674,6 +719,7 @@ class _SparseMessageList extends StatelessWidget {
     required this.currentUserId,
     required this.viewportHeight,
     required this.onRefresh,
+    required this.onRetryFailedMessage,
   });
 
   final ScrollController scrollController;
@@ -681,6 +727,7 @@ class _SparseMessageList extends StatelessWidget {
   final String currentUserId;
   final double viewportHeight;
   final Future<void> Function() onRefresh;
+  final ValueChanged<MessageDto> onRetryFailedMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -706,7 +753,10 @@ class _SparseMessageList extends StatelessWidget {
                   padding: EdgeInsets.only(top: entry.topSpacing),
                   child: entry.isDayDivider
                       ? _MessageDayDivider(label: entry.dayLabel!)
-                      : _MessageBubble(entry: entry),
+                      : _MessageBubble(
+                          entry: entry,
+                          onRetryFailedMessage: onRetryFailedMessage,
+                        ),
                 ),
             ],
           ),
@@ -845,9 +895,13 @@ class _MessageDayDivider extends StatelessWidget {
 }
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.entry});
+  const _MessageBubble({
+    required this.entry,
+    required this.onRetryFailedMessage,
+  });
 
   final _ConversationEntry entry;
+  final ValueChanged<MessageDto> onRetryFailedMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -903,7 +957,16 @@ class _MessageBubble extends StatelessWidget {
                     height: 1.34,
                   ),
                 ),
-                if (entry.showTimestamp) ...[
+                if (message.localState != MessageLocalState.none) ...[
+                  const SizedBox(height: 8),
+                  _MessageLocalStateRow(
+                    message: message,
+                    foregroundColor: entry.isOutgoing
+                        ? outgoingTextColor.withValues(alpha: 0.88)
+                        : colorScheme.onSurfaceVariant,
+                    onRetryFailedMessage: onRetryFailedMessage,
+                  ),
+                ] else if (entry.showTimestamp) ...[
                   const SizedBox(height: 6),
                   Align(
                     alignment: entry.isOutgoing
@@ -925,6 +988,68 @@ class _MessageBubble extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MessageLocalStateRow extends StatelessWidget {
+  const _MessageLocalStateRow({
+    required this.message,
+    required this.foregroundColor,
+    required this.onRetryFailedMessage,
+  });
+
+  final MessageDto message;
+  final Color foregroundColor;
+  final ValueChanged<MessageDto> onRetryFailedMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (message.localState == MessageLocalState.sending) ...[
+          SizedBox.square(
+            dimension: 12,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Sending…',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: foregroundColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ] else if (message.localState == MessageLocalState.failed) ...[
+          Icon(Icons.error_outline_rounded, size: 14, color: foregroundColor),
+          const SizedBox(width: 6),
+          Text(
+            'Not sent',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: foregroundColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 4),
+          TextButton(
+            onPressed: () => onRetryFailedMessage(message),
+            style: TextButton.styleFrom(
+              foregroundColor: foregroundColor,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              minimumSize: const Size(0, 28),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -827,15 +827,20 @@ class ApiClient {
   /// Uploads a photo. Caller supplies a `MultipartFile` (built from
   /// bytes or a file path) so the device-specific image picker can be
   /// wired in separately without touching the API layer.
+  ///
+  /// [onSendProgress] is an optional callback that receives (sent, total)
+  /// bytes during upload, used to show progress in the UI.
   Future<PhotoUploadResponse> uploadPhoto({
     required String userId,
     required MultipartFile photo,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.userPhotos(userId),
         data: FormData.fromMap({'photo': photo}),
         options: Options(extra: {'userId': userId}),
+        onSendProgress: onSendProgress,
       );
 
       return PhotoUploadResponse.fromJson(

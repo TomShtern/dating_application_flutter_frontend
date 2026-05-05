@@ -25,6 +25,15 @@ class PhotoEditController {
 
   final Ref _ref;
 
+  /// Uploads a photo chosen via [XFile].
+  ///
+  /// Image Picker with `imageQuality` set re-encodes the image on most
+  /// platforms, which strips EXIF metadata as a side effect. This is the
+  /// frontend's best-effort EXIF removal. The backend remains the
+  /// enforcement point for content policy and full EXIF hygiene.
+  ///
+  /// For progress tracking, retry on failure, and server rejection reasons,
+  /// use [PhotoUploadNotifier] from `photo_upload_provider.dart` instead.
   Future<void> uploadFromXFile(XFile file) async {
     final currentUser = await user_guard.requireSelectedUser(_ref);
     final apiClient = _ref.read(apiClientProvider);

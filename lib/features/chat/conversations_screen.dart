@@ -16,13 +16,41 @@ const _conversationTeal = Color(0xFF009688);
 const _conversationSky = Color(0xFF188DC8);
 const _conversationSlate = Color(0xFF596579);
 
-class ConversationsScreen extends ConsumerWidget {
+class ConversationsScreen extends ConsumerStatefulWidget {
   const ConversationsScreen({super.key, required this.currentUser});
 
   final UserSummary currentUser;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConversationsScreen> createState() =>
+      _ConversationsScreenState();
+}
+
+class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
+  late final TextEditingController _searchController;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final conversationsState = ref.watch(conversationsProvider);
     final controller = ref.read(conversationsControllerProvider);
     final conversationCount = conversationsState.maybeWhen(
@@ -53,12 +81,39 @@ class ConversationsScreen extends ConsumerWidget {
               onRefresh: controller.refresh,
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppTheme.pagePadding,
+              12,
+              AppTheme.pagePadding,
+              0,
+            ),
+            child: _ConversationSearchField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.trim();
+                });
+              },
+              onClear: _clearSearch,
+            ),
+          ),
           SizedBox(height: AppTheme.sectionSpacing(compact: true)),
           Expanded(
             child: RefreshIndicator(
               onRefresh: controller.refresh,
               child: conversationsState.when(
                 data: (conversations) {
+                  final filteredConversations = conversations
+                      .where(
+                        (summary) => _matchesConversationSearch(
+                          summary,
+                          currentUserId: widget.currentUser.id,
+                          query: _searchQuery,
+                        ),
+                      )
+                      .toList(growable: false);
+
                   return ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(
@@ -70,23 +125,30 @@ class ConversationsScreen extends ConsumerWidget {
                     children: [
                       if (conversations.isEmpty)
                         _ConversationsEmptyState(onRefresh: controller.refresh)
+                      else if (filteredConversations.isEmpty)
+                        _ConversationSearchEmptyState(
+                          query: _searchQuery,
+                          onClear: _clearSearch,
+                        )
                       else ...[
                         AppGroupLabel(
-                          title: 'Open conversations',
+                          title: _searchQuery.isEmpty
+                              ? 'Open conversations'
+                              : 'Matching conversations',
                           accentColor: _conversationTeal,
-                          countText: '${conversations.length}',
+                          countText: '${filteredConversations.length}',
                         ),
                         SizedBox(height: AppTheme.listSpacing()),
                         for (
                           var index = 0;
-                          index < conversations.length;
+                          index < filteredConversations.length;
                           index++
                         ) ...[
                           _ConversationCard(
-                            currentUser: currentUser,
-                            summary: conversations[index],
+                            currentUser: widget.currentUser,
+                            summary: filteredConversations[index],
                           ),
-                          if (index != conversations.length - 1)
+                          if (index != filteredConversations.length - 1)
                             SizedBox(height: AppTheme.listSpacing()),
                         ],
                       ],
@@ -126,6 +188,65 @@ class ConversationsScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ConversationSearchField extends StatelessWidget {
+  const _ConversationSearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: Color.alphaBlend(
+        _conversationTeal.withValues(alpha: isDark ? 0.10 : 0.04),
+        colorScheme.surfaceContainerLow,
+      ),
+      borderRadius: AppTheme.panelRadius,
+      clipBehavior: Clip.antiAlias,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: AppTheme.panelRadius,
+          border: Border.all(
+            color: _conversationTeal.withValues(alpha: isDark ? 0.18 : 0.10),
+          ),
+        ),
+        child: TextField(
+          controller: controller,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            hintText: 'Search loaded chats',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: controller.text.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear chat search',
+                    onPressed: onClear,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -351,6 +472,82 @@ class _ConversationsEmptyState extends StatelessWidget {
   }
 }
 
+class _ConversationSearchEmptyState extends StatelessWidget {
+  const _ConversationSearchEmptyState({
+    required this.query,
+    required this.onClear,
+  });
+
+  final String query;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Color.alphaBlend(
+          _conversationSky.withValues(alpha: isDark ? 0.08 : 0.03),
+          Color.alphaBlend(
+            _conversationTeal.withValues(alpha: isDark ? 0.12 : 0.05),
+            colorScheme.surfaceContainerLow,
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(compact: true),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: _conversationSky.withValues(alpha: isDark ? 0.20 : 0.10),
+                borderRadius: const BorderRadius.all(Radius.circular(14)),
+              ),
+              child: SizedBox.square(
+                dimension: 44,
+                child: Icon(
+                  Icons.search_off_rounded,
+                  color: isDark ? const Color(0xFF9FD2EF) : _conversationSky,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No chats match “$query”',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Search looks through the conversations already loaded on this device.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: onClear,
+                    icon: const Icon(Icons.close_rounded),
+                    label: const Text('Clear search'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ConversationCard extends StatelessWidget {
   const _ConversationCard({required this.currentUser, required this.summary});
 
@@ -373,8 +570,8 @@ class _ConversationCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final spec = _ConversationVisualSpec.forSummary(summary);
-    final preview = _conversationPreview(summary);
-    final messageSummary = _conversationMessageSummary(summary.messageCount);
+    final preview = _conversationPreview(summary, currentUser.id);
+    final messageSummary = _conversationMessageSummary(summary);
     final timestamp = formatShortDate(summary.lastMessageAt);
 
     return Material(
@@ -424,14 +621,22 @@ class _ConversationCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              timestamp,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
+                            if (summary.unreadCount > 0) ...[
+                              const SizedBox(width: 8),
+                              _ConversationUnreadBadge(
+                                count: summary.unreadCount,
                               ),
-                            ),
+                            ],
+                            if (_hasConversationTimestamp(summary)) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                timestamp,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 5),
@@ -440,7 +645,12 @@ class _ConversationCard extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                            color: summary.unreadCount > 0
+                                ? colorScheme.onSurface
+                                : colorScheme.onSurfaceVariant,
+                            fontWeight: summary.unreadCount > 0
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                             height: 1.35,
                           ),
                         ),
@@ -576,6 +786,43 @@ class _ConversationInfoPill extends StatelessWidget {
   }
 }
 
+class _ConversationUnreadBadge extends StatelessWidget {
+  const _ConversationUnreadBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: _conversationTeal,
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
+        boxShadow: [
+          BoxShadow(
+            color: _conversationTeal.withValues(alpha: isDark ? 0.20 : 0.14),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          count == 1 ? '1 unread' : '$count unread',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ConversationVisualSpec {
   const _ConversationVisualSpec({
     required this.color,
@@ -588,6 +835,14 @@ class _ConversationVisualSpec {
   final IconData icon;
 
   static _ConversationVisualSpec forSummary(ConversationSummary summary) {
+    if (summary.unreadCount > 0) {
+      return const _ConversationVisualSpec(
+        color: _conversationTeal,
+        foregroundColor: _conversationTeal,
+        icon: Icons.mark_chat_unread_rounded,
+      );
+    }
+
     if (summary.messageCount == 0) {
       return const _ConversationVisualSpec(
         color: _conversationSky,
@@ -604,7 +859,13 @@ class _ConversationVisualSpec {
   }
 }
 
-String _conversationPreview(ConversationSummary summary) {
+String _conversationPreview(ConversationSummary summary, String currentUserId) {
+  final preview = summary.lastMessagePreview?.trim();
+  if (preview != null && preview.isNotEmpty) {
+    final senderCue = _conversationSenderCue(summary, currentUserId);
+    return senderCue == null ? preview : '$senderCue: $preview';
+  }
+
   return switch (summary.messageCount) {
     0 => 'Send the first message when you are ready.',
     1 => 'Conversation started.',
@@ -612,12 +873,61 @@ String _conversationPreview(ConversationSummary summary) {
   };
 }
 
-String _conversationMessageSummary(int messageCount) {
-  return switch (messageCount) {
+String _conversationMessageSummary(ConversationSummary summary) {
+  if (summary.unreadCount > 0) {
+    return summary.unreadCount == 1
+        ? '1 unread'
+        : '${summary.unreadCount} unread';
+  }
+
+  return switch (summary.messageCount) {
     0 => 'Waiting to start',
     1 => '1 message',
     final count => '$count messages',
   };
+}
+
+String? _conversationSenderCue(
+  ConversationSummary summary,
+  String currentUserId,
+) {
+  if (summary.lastSenderId == currentUserId) {
+    return 'You';
+  }
+
+  if (summary.lastSenderId == summary.otherUserId) {
+    return summary.otherUserName;
+  }
+
+  final lastSenderName = summary.lastSenderName?.trim();
+  if (lastSenderName != null && lastSenderName.isNotEmpty) {
+    return lastSenderName;
+  }
+
+  return null;
+}
+
+bool _matchesConversationSearch(
+  ConversationSummary summary, {
+  required String currentUserId,
+  required String query,
+}) {
+  final trimmedQuery = query.trim().toLowerCase();
+  if (trimmedQuery.isEmpty) {
+    return true;
+  }
+
+  final haystacks = <String>[
+    summary.otherUserName,
+    summary.lastMessagePreview ?? '',
+    _conversationSenderCue(summary, currentUserId) ?? '',
+  ];
+
+  return haystacks.any((value) => value.toLowerCase().contains(trimmedQuery));
+}
+
+bool _hasConversationTimestamp(ConversationSummary summary) {
+  return summary.lastMessageAt.millisecondsSinceEpoch > 0;
 }
 
 Color _conversationSurfaceColor(

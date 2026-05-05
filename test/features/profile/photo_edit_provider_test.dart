@@ -229,6 +229,7 @@ class _FakeApiClient extends ApiClient {
   Future<PhotoUploadResponse> uploadPhoto({
     required String userId,
     required MultipartFile photo,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     uploadCalls.add((userId, photo));
     if (uploadResponse == null) {
