@@ -23,9 +23,9 @@ const _profileSky = Color(0xFF188DC8);
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen.currentUser({super.key})
-      : userId = null,
-        userName = null,
-        showPresentationContext = true;
+    : userId = null,
+      userName = null,
+      showPresentationContext = true;
 
   const ProfileScreen.otherUser({
     super.key,
@@ -224,7 +224,7 @@ class _CurrentUserProfileIntroCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Keep photos, bio, and preferences current.',
+                        'Edit photos, bio, and discovery basics.',
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],
@@ -295,7 +295,9 @@ class _ProfileContent extends StatelessWidget {
             displayName: _displayName(detail),
           ),
         ],
-        if (!isCurrentUser && presentationContextState != null && showPresentationContext) ...[
+        if (!isCurrentUser &&
+            presentationContextState != null &&
+            showPresentationContext) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
           _PresentationContextSection(state: presentationContextState!),
         ],
@@ -822,7 +824,7 @@ class _ProfileDetailsCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         isCurrentUser
-                            ?                              'Discovery preferences.'
+                            ? 'Shared discovery basics.'
                             : 'The basics this person has chosen to share.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
@@ -832,55 +834,71 @@ class _ProfileDetailsCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final crossAxisCount = constraints.maxWidth >= 400 ? 3 : 2;
-                  final items = [
-                    _ProfileFactTile(
-                      icon: Icons.person_outline_rounded,
-                      title: 'Gender',
-                      value: _gender(detail),
-                      color: _profileSky,
-                    ),
-                    _ProfileFactTile(
-                      icon: Icons.favorite_outline_rounded,
-                      title: 'Interested in',
-                      value: _interestedIn(detail),
-                      color: _profileRose,
-                    ),
-                    _ProfileFactTile(
-                      icon: Icons.location_on_outlined,
-                      title: 'Location',
-                      value: _approximateLocation(detail),
-                      color: _profileMint,
-                    ),
-                    _ProfileFactTile(
-                      icon: Icons.route_outlined,
-                      title: 'Distance',
-                      value: _distancePreference(detail),
-                      color: _profileViolet,
-                    ),
-                    _ProfileFactTile(
-                      icon: Icons.verified_user_outlined,
-                      title: 'Status',
-                      value: _state(detail),
-                      color: _profileSky,
-                    ),
-                  ];
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: items.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      mainAxisExtent: 120,
-                    ),
-                    itemBuilder: (context, index) => items[index],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final items = [
+                  _ProfileFactTile(
+                    icon: Icons.person_outline_rounded,
+                    title: 'Gender',
+                    value: _gender(detail),
+                    color: _profileSky,
+                  ),
+                  _ProfileFactTile(
+                    icon: Icons.favorite_outline_rounded,
+                    title: 'Interested in',
+                    value: _interestedIn(detail),
+                    color: _profileRose,
+                  ),
+                  _ProfileFactTile(
+                    icon: Icons.location_on_outlined,
+                    title: 'Location',
+                    value: _approximateLocation(detail),
+                    color: _profileMint,
+                  ),
+                  _ProfileFactTile(
+                    icon: Icons.route_outlined,
+                    title: 'Distance',
+                    value: _distancePreference(detail),
+                    color: _profileViolet,
+                  ),
+                  _ProfileFactTile(
+                    icon: Icons.verified_user_outlined,
+                    title: 'Status',
+                    value: _state(detail),
+                    color: _profileSky,
+                  ),
+                ];
+
+                final rows = <Widget>[];
+                for (var index = 0; index < items.length; index += 2) {
+                  final first = items[index];
+                  final second = index + 1 < items.length
+                      ? items[index + 1]
+                      : null;
+
+                  rows.add(
+                    second == null
+                        ? first
+                        : Row(
+                            children: [
+                              Expanded(child: first),
+                              const SizedBox(width: 10),
+                              Expanded(child: second),
+                            ],
+                          ),
                   );
-                },
-              ),
+                }
+
+                return Column(
+                  children: [
+                    for (var index = 0; index < rows.length; index++) ...[
+                      if (index > 0) const SizedBox(height: 10),
+                      rows[index],
+                    ],
+                  ],
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -905,37 +923,50 @@ class _ProfileFactTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 142),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: isDark ? 0.14 : 0.06),
-          borderRadius: AppTheme.cardRadius,
-          border: Border.all(color: color.withValues(alpha: 0.14)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.14 : 0.06),
+        borderRadius: AppTheme.cardRadius,
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDark ? 0.18 : 0.10),
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
               ),
-              const SizedBox(height: 3),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.bodyMedium,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Icon(icon, size: 16, color: color),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

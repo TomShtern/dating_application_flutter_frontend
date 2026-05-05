@@ -47,8 +47,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     final progressValue = confirmResult?.verified == true
         ? 1.0
         : startResult == null
-        ? 0.5
-        : 0.82;
+        ? 0.34
+        : 0.76;
     return Scaffold(
       body: SafeArea(
         child: ListView(
@@ -61,7 +61,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
               icon: Icons.verified_user_rounded,
               title: 'Verify your account',
               description:
-                  'Confirm your email or phone. Verified profiles get a badge and build more trust with matches.',
+                  'Confirm your email or phone in two short steps. Verified profiles show a clearer trust signal to matches.',
               iconBackgroundColor: _verificationTrust.withValues(alpha: 0.12),
               iconColor: _verificationTrust,
               badges: const [
@@ -71,11 +71,11 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                 ),
                 ShellHeroPill(
                   icon: Icons.security_outlined,
-                  label: 'More trust',
+                  label: 'Trust signal',
                 ),
                 ShellHeroPill(
-                  icon: Icons.favorite_outlined,
-                  label: 'Better matches',
+                  icon: Icons.timelapse_rounded,
+                  label: 'Two quick steps',
                 ),
               ],
             ),
@@ -91,7 +91,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             ),
             const SizedBox(height: AppTheme.compactCardGap),
             _VerificationStepCard(
-              stepLabel: 'Step 1',
+              stepLabel: 'Request code',
               title: 'Start verification',
               description:
                   'Choose email or phone, then we\'ll send a code there.',
@@ -152,7 +152,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             if (startResult != null) ...[
               const SizedBox(height: AppTheme.compactCardGap),
               _VerificationStepCard(
-                stepLabel: 'Step 2',
+                stepLabel: 'Confirm code',
                 title: 'Enter the code',
                 description:
                     'Enter the code sent to ${startResult.contact} to finish verifying your ${formatDisplayLabel(startResult.method).toLowerCase()}.',
@@ -343,10 +343,14 @@ ButtonStyle _verificationButtonStyle(BuildContext context) {
 
       return Colors.white;
     }),
+    minimumSize: const WidgetStatePropertyAll(Size.fromHeight(48)),
+    shape: const WidgetStatePropertyAll(
+      RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+      ),
+    ),
   );
 }
-
-
 
 class _VerificationProgressBar extends StatelessWidget {
   const _VerificationProgressBar({required this.value, required this.color});

@@ -10,7 +10,6 @@ import '../../models/user_summary.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../../shared/widgets/app_async_state.dart';
-import '../../shared/widgets/app_route_header.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
@@ -110,100 +109,16 @@ class _ConversationThreadScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AppRouteHeader(
-                title: 'Conversation',
-                subtitle: 'Back to chats',
-                trailing: AppOverflowMenuButton<_ConversationMenuAction>(
-                  tooltip: 'Conversation options',
-                  items: const [
-                    PopupMenuItem<_ConversationMenuAction>(
-                      value: _ConversationMenuAction.viewProfile,
-                      child: Text('View profile'),
-                    ),
-                    PopupMenuItem<_ConversationMenuAction>(
-                      value: _ConversationMenuAction.safetyActions,
-                      child: Text('Safety actions'),
-                    ),
-                    PopupMenuItem<_ConversationMenuAction>(
-                      value: _ConversationMenuAction.refresh,
-                      child: Text('Refresh messages'),
-                    ),
-                  ],
-                  onSelected: _handleConversationMenuAction,
-                ),
-              ),
-              const SizedBox(height: 6),
-              InkWell(
-                onTap: () => _handleConversationMenuAction(
+              _ConversationHeaderCard(
+                otherUserName: widget.conversation.otherUserName,
+                showActivityIndicator: _showActivityIndicator,
+                onBack: () => Navigator.of(context).maybePop(),
+                onOpenProfile: () => _handleConversationMenuAction(
                   _ConversationMenuAction.viewProfile,
                 ),
-                borderRadius: AppTheme.cardRadius,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 6,
-                  ),
-                  child: Row(
-                    children: [
-                      UserAvatar(
-                        name: widget.conversation.otherUserName,
-                        radius: 18,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.conversation.otherUserName,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            if (_showActivityIndicator)
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.onSurfaceVariant,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Flexible(
-                                    child: Text(
-                                      'Status unavailable',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            else
-                              Text(
-                                'Tap name to view profile',
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                onMenuSelected: _handleConversationMenuAction,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) => threadState.when(
@@ -267,78 +182,63 @@ class _ConversationThreadScreenState
                   ),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            tooltip: 'Attachments (coming soon)',
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Media attachments coming soon.'),
-                                ),
-                              );
-                            },
-                            icon: Icon(
-                              Icons.add_rounded,
-                              color: _threadTeal.withValues(alpha: 0.78),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: TextField(
-                              controller: _messageController,
-                              minLines: 1,
-                              maxLines: 3,
-                              textInputAction: TextInputAction.send,
-                              onChanged: (_) => setState(() {}),
-                              onSubmitted: (_) => _handleSend(),
-                              decoration: InputDecoration(
-                                hintText:
-                                    'Message ${widget.conversation.otherUserName}',
-                                isDense: true,
-                                filled: false,
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 8,
-                                ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _messageController,
+                            minLines: 1,
+                            maxLines: 3,
+                            textInputAction: TextInputAction.send,
+                            onChanged: (_) => setState(() {}),
+                            onSubmitted: (_) => _handleSend(),
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Message ${widget.conversation.otherUserName}',
+                              isDense: true,
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 8,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          IconButton.filled(
-                            tooltip: _isSending
-                                ? 'Sending message…'
-                                : 'Send message',
-                            onPressed: trimmedMessage.isEmpty || _isSending
-                                ? null
-                                : _handleSend,
-                            style: IconButton.styleFrom(
-                              backgroundColor: _threadTeal,
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor:
-                                  colorScheme.surfaceContainerHighest,
-                              disabledForegroundColor: colorScheme
-                                  .onSurfaceVariant
-                                  .withValues(alpha: 0.62),
-                            ),
-                            icon: _isSending
-                                ? const SizedBox.square(
-                                    dimension: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                : const Icon(Icons.arrow_upward_rounded),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          tooltip: _isSending
+                              ? 'Sending message…'
+                              : 'Send message',
+                          onPressed: trimmedMessage.isEmpty || _isSending
+                              ? null
+                              : _handleSend,
+                          style: IconButton.styleFrom(
+                            backgroundColor: _threadTeal,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                            disabledForegroundColor: colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.62),
                           ),
-                        ],
-                      ),
+                          icon: _isSending
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Icon(Icons.arrow_upward_rounded),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -520,6 +420,207 @@ class _ConversationThreadScreenState
         curve: Curves.easeOut,
       );
     });
+  }
+}
+
+class _ConversationHeaderCard extends StatelessWidget {
+  const _ConversationHeaderCard({
+    required this.otherUserName,
+    required this.showActivityIndicator,
+    required this.onBack,
+    required this.onOpenProfile,
+    required this.onMenuSelected,
+  });
+
+  final String otherUserName;
+  final bool showActivityIndicator;
+  final VoidCallback onBack;
+  final VoidCallback onOpenProfile;
+  final ValueChanged<_ConversationMenuAction> onMenuSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Color.alphaBlend(
+          _threadSky.withValues(alpha: isDark ? 0.10 : 0.035),
+          Color.alphaBlend(
+            _threadTeal.withValues(alpha: isDark ? 0.10 : 0.03),
+            colorScheme.surfaceContainerLow,
+          ),
+        ),
+        prominent: true,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Back to chats',
+                  onPressed: onBack,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Conversation',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Back to chats',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AppOverflowMenuButton<_ConversationMenuAction>(
+                  tooltip: 'Conversation options',
+                  items: const [
+                    PopupMenuItem<_ConversationMenuAction>(
+                      value: _ConversationMenuAction.viewProfile,
+                      child: Text('View profile'),
+                    ),
+                    PopupMenuItem<_ConversationMenuAction>(
+                      value: _ConversationMenuAction.safetyActions,
+                      child: Text('Safety actions'),
+                    ),
+                    PopupMenuItem<_ConversationMenuAction>(
+                      value: _ConversationMenuAction.refresh,
+                      child: Text('Refresh messages'),
+                    ),
+                  ],
+                  onSelected: onMenuSelected,
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+              child: Divider(
+                height: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.22),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onOpenProfile,
+                borderRadius: AppTheme.cardRadius,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
+                  child: Row(
+                    children: [
+                      UserAvatar(name: otherUserName, radius: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              otherUserName,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (showActivityIndicator)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.onSurfaceVariant,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      'Status unavailable',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              Text(
+                                'Tap name to view profile',
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: _threadTeal.withValues(
+                            alpha: isDark ? 0.20 : 0.10,
+                          ),
+                          borderRadius: AppTheme.chipRadius,
+                          border: Border.all(
+                            color: _threadTeal.withValues(alpha: 0.16),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.person_outline_rounded,
+                                size: 16,
+                                color: _threadTeal,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Open profile',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: _threadTeal,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -763,8 +864,8 @@ class _MessageBubble extends StatelessWidget {
         ? BoxDecoration(
             gradient: LinearGradient(
               colors: isDark
-                  ? const [Color(0xFF0A4A4F), Color(0xFF126A72)]
-                  : const [Color(0xFFA8E0D8), Color(0xFF90D5CB)],
+                  ? const [Color(0xFF0B5156), Color(0xFF15757E)]
+                  : const [Color(0xFF96DBD2), Color(0xFF74C8BE)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

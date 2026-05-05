@@ -322,12 +322,12 @@ class _BrowseIntroCard extends StatelessWidget {
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(
         context,
-        gradient: LinearGradient(
-          colors: isDark
-              ? const [Color(0xFF252534), Color(0xFF1E313A), Color(0xFF343226)]
-              : const [Color(0xFFFFF3E6), Color(0xFFEAF6FF), Color(0xFFF4F0FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: Color.alphaBlend(
+          _browseSky.withValues(alpha: isDark ? 0.10 : 0.04),
+          Color.alphaBlend(
+            _browseAmber.withValues(alpha: isDark ? 0.10 : 0.04),
+            theme.colorScheme.surfaceContainerLow,
+          ),
         ),
         prominent: true,
       ),
@@ -355,20 +355,36 @@ class _BrowseIntroCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    'Discover',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Discover',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Browsing as $currentUserName',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (candidateCount != null)
+                if (candidateCount != null) ...[
                   _BrowseStatusPill(
                     icon: Icons.people_outline_rounded,
-                    label: '$candidateCount ready',
+                    label: candidateCount == 1
+                        ? '1 profile ready'
+                        : '$candidateCount ready',
                     color: _browseSky,
                   ),
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
                 IconButton(
                   tooltip: 'Undo last swipe',
                   onPressed: actionsDisabled ? null : onUndo,
@@ -382,26 +398,49 @@ class _BrowseIntroCard extends StatelessWidget {
               ],
             ),
             if (hasDailyPick || locationMissing) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (hasDailyPick)
-                    const _BrowseStatusPill(
-                      icon: Icons.auto_awesome_rounded,
-                      label: 'Today\'s daily pick',
-                      color: _browseAmber,
-                    ),
-                  if (locationMissing)
-                    const _BrowseStatusPill(
-                      icon: Icons.location_off_outlined,
-                      label: 'Location incomplete',
-                      color: _browseMint,
-                    ),
-                ],
+              const SizedBox(height: 8),
+              Text(
+                locationMissing
+                    ? 'Finish your location so nearby picks stay accurate.'
+                    : 'Today\'s daily pick is waiting below.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DeveloperSessionPanel extends StatelessWidget {
+  const _DeveloperSessionPanel({required this.user});
+
+  final UserSummary user;
+
+  @override
+  Widget build(BuildContext context) {
+    return DeveloperOnlyCalloutCard(
+      title: 'Browse diagnostics',
+      description:
+          '${user.name} is active on this device. Expand this only when you need backend/system health while testing.',
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(top: 12),
+          leading: const Icon(Icons.monitor_heart_outlined),
+          title: const Text('Connection status'),
+          children: [
+            const BackendHealthBanner(),
+            const SizedBox(height: 12),
+            Text(
+              'Check connection health without pulling attention away from the next profile.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
         ),
       ),
@@ -445,38 +484,6 @@ class _BrowseStatusPill extends StatelessWidget {
                 color: color,
                 fontWeight: FontWeight.w700,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DeveloperSessionPanel extends StatelessWidget {
-  const _DeveloperSessionPanel({required this.user});
-
-  final UserSummary user;
-
-  @override
-  Widget build(BuildContext context) {
-    return DeveloperOnlyCalloutCard(
-      title: 'Browse diagnostics',
-      description:
-          '${user.name} is active on this device. Expand this only when you need backend/system health while testing.',
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: EdgeInsets.zero,
-          childrenPadding: const EdgeInsets.only(top: 12),
-          leading: const Icon(Icons.monitor_heart_outlined),
-          title: const Text('Connection status'),
-          children: [
-            const BackendHealthBanner(),
-            const SizedBox(height: 12),
-            Text(
-              'Check connection health without pulling attention away from the next profile.',
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),
@@ -578,17 +585,16 @@ class _BrowseContent extends ConsumerWidget {
                   ),
                 ),
                 SizedBox(height: AppTheme.listSpacing()),
+                if (browse.dailyPick case final dailyPick?) ...[
+                  _DailyPickCard(dailyPick: dailyPick),
+                  SizedBox(height: AppTheme.listSpacing()),
+                ],
                 _BrowsePresentationContext(
                   state: ref.watch(
                     presentationContextProvider(currentCandidate.id),
                   ),
                 ),
-                const SizedBox(height: AppTheme.navBarHeight),
                 SizedBox(height: AppTheme.listSpacing()),
-                if (browse.dailyPick case final dailyPick?) ...[
-                  _DailyPickCard(dailyPick: dailyPick),
-                  SizedBox(height: AppTheme.listSpacing()),
-                ],
                 _DiscoveryShortcutRow(
                   onOpenPendingLikers: onOpenPendingLikers,
                   onOpenStandouts: onOpenStandouts,
@@ -825,41 +831,41 @@ class _BrowseActionBar extends StatelessWidget {
           padding: const EdgeInsets.all(10),
           child: Row(
             children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: isSubmitting ? null : () => onPass(candidate),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(52),
-                            foregroundColor: theme.brightness == Brightness.dark
-                                ? const Color(0xFFEAF4FB)
-                                : const Color(0xFF2A3D4D),
-                            side: BorderSide(
-                              color: theme.brightness == Brightness.dark
-                                  ? const Color(0xFF5A7A8F)
-                                  : const Color(0xFF8BAABD),
-                              width: 1.5,
-                            ),
-                            backgroundColor: theme.brightness == Brightness.dark
-                                ? const Color(0xFF1A2E3A)
-                                : const Color(0xFFF0F7FA),
-                          ),
-                          icon: const Icon(Icons.close_rounded),
-                          label: const Text('Pass'),
-                        ),
-                      ),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: isSubmitting ? null : () => onPass(candidate),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                    foregroundColor: theme.brightness == Brightness.dark
+                        ? const Color(0xFFEAF4FB)
+                        : const Color(0xFF2D4657),
+                    side: BorderSide(
+                      color: theme.brightness == Brightness.dark
+                          ? const Color(0xFF6790A5)
+                          : const Color(0xFF84AAC0),
+                      width: 1.5,
+                    ),
+                    backgroundColor: theme.brightness == Brightness.dark
+                        ? const Color(0xFF16303D)
+                        : const Color(0xFFF2F8FB),
+                  ),
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('Pass'),
+                ),
+              ),
               const SizedBox(width: 10),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: isSubmitting ? null : () => onLike(candidate),
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(52),
-                            backgroundColor: _browseRose,
-                            foregroundColor: Colors.white,
-                          ),
-                          icon: const Icon(Icons.favorite_rounded),
-                          label: const Text('Like'),
-                        ),
-                      ),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: isSubmitting ? null : () => onLike(candidate),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                    backgroundColor: _browseRose,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.favorite_rounded),
+                  label: const Text('Like'),
+                ),
+              ),
             ],
           ),
         ),
@@ -1003,6 +1009,8 @@ class _CandidateCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
+      borderRadius: const BorderRadius.all(Radius.circular(26)),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: const BorderRadius.all(Radius.circular(26)),
         onTap: onViewProfile,
@@ -1019,134 +1027,169 @@ class _CandidateCard extends StatelessWidget {
             prominent: true,
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                PersonMediaThumbnail(
-                  key: ValueKey('browse-candidate-media-${candidate.id}'),
-                  name: candidate.name,
-                  photoUrl: photoUrl,
-                  width: double.infinity,
-                  height: 280,
-                  borderRadius: const BorderRadius.all(Radius.circular(26)),
-                ),
-                Positioned(
-                  top: 14,
-                  left: 14,
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _BrowseQueuePill(
+                Stack(
+                  children: [
+                    PersonMediaThumbnail(
+                      key: ValueKey('browse-candidate-media-${candidate.id}'),
+                      name: candidate.name,
+                      photoUrl: photoUrl,
+                      width: double.infinity,
+                      height: 236,
+                      borderRadius: const BorderRadius.all(Radius.circular(26)),
+                    ),
+                    Positioned(
+                      top: 14,
+                      left: 14,
+                      child: _BrowseQueuePill(
                         label: remainingCount > 1
                             ? '1 of $remainingCount ready'
-                            : 'Ready now',
+                            : '1 ready',
                         color: _browseSky,
                       ),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: SafetyActionsButton(
-                    targetUserId: candidate.id,
-                    targetUserName: candidate.name,
-                  ),
-                ),
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 16,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: photoUrl == null
-                          ? const Color(
-                              0xFF6A7E90,
-                            ).withValues(alpha: isDark ? 0.52 : 0.36)
-                          : Colors.black.withValues(alpha: 0.24),
-                      border: Border.all(
-                        color: Colors.white.withValues(
-                          alpha: photoUrl == null ? 0.18 : 0.12,
-                        ),
-                      ),
-                      borderRadius: const BorderRadius.all(Radius.circular(22)),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            candidate.name,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: SafetyActionsButton(
+                        targetUserId: candidate.id,
+                        targetUserName: candidate.name,
+                      ),
+                    ),
+                    if (photoUrl == null)
+                      Positioned(
+                        left: 16,
+                        right: 16,
+                        bottom: 16,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF4A6577,
+                            ).withValues(alpha: isDark ? 0.62 : 0.48),
+                            borderRadius: AppTheme.cardRadius,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.16),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 4,
-                            children: [
-                              if (candidate.age > 0)
-                                Text(
-                                  'Age ${candidate.age}',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.92),
-                                  ),
-                                ),
-                              if (candidate.approximateLocation != null)
-                                Text(
-                                  candidate.approximateLocation!,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.92),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          if (candidate.summaryLine != null) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              candidate.summaryLine!,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.88),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            child: Text(
+                              'Photo preview unavailable right now',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ],
-                        ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: AppTheme.cardRadius,
+                          onTap: onViewProfile,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                TextButton(
+                                  onPressed: onViewProfile,
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    alignment: Alignment.centerLeft,
+                                    foregroundColor: colorScheme.onSurface,
+                                  ),
+                                  child: Text(
+                                    candidate.name,
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(fontWeight: FontWeight.w800),
+                                  ),
+                                ),
+                                if (candidate.age > 0) ...[
+                                  const SizedBox(height: 4),
+                                  _BrowseStatusPill(
+                                    icon: Icons.cake_outlined,
+                                    label: '${candidate.age}',
+                                    color: _browseAmber,
+                                  ),
+                                ],
+                                if (candidate.summaryLine
+                                    case final summary?) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    summary,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurface,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    FilledButton.tonalIcon(
+                      onPressed: onViewProfile,
+                      style: FilledButton.styleFrom(
+                        foregroundColor: _browseRose,
+                        backgroundColor: _browseRose.withValues(
+                          alpha: isDark ? 0.16 : 0.08,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                      ),
+                      icon: const Icon(Icons.person_outline_rounded, size: 18),
+                      label: const Text('See full profile'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _BrowseStatusPill(
+                      icon: Icons.person_outline_rounded,
+                      label: formatDisplayLabel(candidate.state),
+                      color: stateColor,
+                    ),
+                    if (candidate.approximateLocation != null)
+                      _BrowseStatusPill(
+                        icon: Icons.location_on_outlined,
+                        label: candidate.approximateLocation!,
+                        color: _browseSky,
+                      ),
+                  ],
                 ),
               ],
             ),
-            SizedBox(height: AppTheme.listSpacing()),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _BrowseStatusPill(
-                  icon: Icons.person_outline_rounded,
-                  label: formatDisplayLabel(candidate.state),
-                  color: stateColor,
-                ),
-                if (candidate.approximateLocation != null)
-                  _BrowseStatusPill(
-                    icon: Icons.location_on_outlined,
-                    label: candidate.approximateLocation!,
-                    color: _browseSky,
-                  ),
-              ],
-            ),
-            SizedBox(height: AppTheme.listSpacing(compact: true)),
-          ],
+          ),
         ),
-      ),
-    ),
       ),
     );
   }
@@ -1193,12 +1236,11 @@ class _BrowsePresentationContextContent extends StatelessWidget {
     final visibleTags = tags.take(3).toList(growable: false);
     final remainingTagCount = tags.length - visibleTags.length;
 
-    return _BrowseInlineReasonSection(
+    return _BrowseReasonCard(
+      summary: contextData.summary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _BrowseReasonHeader(),
-          const SizedBox(height: 6),
           Text(contextData.summary),
           if (visibleTags.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -1228,40 +1270,51 @@ class _BrowseWhyPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _BrowseInlineReasonSection(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _BrowseReasonHeader(),
-          const SizedBox(height: 6),
-          Text(message),
-        ],
-      ),
-    );
+    return _BrowseReasonCard(summary: message, child: Text(message));
   }
 }
 
-class _BrowseInlineReasonSection extends StatelessWidget {
-  const _BrowseInlineReasonSection({required this.child});
+class _BrowseReasonCard extends StatelessWidget {
+  const _BrowseReasonCard({required this.summary, required this.child});
 
+  final String summary;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      padding: const EdgeInsets.only(left: 12, top: 10),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: _browseSky.withValues(alpha: 0.10)),
-          left: BorderSide(
-            color: _browseSky.withValues(alpha: isDark ? 0.34 : 0.22),
-            width: 3,
-          ),
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: Color.alphaBlend(
+          _browseSky.withValues(alpha: isDark ? 0.10 : 0.03),
+          theme.colorScheme.surfaceContainerLow,
         ),
       ),
-      child: child,
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          collapsedIconColor: _browseSky,
+          iconColor: _browseSky,
+          title: const _BrowseReasonHeader(),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              summary,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          children: [child],
+        ),
+      ),
     );
   }
 }
@@ -1275,11 +1328,13 @@ class _BrowseReasonHeader extends StatelessWidget {
       children: [
         Icon(Icons.lightbulb_outline_rounded, size: 16, color: _browseSky),
         const SizedBox(width: 8),
-        Text(
-          'Why this profile is shown',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: _browseSky,
-            fontWeight: FontWeight.w800,
+        Flexible(
+          child: Text(
+            'Why this profile is shown',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: _browseSky,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ],

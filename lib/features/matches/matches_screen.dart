@@ -494,18 +494,18 @@ class _MatchCard extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: AppTheme.cardRadius,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: ValueKey('match-profile-${match.matchId}'),
-          borderRadius: AppTheme.cardRadius,
-          onTap: () => _openProfile(context),
-          child: DecoratedBox(
-            decoration: AppTheme.surfaceDecoration(
-              context,
-              color: cardColor,
-              prominent: isNew,
-            ),
+      child: DecoratedBox(
+        decoration: AppTheme.surfaceDecoration(
+          context,
+          color: cardColor,
+          prominent: isNew,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: ValueKey('match-profile-${match.matchId}'),
+            borderRadius: AppTheme.cardRadius,
+            onTap: () => _openProfile(context),
             child: Stack(
               children: [
                 if (isNew)
@@ -576,10 +576,7 @@ class _MatchCard extends StatelessWidget {
                                     ? const Color(0xFFC5CCFF)
                                     : _matchViolet,
                               ),
-                              icon: const Icon(
-                                Icons.forum_rounded,
-                                size: 18,
-                              ),
+                              icon: const Icon(Icons.forum_rounded, size: 18),
                             ),
                           ),
                         ],

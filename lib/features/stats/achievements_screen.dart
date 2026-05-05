@@ -688,14 +688,8 @@ class _AchievementVisualSpec {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final categoryHint = achievement.title.toLowerCase();
-    final categoryColor = switch (categoryHint) {
-      _ when categoryHint.contains('message') || categoryHint.contains('chat') || categoryHint.contains('conversation') => const Color(0xFF009688),
-      _ when categoryHint.contains('match') || categoryHint.contains('like') || categoryHint.contains('heart') => const Color(0xFFD95F84),
-      _ when categoryHint.contains('active') || categoryHint.contains('login') || categoryHint.contains('day') || categoryHint.contains('streak') => const Color(0xFF16A871),
-      _ when categoryHint.contains('photo') || categoryHint.contains('profile') || categoryHint.contains('bio') => const Color(0xFF188DC8),
-      _ => _achievementAmber,
-    };
+    final categoryHint = '${achievement.title} ${achievement.subtitle ?? ''}';
+    final categoryColor = _achievementCategoryColor(categoryHint);
 
     if (achievement.isUnlocked == true) {
       final successColor = AppTheme.activeColor(context);
@@ -712,7 +706,12 @@ class _AchievementVisualSpec {
         iconBackgroundColor: categoryColor.withValues(
           alpha: isDark ? 0.22 : 0.14,
         ),
-        iconColor: isDark ? Color.alphaBlend(Colors.white.withValues(alpha: 0.22), categoryColor) : categoryColor,
+        iconColor: isDark
+            ? Color.alphaBlend(
+                Colors.white.withValues(alpha: 0.22),
+                categoryColor,
+              )
+            : categoryColor,
         statusBackgroundColor: successColor.withValues(
           alpha: isDark ? 0.22 : 0.14,
         ),
@@ -721,7 +720,10 @@ class _AchievementVisualSpec {
           alpha: isDark ? 0.18 : 0.10,
         ),
         progressColor: isDark
-            ? Color.alphaBlend(Colors.white.withValues(alpha: 0.22), categoryColor)
+            ? Color.alphaBlend(
+                Colors.white.withValues(alpha: 0.22),
+                categoryColor,
+              )
             : categoryColor,
         progressTrackColor: categoryColor.withValues(
           alpha: isDark ? 0.24 : 0.12,
@@ -741,7 +743,12 @@ class _AchievementVisualSpec {
         iconBackgroundColor: categoryColor.withValues(
           alpha: isDark ? 0.26 : 0.14,
         ),
-        iconColor: isDark ? Color.alphaBlend(Colors.white.withValues(alpha: 0.22), categoryColor) : categoryColor,
+        iconColor: isDark
+            ? Color.alphaBlend(
+                Colors.white.withValues(alpha: 0.22),
+                categoryColor,
+              )
+            : categoryColor,
         statusBackgroundColor: _achievementPeriwinkle.withValues(
           alpha: isDark ? 0.22 : 0.12,
         ),
@@ -752,7 +759,10 @@ class _AchievementVisualSpec {
           alpha: isDark ? 0.18 : 0.10,
         ),
         progressColor: isDark
-            ? Color.alphaBlend(Colors.white.withValues(alpha: 0.22), categoryColor)
+            ? Color.alphaBlend(
+                Colors.white.withValues(alpha: 0.22),
+                categoryColor,
+              )
             : categoryColor,
         progressTrackColor: categoryColor.withValues(
           alpha: isDark ? 0.24 : 0.12,
@@ -788,4 +798,39 @@ class _AchievementVisualSpec {
       progressBarColor: _achievementSlate,
     );
   }
+}
+
+Color _achievementCategoryColor(String categoryHint) {
+  if (_hasAchievementKeyword(categoryHint, const ['photo', 'profile', 'bio'])) {
+    return const Color(0xFF188DC8);
+  }
+  if (_hasAchievementKeyword(categoryHint, const [
+    'message',
+    'chat',
+    'conversation',
+  ])) {
+    return const Color(0xFF009688);
+  }
+  if (_hasAchievementKeyword(categoryHint, const ['match', 'like', 'heart'])) {
+    return const Color(0xFFD95F84);
+  }
+  if (_hasAchievementKeyword(categoryHint, const [
+    'active',
+    'login',
+    'day',
+    'streak',
+  ])) {
+    return const Color(0xFF16A871);
+  }
+
+  return _achievementAmber;
+}
+
+bool _hasAchievementKeyword(String value, List<String> keywords) {
+  return keywords.any(
+    (keyword) => RegExp(
+      '\\b${RegExp.escape(keyword)}\\b',
+      caseSensitive: false,
+    ).hasMatch(value),
+  );
 }

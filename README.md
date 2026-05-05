@@ -71,15 +71,15 @@ The values below come from `flutter --version --machine`, `pubspec.lock`, `.meta
 | Dart language constraint   | `>=3.11.5 <4.0.0`                          | from `pubspec.lock`                     |
 | Flutter SDK constraint     | `>=3.35.0`                                 | from `pubspec.lock`                     |
 | Android JVM target         | 17                                         | Android build bytecode target, not app source language |
-| Kotlin                     | 2.2.20                                     | Android plugin version                  |
+| Kotlin                     | 2.3.20                                     | Android plugin version                  |
 
 ### Frameworks and build tooling
 
 | Item                         | Exact version | Notes                                                   |
 |------------------------------|---------------|---------------------------------------------------------|
 | Material Design              | 3             | enabled with `uses-material-design: true`               |
-| Gradle Wrapper               | 8.14          | from `android/gradle/wrapper/gradle-wrapper.properties` |
-| Android Gradle Plugin        | 8.11.1        | from `android/settings.gradle.kts`                      |
+| Gradle Wrapper               | 8.14.4        | from `android/gradle/wrapper/gradle-wrapper.properties` |
+| Android Gradle Plugin        | 8.13.2        | from `android/settings.gradle.kts`                      |
 | Flutter Gradle plugin loader | 1.0.0         | from `android/settings.gradle.kts`                      |
 
 ### Direct Dart and Flutter dependencies
@@ -210,6 +210,7 @@ The values below come from `flutter --version --machine`, `pubspec.lock`, `.meta
 ### Version notes
 
 - Android `compileSdk`, `minSdk`, `targetSdk`, and `ndkVersion` are inherited from the Flutter Gradle plugin in Flutter 3.41.7 and are not hard-coded in this repository.
+- Gradle `8.14.4` does not run on JDK 25. Keep any global `JAVA_HOME` needed by other tools unchanged; for Android/Gradle only, use a supported Gradle runtime JDK such as JDK 17, 21, or 24 through Android Studio's Gradle JDK setting, CI runner configuration, a shell-local `JAVA_HOME` override for that command, or a user-local Gradle property. Do not commit machine-specific `org.gradle.java.home` paths to `android/gradle.properties`.
 - iOS and macOS deployment target versions are not explicitly pinned in the committed project files.
 - No project-specific VS Code extension versions are versioned in this repository.
 

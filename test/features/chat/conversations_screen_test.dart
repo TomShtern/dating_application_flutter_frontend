@@ -52,7 +52,8 @@ void main() {
     expect(find.text('Open conversations'), findsOneWidget);
     expect(find.text('Noa'), findsOneWidget);
     expect(find.text('1 conversation ready to pick back up.'), findsOneWidget);
-    expect(find.text('5 messages so far.'), findsOneWidget);
+    expect(find.text('5 messages'), findsOneWidget);
+    expect(find.text('Tap to continue the conversation.'), findsOneWidget);
     expect(find.text('Updated Apr 18, 2026'), findsNothing);
     expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
     expect(find.text('Open'), findsOneWidget);

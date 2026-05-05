@@ -95,10 +95,7 @@ class ProfileEditScreen extends ConsumerWidget {
 }
 
 class _ProfileEditForm extends ConsumerStatefulWidget {
-  const _ProfileEditForm({
-    required this.snapshot,
-    required this.missingFields,
-  });
+  const _ProfileEditForm({required this.snapshot, required this.missingFields});
 
   final ProfileEditSnapshot snapshot;
   final List<MissingField> missingFields;
@@ -236,11 +233,11 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
               ),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     AppTheme.pagePadding,
                     0,
                     AppTheme.pagePadding,
-                    AppTheme.navBarHeight + AppTheme.pagePadding,
+                    AppTheme.bottomActionScrollPadding().bottom,
                   ),
                   children: [
                     if (widget.missingFields.isNotEmpty) ...[
@@ -609,7 +606,9 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
     } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Unable to save your profile right now.')),
+          const SnackBar(
+            content: Text('Unable to save your profile right now.'),
+          ),
         );
       }
     } finally {
@@ -779,11 +778,7 @@ const List<String> _genderOptions = <String>[
   'OTHER',
 ];
 
-const List<String> _paceOptions = <String>[
-  'SLOW',
-  'MODERATE',
-  'FAST',
-];
+const List<String> _paceOptions = <String>['SLOW', 'MODERATE', 'FAST'];
 
 class _ProfileEditHeader extends StatelessWidget {
   const _ProfileEditHeader({required this.snapshot});
@@ -833,7 +828,7 @@ class _ProfileEditHeader extends StatelessWidget {
                     child: UserAvatar(
                       name: readOnly.name.isNotEmpty ? readOnly.name : '?',
                       photoUrl: photoUrl,
-                      radius: 24,
+                      radius: 22,
                     ),
                   ),
                 ),
@@ -843,7 +838,9 @@ class _ProfileEditHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        readOnly.name.isNotEmpty ? readOnly.name : 'No name set',
+                        readOnly.name.isNotEmpty
+                            ? readOnly.name
+                            : 'No name set',
                         style: readOnly.name.isNotEmpty
                             ? theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w800,
@@ -901,7 +898,7 @@ class _ProfileEditHeader extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Edit the core details first. Optional filters stay lower on the page.',
+              'Start with photos and basics. Optional filters stay lower down.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
               ),
@@ -1205,7 +1202,8 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
                 title: const Text('Choose from gallery'),
-                onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(ImageSource.gallery),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_camera_outlined),
@@ -1231,14 +1229,9 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
       return;
     }
 
-    await _runBusy(
-      () async {
-        await ref
-            .read(photoEditControllerProvider)
-            .uploadFromXFile(picked);
-      },
-      successMessage: 'Photo added.',
-    );
+    await _runBusy(() async {
+      await ref.read(photoEditControllerProvider).uploadFromXFile(picked);
+    }, successMessage: 'Photo added.');
   }
 
   Future<void> _handleMakePrimary(String photoId) async {
@@ -1257,9 +1250,7 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Delete photo?'),
-          content: const Text(
-            'This photo will be removed from your profile.',
-          ),
+          content: const Text('This photo will be removed from your profile.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -1295,8 +1286,7 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
       icon: Icons.photo_library_outlined,
       accentColor: _profileSky,
       title: 'Photos',
-      description:
-          'Add up to a few photos. The first one is what people see first.',
+      description: 'Keep your first photo strong and the rest easy to scan.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1341,8 +1331,8 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
     final emptySlots = 4 - data.photos.length;
 
     return Wrap(
-      spacing: 12,
-      runSpacing: 12,
+      spacing: 10,
+      runSpacing: 10,
       children: [
         for (final photo in data.photos)
           _PhotoTile(
@@ -1387,7 +1377,7 @@ class _PhotoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 96,
+      width: 88,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1395,16 +1385,18 @@ class _PhotoTile extends StatelessWidget {
             children: [
               DecoratedBox(
                 decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(24)),
+                  borderRadius: const BorderRadius.all(Radius.circular(22)),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.35),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.35),
                   ),
                 ),
                 child: PersonMediaThumbnail(
                   name: 'Photo',
                   photoUrl: photo.url,
-                  width: 96,
-                  height: 128,
+                  width: 88,
+                  height: 116,
                 ),
               ),
               if (isBusy)
@@ -1412,7 +1404,7 @@ class _PhotoTile extends StatelessWidget {
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.35),
-                      borderRadius: const BorderRadius.all(Radius.circular(24)),
+                      borderRadius: const BorderRadius.all(Radius.circular(22)),
                     ),
                     child: const Center(
                       child: SizedBox.square(
@@ -1471,10 +1463,7 @@ class _PhotoTile extends StatelessWidget {
                       borderRadius: AppTheme.chipRadius,
                     ),
                     child: const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       child: Text(
                         'Primary',
                         style: TextStyle(
@@ -1502,12 +1491,12 @@ class _PhotoEmptySlot extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
-      width: 96,
-      height: 128,
+      width: 88,
+      height: 116,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: _profileSky.withValues(alpha: isDark ? 0.10 : 0.05),
-          borderRadius: const BorderRadius.all(Radius.circular(24)),
+          borderRadius: const BorderRadius.all(Radius.circular(22)),
           border: Border.all(
             color: _profileSky.withValues(alpha: isDark ? 0.28 : 0.18),
             width: 1.5,

@@ -140,7 +140,7 @@ class _LocationCompletionScreenState
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Choose the country and city we should use for nearby matches.',
+                                      'Choose the area you want the app to use for nearby matches.',
                                       style: theme.textTheme.bodyMedium
                                           ?.copyWith(
                                             color: colorScheme.onSurfaceVariant,
@@ -160,8 +160,9 @@ class _LocationCompletionScreenState
                               labelText: 'Country',
                               filled: true,
                               fillColor: isDark
-                                  ? colorScheme.surfaceContainerHigh
-                                      .withValues(alpha: 0.72)
+                                  ? colorScheme.surfaceContainerHigh.withValues(
+                                      alpha: 0.72,
+                                    )
                                   : colorScheme.surface,
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 18,
@@ -232,9 +233,14 @@ class _LocationCompletionScreenState
                               labelText: 'City',
                               hintText: 'Start typing your city',
                               filled: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 14,
+                              ),
                               fillColor: isDark
-                                  ? colorScheme.surfaceContainerHigh
-                                      .withValues(alpha: 0.72)
+                                  ? colorScheme.surfaceContainerHigh.withValues(
+                                      alpha: 0.72,
+                                    )
                                   : colorScheme.surface,
                               border: OutlineInputBorder(
                                 borderRadius: const BorderRadius.all(
@@ -278,9 +284,14 @@ class _LocationCompletionScreenState
                             decoration: InputDecoration(
                               labelText: 'ZIP code (optional)',
                               filled: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 14,
+                              ),
                               fillColor: isDark
-                                  ? colorScheme.surfaceContainerHigh
-                                      .withValues(alpha: 0.72)
+                                  ? colorScheme.surfaceContainerHigh.withValues(
+                                      alpha: 0.72,
+                                    )
                                   : colorScheme.surface,
                               border: OutlineInputBorder(
                                 borderRadius: const BorderRadius.all(
@@ -348,7 +359,7 @@ class _LocationCompletionScreenState
                             child: FilledButton.icon(
                               style: FilledButton.styleFrom(
                                 backgroundColor: _locationSky.withValues(
-                                  alpha: isDark ? 0.22 : 0.12,
+                                  alpha: isDark ? 0.30 : 0.18,
                                 ),
                                 foregroundColor: isDark
                                     ? const Color(0xFF9FD2EF)
@@ -357,6 +368,11 @@ class _LocationCompletionScreenState
                                   color: _locationSky.withValues(alpha: 0.32),
                                 ),
                                 elevation: 0,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(20),
+                                  ),
+                                ),
                               ),
                               onPressed: _saving
                                   ? null
@@ -437,72 +453,103 @@ class _LocationCompletionScreenState
                                     Column(
                                       children: [
                                         for (final city in cities)
-                                          Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              borderRadius:
-                                                  AppTheme.panelRadius,
-                                              onTap: () {
-                                                setState(() {
-                                                  _cityController.text =
-                                                      city.name;
-                                                  _selectedCityLabel =
-                                                      _cityDisplayLabel(city);
-                                                });
-                                              },
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      vertical: 10,
-                                                    ),
-                                                child: Row(
-                                                  children: [
-                                                    const _LocationLeadChip(
-                                                      icon:
-                                                          Icons.place_outlined,
-                                                      color: _locationSky,
-                                                    ),
-                                                    const SizedBox(width: 10),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            city.name,
-                                                            style: theme
-                                                                .textTheme
-                                                                .titleSmall,
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 8,
+                                            ),
+                                            child: DecoratedBox(
+                                              decoration: BoxDecoration(
+                                                color: Color.alphaBlend(
+                                                  _locationSky.withValues(
+                                                    alpha: isDark ? 0.12 : 0.05,
+                                                  ),
+                                                  colorScheme.surface,
+                                                ),
+                                                borderRadius:
+                                                    AppTheme.panelRadius,
+                                                border: Border.all(
+                                                  color: _locationSky
+                                                      .withValues(alpha: 0.12),
+                                                ),
+                                              ),
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: InkWell(
+                                                  borderRadius:
+                                                      AppTheme.panelRadius,
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _cityController.text =
+                                                          city.name;
+                                                      _selectedCityLabel =
+                                                          _cityDisplayLabel(
+                                                            city,
+                                                          );
+                                                    });
+                                                  },
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 12,
+                                                        ),
+                                                    child: Row(
+                                                      children: [
+                                                        const _LocationLeadChip(
+                                                          icon: Icons
+                                                              .place_outlined,
+                                                          color: _locationSky,
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 10,
+                                                        ),
+                                                        Expanded(
+                                                          child: Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                city.name,
+                                                                style: theme
+                                                                    .textTheme
+                                                                    .titleSmall
+                                                                    ?.copyWith(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w700,
+                                                                    ),
+                                                              ),
+                                                              if (city
+                                                                  .district
+                                                                  .isNotEmpty) ...[
+                                                                const SizedBox(
+                                                                  height: 2,
+                                                                ),
+                                                                Text(
+                                                                  city.district,
+                                                                  style: theme
+                                                                      .textTheme
+                                                                      .bodySmall
+                                                                      ?.copyWith(
+                                                                        color: colorScheme
+                                                                            .onSurfaceVariant,
+                                                                      ),
+                                                                ),
+                                                              ],
+                                                            ],
                                                           ),
-                                                          if (city
-                                                              .district
-                                                              .isNotEmpty) ...[
-                                                            const SizedBox(
-                                                              height: 2,
-                                                            ),
-                                                            Text(
-                                                              city.district,
-                                                              style: theme
-                                                                  .textTheme
-                                                                  .bodySmall
-                                                                  ?.copyWith(
-                                                                    color: colorScheme
-                                                                        .onSurfaceVariant,
-                                                                  ),
-                                                            ),
-                                                          ],
-                                                        ],
-                                                      ),
+                                                        ),
+                                                        Icon(
+                                                          Icons
+                                                              .chevron_right_rounded,
+                                                          size: 20,
+                                                          color: colorScheme
+                                                              .onSurfaceVariant,
+                                                        ),
+                                                      ],
                                                     ),
-                                                    Icon(
-                                                      Icons
-                                                          .chevron_right_rounded,
-                                                      size: 20,
-                                                      color: colorScheme
-                                                          .onSurfaceVariant,
-                                                    ),
-                                                  ],
+                                                  ),
                                                 ),
                                               ),
                                             ),

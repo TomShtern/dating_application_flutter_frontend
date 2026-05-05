@@ -32,7 +32,8 @@ class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
   _StandoutsViewMode? _viewModeOverride;
 
   _StandoutsViewMode _resolveViewMode(double width) {
-    return _viewModeOverride ?? _StandoutsViewMode.grid;
+    return _viewModeOverride ??
+        (width < 600 ? _StandoutsViewMode.list : _StandoutsViewMode.grid);
   }
 
   @override
@@ -184,7 +185,7 @@ class _StandoutsHero extends StatelessWidget {
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
@@ -207,7 +208,7 @@ class _StandoutsHero extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 12,
@@ -258,7 +259,7 @@ class _StandoutsGrid extends StatelessWidget {
         final availableWidth =
             constraints.maxWidth - (_standoutsCardGap * (crossAxisCount - 1));
         final tileWidth = availableWidth / crossAxisCount;
-        final mainAxisExtent = tileWidth >= 220 ? 276.0 : 268.0;
+        final mainAxisExtent = tileWidth >= 220 ? 316.0 : 300.0;
 
         return GridView.builder(
           key: const ValueKey('standouts-grid'),
@@ -341,6 +342,8 @@ class _StandoutCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
+        borderRadius: AppTheme.panelRadius,
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: AppTheme.panelRadius,
           onTap: () => _openProfile(context),
@@ -378,6 +381,7 @@ class _StandoutListContent extends StatelessWidget {
     final theme = Theme.of(context);
     final metadata = _standoutFreshness(standout);
     final location = standout.approximateLocation;
+    final reason = _humanizeStandoutReason(standout);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,8 +396,8 @@ class _StandoutListContent extends StatelessWidget {
                 standout.primaryPhotoUrl,
                 standout.photoUrls,
               ),
-              width: 72,
-              height: 92,
+              width: 82,
+              height: 106,
               borderRadius: AppTheme.cardRadius,
             ),
             const SizedBox(width: 12),
@@ -424,7 +428,7 @@ class _StandoutListContent extends StatelessWidget {
                       summary,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall,
+                      style: theme.textTheme.bodySmall?.copyWith(height: 1.28),
                     ),
                   ],
                   const SizedBox(height: 8),
@@ -453,20 +457,37 @@ class _StandoutListContent extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          _humanizeStandoutReason(standout),
-          maxLines: 1,
+          reason,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
+            height: 1.32,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerRight,
-          child: Icon(
-            Icons.chevron_right_rounded,
-            color: _standoutAccentColor(standout).withValues(alpha: 0.84),
-            size: 22,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: _standoutAccentColor(standout).withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.18
+                    : 0.10,
+              ),
+              borderRadius: AppTheme.chipRadius,
+              border: Border.all(
+                color: _standoutAccentColor(standout).withValues(alpha: 0.16),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                color: _standoutAccentColor(standout).withValues(alpha: 0.90),
+                size: 18,
+              ),
+            ),
           ),
         ),
       ],
@@ -488,13 +509,7 @@ class _StandoutGridContent extends StatelessWidget {
     final theme = Theme.of(context);
     final metadata = _standoutFreshness(standout);
     final location = standout.approximateLocation;
-    final primaryContextLabel = location ?? metadata;
-    final primaryContextIcon = location != null && location.isNotEmpty
-        ? Icons.location_on_outlined
-        : Icons.schedule_rounded;
-    final primaryContextColor = location != null && location.isNotEmpty
-        ? _standoutViolet
-        : _standoutRose;
+    final reason = _humanizeStandoutReason(standout);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -513,10 +528,10 @@ class _StandoutGridContent extends StatelessWidget {
             standout.photoUrls,
           ),
           width: double.infinity,
-          height: 84,
+          height: 100,
           borderRadius: AppTheme.cardRadius,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
           _standoutDisplayName(standout),
           maxLines: 1,
@@ -525,22 +540,39 @@ class _StandoutGridContent extends StatelessWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        if (primaryContextLabel != null) ...[
-          const SizedBox(height: 6),
-          _StandoutInfoPill(
-            icon: primaryContextIcon,
-            label: primaryContextLabel,
-            color: primaryContextColor,
+        if (standout.summaryLine case final summary?) ...[
+          const SizedBox(height: 4),
+          Text(
+            summary,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
         const SizedBox(height: 6),
+        if (location != null && location.isNotEmpty)
+          _StandoutInfoPill(
+            icon: Icons.location_on_outlined,
+            label: location,
+            color: _standoutViolet,
+          )
+        else if (metadata != null)
+          _StandoutInfoPill(
+            icon: Icons.schedule_rounded,
+            label: metadata,
+            color: _standoutRose,
+          ),
+        const SizedBox(height: 8),
         Expanded(
           child: Text(
-            _humanizeStandoutReason(standout),
-            maxLines: 1,
+            reason,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
+              height: 1.32,
             ),
           ),
         ),
@@ -550,6 +582,7 @@ class _StandoutGridContent extends StatelessWidget {
           child: IconButton(
             onPressed: onOpenProfile,
             tooltip: 'Open profile',
+            visualDensity: VisualDensity.compact,
             style: IconButton.styleFrom(
               foregroundColor: _standoutAccentColor(standout),
               backgroundColor: _standoutAccentColor(standout).withValues(
@@ -558,7 +591,7 @@ class _StandoutGridContent extends StatelessWidget {
                     : 0.10,
               ),
             ),
-            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+            icon: const Icon(Icons.chevron_right_rounded, size: 18),
           ),
         ),
       ],

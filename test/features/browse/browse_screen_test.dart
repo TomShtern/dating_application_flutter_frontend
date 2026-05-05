@@ -292,6 +292,12 @@ void main() {
     );
     expect(find.text('Discover'), findsOneWidget);
     expect(find.byType(InkWell), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('Why this profile is shown'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Why this profile is shown'), findsOneWidget);
     expect(find.text('Shown because this profile is nearby.'), findsOneWidget);
   });

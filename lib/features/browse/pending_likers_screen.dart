@@ -7,7 +7,7 @@ import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/app_group_label.dart';
 import '../../shared/widgets/app_route_header.dart';
-import '../../shared/widgets/user_avatar.dart';
+import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
@@ -346,71 +346,79 @@ class _PendingLikerCard extends StatelessWidget {
         liker.summaryLine ?? 'Open ${liker.name}’s profile before deciding.';
 
     return DecoratedBox(
-      decoration: AppTheme.surfaceDecoration(context, color: surfaceColor),
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: surfaceColor,
+        prominent: true,
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: AppTheme.panelRadius,
           onTap: () => _openProfile(context),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            child: Column(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [_pendingRose, _pendingViolet],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(3),
-                            child: UserAvatar(
-                              key: ValueKey(
-                                'pending-liker-media-${liker.userId}',
-                              ),
-                              radius: 24,
-                              photoUrl: photoUrl,
-                              name: liker.name,
-                            ),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [_pendingRose, _pendingViolet],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(24),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(3),
+                        child: PersonMediaThumbnail(
+                          key: ValueKey('pending-liker-media-${liker.userId}'),
+                          name: liker.name,
+                          photoUrl: photoUrl,
+                          width: 92,
+                          height: 118,
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(21),
                           ),
                         ),
-                        Positioned(
-                          right: -2,
-                          bottom: -2,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: _pendingRose,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: colorScheme.surface,
-                                width: 2,
-                              ),
-                            ),
-                            child: const SizedBox(width: 14, height: 14),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
+                    Positioned(
+                      right: -2,
+                      bottom: -2,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: _pendingRose,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: colorScheme.surface,
+                            width: 2,
+                          ),
+                        ),
+                        child: const SizedBox(width: 14, height: 14),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
                                   liker.age > 0
                                       ? '${liker.name}, ${liker.age}'
                                       : liker.name,
@@ -418,68 +426,87 @@ class _PendingLikerCard extends StatelessWidget {
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                              ),
-                              DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surface.withValues(
-                                    alpha: isDark ? 0.76 : 0.92,
+                                if (likedAtLabel != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    likedAtLabel,
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: _pendingCoral,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                   ),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: colorScheme.outlineVariant
-                                        .withValues(alpha: 0.18),
-                                  ),
-                                ),
-                                child: SafetyActionsButton(
-                                  targetUserId: liker.userId,
-                                  targetUserName: liker.name,
-                                  tooltip: 'More actions for ${liker.name}',
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            summary,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurface,
-                              height: 1.35,
+                                ],
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 7),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: [
-                              if (likedAtLabel != null)
-                                _PendingInfoPill(
-                                  icon: Icons.schedule_rounded,
-                                  label: likedAtLabel,
-                                  color: _pendingCoral,
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: colorScheme.surface.withValues(
+                                alpha: isDark ? 0.76 : 0.92,
+                              ),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: colorScheme.outlineVariant.withValues(
+                                  alpha: 0.18,
                                 ),
-                              if (liker.approximateLocation
-                                  case final location?)
-                                _PendingInfoPill(
-                                  icon: Icons.location_on_outlined,
-                                  label: location,
-                                  color: _pendingViolet,
-                                ),
-                            ],
+                              ),
+                            ),
+                            child: SafetyActionsButton(
+                              targetUserId: liker.userId,
+                              targetUserName: liker.name,
+                              tooltip: 'More actions for ${liker.name}',
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    color: _pendingSky.withValues(alpha: 0.82),
-                    size: 22,
+                      const SizedBox(height: 10),
+                      Text(
+                        summary,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          height: 1.34,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          if (liker.approximateLocation case final location?)
+                            _PendingInfoPill(
+                              icon: Icons.location_on_outlined,
+                              label: location,
+                              color: _pendingViolet,
+                            ),
+                          _PendingInfoPill(
+                            icon: Icons.person_search_rounded,
+                            label: 'View profile before deciding',
+                            color: _pendingSky,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(
+                            'See more of ${liker.name}\'s profile',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: _pendingSky,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: _pendingSky.withValues(alpha: 0.82),
+                            size: 22,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
