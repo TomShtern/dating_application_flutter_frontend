@@ -226,12 +226,14 @@ class _ConversationThreadScreenState
                                 .withValues(alpha: 0.62),
                           ),
                           icon: _isSending
-                              ? const SizedBox.square(
+                              ? SizedBox.square(
                                   dimension: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
+                                      colorScheme.onSurfaceVariant.withValues(
+                                        alpha: 0.62,
+                                      ),
                                     ),
                                   ),
                                 )

@@ -1096,57 +1096,39 @@ class _CandidateCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: AppTheme.cardRadius,
-                          onTap: onViewProfile,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                TextButton(
-                                  onPressed: onViewProfile,
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: Size.zero,
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    alignment: Alignment.centerLeft,
-                                    foregroundColor: colorScheme.onSurface,
-                                  ),
-                                  child: Text(
-                                    candidate.name,
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(fontWeight: FontWeight.w800),
-                                  ),
-                                ),
-                                if (candidate.age > 0) ...[
-                                  const SizedBox(height: 4),
-                                  _BrowseStatusPill(
-                                    icon: Icons.cake_outlined,
-                                    label: '${candidate.age}',
-                                    color: _browseAmber,
-                                  ),
-                                ],
-                                if (candidate.summaryLine
-                                    case final summary?) ...[
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    summary,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: colorScheme.onSurface,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              candidate.name,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
+                            if (candidate.age > 0) ...[
+                              const SizedBox(height: 4),
+                              _BrowseStatusPill(
+                                icon: Icons.cake_outlined,
+                                label: '${candidate.age}',
+                                color: _browseAmber,
+                              ),
+                            ],
+                            if (candidate.summaryLine case final summary?) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                summary,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     ),

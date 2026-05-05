@@ -817,7 +817,10 @@ Color _achievementCategoryColor(String categoryHint) {
   if (_hasAchievementKeyword(categoryHint, const [
     'active',
     'login',
-    'day',
+    'days',
+    'daily',
+    'daily_login',
+    'login_streak',
     'streak',
   ])) {
     return const Color(0xFF16A871);
