@@ -362,6 +362,41 @@ class ApiClient {
     }
   }
 
+  Future<String> gracefulExit({
+    required String userId,
+    required String targetId,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.gracefulExit(userId, targetId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return _extractMessage(
+        response.data,
+        fallback: 'Connection ended gracefully.',
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<String> archiveMatch({
+    required String userId,
+    required String matchId,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.archiveMatch(userId, matchId),
+        options: Options(extra: {'userId': userId}),
+      );
+
+      return _extractMessage(response.data, fallback: 'Match archived.');
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
   Future<BrowseResponse> getBrowse({required String userId}) async {
     try {
       final response = await _dio.get<dynamic>(

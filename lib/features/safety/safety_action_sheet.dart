@@ -6,7 +6,7 @@ import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../auth/selected_user_provider.dart';
 import 'safety_provider.dart';
 
-enum SafetyAction { block, unblock, report, unmatch }
+enum SafetyAction { block, unblock, report, unmatch, gracefulExit }
 
 enum _SafetyMenuAction { open }
 
@@ -17,7 +17,9 @@ class SafetyActionOutcome {
   final String message;
 
   bool get removesRelationship =>
-      action == SafetyAction.block || action == SafetyAction.unmatch;
+      action == SafetyAction.block ||
+      action == SafetyAction.unmatch ||
+      action == SafetyAction.gracefulExit;
 }
 
 class SafetyActionsButton extends ConsumerWidget {
@@ -135,7 +137,16 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
                 ),
                 if (!isSelfTarget) ...[
                   const SizedBox(height: 16),
-                  if (widget.canUnmatch)
+                  if (widget.canUnmatch) ...[
+                    _ActionTile(
+                      enabled: !_isSubmitting,
+                      icon: Icons.waving_hand_outlined,
+                      title: 'End gracefully',
+                      subtitle:
+                          'Close this connection kindly — they get a gentle goodbye.',
+                      color: colorScheme.tertiary,
+                      onTap: () => _handleAction(SafetyAction.gracefulExit),
+                    ),
                     _ActionTile(
                       enabled: !_isSubmitting,
                       icon: Icons.heart_broken_outlined,
@@ -145,6 +156,7 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
                       color: colorScheme.error,
                       onTap: () => _handleAction(SafetyAction.unmatch),
                     ),
+                  ],
                   _ActionTile(
                     enabled: !_isSubmitting,
                     icon: Icons.block_outlined,
@@ -220,11 +232,9 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
       return;
     }
 
-    if (action != SafetyAction.report) {
-      final confirmed = await _confirmAction(action);
-      if (!confirmed || !mounted) {
-        return;
-      }
+    final confirmed = await _confirmAction(action);
+    if (!confirmed || !mounted) {
+      return;
     }
 
     setState(() {
@@ -240,6 +250,9 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
         ),
         SafetyAction.report => await controller.reportUser(widget.targetUserId),
         SafetyAction.unmatch => await controller.unmatchUser(
+          widget.targetUserId,
+        ),
+        SafetyAction.gracefulExit => await controller.gracefulExit(
           widget.targetUserId,
         ),
       };
@@ -282,6 +295,7 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
       SafetyAction.unmatch => 'Unmatch ${widget.targetUserName}?',
       SafetyAction.unblock => 'Unblock ${widget.targetUserName}?',
       SafetyAction.report => 'Report ${widget.targetUserName}?',
+      SafetyAction.gracefulExit => 'End things with ${widget.targetUserName}?',
     };
     final description = switch (action) {
       SafetyAction.block =>
@@ -290,6 +304,8 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
         'This removes the current match and conversation access.',
       SafetyAction.unblock => 'This lets the user appear again in the app.',
       SafetyAction.report => 'A backend report will be created for review.',
+      SafetyAction.gracefulExit =>
+        'The connection closes kindly for both of you. This cannot be undone.',
     };
 
     final confirmed = await showDialog<bool>(

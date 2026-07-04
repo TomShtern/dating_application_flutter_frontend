@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/user_summary.dart';
 import '../../theme/app_theme.dart';
 import '../browse/browse_screen.dart';
+import '../chat/conversations_provider.dart';
 import '../chat/conversations_screen.dart';
+import '../matches/matches_provider.dart';
 import '../matches/matches_screen.dart';
 import '../profile/profile_screen.dart';
 import '../settings/settings_screen.dart';
@@ -14,54 +17,51 @@ class _ShellDestination {
     required this.icon,
     required this.selectedIcon,
     this.showBadge = false,
+    this.badgeCount = 0,
   });
 
   final String label;
   final IconData icon;
   final IconData selectedIcon;
   final bool showBadge;
+  final int badgeCount;
 }
 
-const _destinations = [
-  _ShellDestination(
-    label: 'Discover',
-    icon: Icons.explore_outlined,
-    selectedIcon: Icons.explore,
-  ),
-  _ShellDestination(
-    label: 'Matches',
-    icon: Icons.favorite_border_rounded,
-    selectedIcon: Icons.favorite_rounded,
-    showBadge: true,
-  ),
-  _ShellDestination(
-    label: 'Chats',
-    icon: Icons.chat_bubble_outline_rounded,
-    selectedIcon: Icons.chat_bubble_rounded,
-  ),
-  _ShellDestination(
-    label: 'Profile',
-    icon: Icons.person_outline_rounded,
-    selectedIcon: Icons.person_rounded,
-  ),
-  _ShellDestination(
-    label: 'Settings',
-    icon: Icons.settings_outlined,
-    selectedIcon: Icons.settings,
-  ),
-];
-
-class SignedInShell extends StatefulWidget {
+class SignedInShell extends ConsumerStatefulWidget {
   const SignedInShell({super.key, required this.currentUser});
 
   final UserSummary currentUser;
 
   @override
-  State<SignedInShell> createState() => _SignedInShellState();
+  ConsumerState<SignedInShell> createState() => _SignedInShellState();
 }
 
-class _SignedInShellState extends State<SignedInShell> {
+class _SignedInShellState extends ConsumerState<SignedInShell> {
   int _selectedIndex = 0;
+
+  bool _hasFreshMatch() {
+    final matches = ref.watch(matchesProvider).value;
+    if (matches == null) {
+      return false;
+    }
+
+    final now = DateTime.now();
+    return matches.matches.any(
+      (match) => now.difference(match.createdAt) < const Duration(hours: 24),
+    );
+  }
+
+  int _unreadChatCount() {
+    final conversations = ref.watch(conversationsProvider).value;
+    if (conversations == null) {
+      return 0;
+    }
+
+    return conversations.fold<int>(
+      0,
+      (total, conversation) => total + conversation.unreadCount,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +72,38 @@ class _SignedInShellState extends State<SignedInShell> {
       ConversationsScreen(currentUser: widget.currentUser),
       const ProfileScreen.currentUser(),
       SettingsScreen(currentUser: widget.currentUser),
+    ];
+
+    final unreadChats = _unreadChatCount();
+    final destinations = [
+      const _ShellDestination(
+        label: 'Discover',
+        icon: Icons.explore_outlined,
+        selectedIcon: Icons.explore,
+      ),
+      _ShellDestination(
+        label: 'Matches',
+        icon: Icons.favorite_border_rounded,
+        selectedIcon: Icons.favorite_rounded,
+        showBadge: _hasFreshMatch(),
+      ),
+      _ShellDestination(
+        label: 'Chats',
+        icon: Icons.chat_bubble_outline_rounded,
+        selectedIcon: Icons.chat_bubble_rounded,
+        showBadge: unreadChats > 0,
+        badgeCount: unreadChats,
+      ),
+      const _ShellDestination(
+        label: 'Profile',
+        icon: Icons.person_outline_rounded,
+        selectedIcon: Icons.person_rounded,
+      ),
+      const _ShellDestination(
+        label: 'Settings',
+        icon: Icons.settings_outlined,
+        selectedIcon: Icons.settings,
+      ),
     ];
 
     return Scaffold(
@@ -115,16 +147,18 @@ class _SignedInShellState extends State<SignedInShell> {
                     _selectedIndex = index;
                   });
                 },
-                destinations: _destinations
+                destinations: destinations
                     .map(
                       (destination) => NavigationDestination(
                         icon: _NavIcon(
                           icon: destination.icon,
                           showBadge: destination.showBadge,
+                          badgeCount: destination.badgeCount,
                         ),
                         selectedIcon: _NavIcon(
                           icon: destination.selectedIcon,
                           showBadge: destination.showBadge,
+                          badgeCount: destination.badgeCount,
                         ),
                         label: destination.label,
                       ),
@@ -140,10 +174,15 @@ class _SignedInShellState extends State<SignedInShell> {
 }
 
 class _NavIcon extends StatelessWidget {
-  const _NavIcon({required this.icon, required this.showBadge});
+  const _NavIcon({
+    required this.icon,
+    required this.showBadge,
+    this.badgeCount = 0,
+  });
 
   final IconData icon;
   final bool showBadge;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +190,34 @@ class _NavIcon extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Icon(icon),
-        if (showBadge)
+        if (showBadge && badgeCount > 0)
+          Positioned(
+            right: -8,
+            top: -5,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppTheme.matchAccent(context),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 1.5,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                child: Text(
+                  badgeCount > 99 ? '99+' : '$badgeCount',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ),
+          )
+        else if (showBadge)
           Positioned(
             right: -2,
             top: -2,

@@ -35,6 +35,16 @@ class MatchesController {
     return _ref.refresh(matchesProvider.future);
   }
 
+  Future<String> archiveMatch(String matchId) async {
+    final currentUser = await user_guard.requireSelectedUser(_ref);
+    final message = await _ref
+        .read(apiClientProvider)
+        .archiveMatch(userId: currentUser.id, matchId: matchId);
+
+    _ref.invalidate(matchesProvider);
+    return message;
+  }
+
   Future<UserSummary> requireSelectedUser() async {
     return user_guard.requireSelectedUser(_ref);
   }

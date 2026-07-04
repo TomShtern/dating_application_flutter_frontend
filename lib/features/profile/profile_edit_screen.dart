@@ -32,6 +32,7 @@ const _profileSky = Color(0xFF188DC8);
 const _profileMint = Color(0xFF16A871);
 const _profileRose = Color(0xFFD95F84);
 const _profileSlate = Color(0xFF667085);
+const _profileAmber = Color(0xFFD98914);
 
 class ProfileEditScreen extends ConsumerWidget {
   const ProfileEditScreen({super.key, this.initialDetail});
@@ -114,9 +115,19 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
   final _maxAgeController = TextEditingController();
   final _heightController = TextEditingController();
   final _nameController = TextEditingController();
+  final _interestController = TextEditingController();
+  final _basicsSectionKey = GlobalKey();
+  final _photoSectionKey = GlobalKey();
+  final _aboutSectionKey = GlobalKey();
   String? _selectedGender;
   String? _selectedPace;
+  String? _selectedSmoking;
+  String? _selectedDrinking;
+  String? _selectedWantsKids;
+  String? _selectedLookingFor;
+  String? _selectedEducation;
   late final Set<String> _selectedInterestedIn;
+  late List<String> _interests;
   int? _maxDistanceKm;
   late String _approximateLocation;
   ResolvedLocation? _resolvedLocation;
@@ -130,9 +141,15 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
     _nameController.text = editable.name ?? '';
     _selectedGender = _normalizedOrNull(editable.gender ?? '');
     _selectedPace = editable.pacePreferences;
+    _selectedSmoking = editable.smoking;
+    _selectedDrinking = editable.drinking;
+    _selectedWantsKids = editable.wantsKids;
+    _selectedLookingFor = editable.lookingFor;
+    _selectedEducation = editable.education;
     _selectedInterestedIn = _orderedInterestedInValues(
       editable.interestedIn,
     ).toSet();
+    _interests = List<String>.of(editable.interests);
     _approximateLocation = editable.location?.label ?? '';
     _maxDistanceKm =
         editable.maxDistanceKm != null && editable.maxDistanceKm! > 0
@@ -151,6 +168,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
     _maxAgeController.dispose();
     _heightController.dispose();
     _nameController.dispose();
+    _interestController.dispose();
     super.dispose();
   }
 
@@ -251,9 +269,13 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                     ],
                     _ProfileEditHeader(snapshot: widget.snapshot),
                     SizedBox(height: AppTheme.compactSectionGap),
-                    const _PhotoEditSection(),
+                    KeyedSubtree(
+                      key: _photoSectionKey,
+                      child: const _PhotoEditSection(),
+                    ),
                     SizedBox(height: AppTheme.compactSectionGap),
                     _ProfileEditSection(
+                      key: _basicsSectionKey,
                       icon: Icons.badge_outlined,
                       accentColor: _profileLavender,
                       title: 'Basics',
@@ -396,6 +418,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                     ),
                     SizedBox(height: AppTheme.compactSectionGap),
                     _ProfileEditSection(
+                      key: _aboutSectionKey,
                       icon: Icons.edit_note_rounded,
                       accentColor: _profileSky,
                       title: 'About',
@@ -410,6 +433,118 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                           hintText:
                               'Share a little about your vibe, interests, or ideal first date',
                         ),
+                      ),
+                    ),
+                    SizedBox(height: AppTheme.compactSectionGap),
+                    _ProfileEditSection(
+                      icon: Icons.spa_outlined,
+                      accentColor: _profileAmber,
+                      title: 'Lifestyle',
+                      description:
+                          'Optional signals that sharpen who you\'re shown to.',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _ProfileFieldLabel(title: 'Smoking'),
+                          const SizedBox(height: 6),
+                          _ProfileEditOptionGrid(
+                            options: _smokingOptions,
+                            accentColor: _profileAmber,
+                            selectedOptions: {?_selectedSmoking},
+                            onOptionToggled: (option, selected) {
+                              setState(() {
+                                _selectedSmoking = selected ? option : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: AppTheme.compactSectionGap),
+                          _ProfileFieldLabel(title: 'Drinking'),
+                          const SizedBox(height: 6),
+                          _ProfileEditOptionGrid(
+                            options: _drinkingOptions,
+                            accentColor: _profileAmber,
+                            selectedOptions: {?_selectedDrinking},
+                            onOptionToggled: (option, selected) {
+                              setState(() {
+                                _selectedDrinking = selected ? option : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: AppTheme.compactSectionGap),
+                          _ProfileFieldLabel(title: 'Kids'),
+                          const SizedBox(height: 6),
+                          _ProfileEditOptionGrid(
+                            options: _kidsStanceOptions,
+                            accentColor: _profileAmber,
+                            selectedOptions: {?_selectedWantsKids},
+                            onOptionToggled: (option, selected) {
+                              setState(() {
+                                _selectedWantsKids = selected ? option : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: AppTheme.compactSectionGap),
+                          _ProfileFieldLabel(title: 'Looking for'),
+                          const SizedBox(height: 6),
+                          _ProfileEditOptionGrid(
+                            options: _lookingForOptions,
+                            accentColor: _profileAmber,
+                            selectedOptions: {?_selectedLookingFor},
+                            onOptionToggled: (option, selected) {
+                              setState(() {
+                                _selectedLookingFor = selected ? option : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: AppTheme.compactSectionGap),
+                          _ProfileFieldLabel(title: 'Education'),
+                          const SizedBox(height: 6),
+                          _ProfileEditOptionGrid(
+                            options: _educationOptions,
+                            accentColor: _profileAmber,
+                            selectedOptions: {?_selectedEducation},
+                            onOptionToggled: (option, selected) {
+                              setState(() {
+                                _selectedEducation = selected ? option : null;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: AppTheme.compactSectionGap),
+                          _ProfileFieldLabel(title: 'Interests'),
+                          const SizedBox(height: 6),
+                          if (_interests.isNotEmpty) ...[
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final interest in _interests)
+                                  InputChip(
+                                    label: Text(interest),
+                                    onDeleted: () {
+                                      setState(() {
+                                        _interests.remove(interest);
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          TextFormField(
+                            controller: _interestController,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _addInterest(),
+                            decoration: InputDecoration(
+                              labelText: 'Add an interest',
+                              hintText: 'Hiking, cooking, live music…',
+                              suffixIcon: IconButton(
+                                tooltip: 'Add interest',
+                                icon: const Icon(Icons.add_rounded),
+                                onPressed: _addInterest,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(height: AppTheme.compactSectionGap),
@@ -590,6 +725,12 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
       heightCm: _parseOptionalInt(_heightController.text),
       location: _profileLocationRequestFrom(_resolvedLocation),
       pacePreferences: _selectedPace,
+      smoking: _selectedSmoking,
+      drinking: _selectedDrinking,
+      wantsKids: _selectedWantsKids,
+      lookingFor: _selectedLookingFor,
+      education: _selectedEducation,
+      interests: List<String>.of(_interests, growable: false),
     );
 
     try {
@@ -637,16 +778,45 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
           });
         }
       case 'photo':
-        // The photo add action is in _PhotoEditSection which is a separate
-        // widget. Scroll to the photos section instead.
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Use the "Add photo" button above to add a photo.'),
-          ),
-        );
+        _scrollToSection(_photoSectionKey);
       case 'location':
         _pushLocationCompletion();
+      case 'pace':
+      case 'gender':
+      case 'interestedIn':
+        _scrollToSection(_basicsSectionKey);
+      case 'bio':
+        _scrollToSection(_aboutSectionKey);
     }
+  }
+
+  void _scrollToSection(GlobalKey key) {
+    final sectionContext = key.currentContext;
+    if (sectionContext == null) {
+      return;
+    }
+    Scrollable.ensureVisible(
+      sectionContext,
+      duration: const Duration(milliseconds: 300),
+      alignment: 0.05,
+    );
+  }
+
+  void _addInterest() {
+    final interest = _interestController.text.trim();
+    if (interest.isEmpty) {
+      return;
+    }
+
+    final alreadyAdded = _interests.any(
+      (entry) => entry.toLowerCase() == interest.toLowerCase(),
+    );
+    setState(() {
+      if (!alreadyAdded) {
+        _interests.add(interest);
+      }
+      _interestController.clear();
+    });
   }
 
   Future<void> _pushLocationCompletion() async {
@@ -782,6 +952,42 @@ const List<String> _genderOptions = <String>[
 
 const List<String> _paceOptions = <String>['SLOW', 'MODERATE', 'FAST'];
 
+const List<String> _smokingOptions = <String>[
+  'NEVER',
+  'SOCIALLY',
+  'REGULARLY',
+  'QUITTING',
+];
+
+const List<String> _drinkingOptions = <String>[
+  'NEVER',
+  'SOCIALLY',
+  'REGULARLY',
+  'QUITTING',
+];
+
+const List<String> _kidsStanceOptions = <String>[
+  'WANT_KIDS',
+  'OPEN',
+  'SOMEDAY',
+  'DO_NOT_WANT',
+];
+
+const List<String> _lookingForOptions = <String>[
+  'CASUAL',
+  'LONG_TERM',
+  'MARRIAGE',
+  'NOT_SURE',
+];
+
+const List<String> _educationOptions = <String>[
+  'HIGH_SCHOOL',
+  'BACHELORS',
+  'MASTERS',
+  'PHD',
+  'OTHER',
+];
+
 class _ProfileEditHeader extends StatelessWidget {
   const _ProfileEditHeader({required this.snapshot});
 
@@ -914,6 +1120,7 @@ class _ProfileEditHeader extends StatelessWidget {
 
 class _ProfileEditSection extends StatelessWidget {
   const _ProfileEditSection({
+    super.key,
     required this.icon,
     required this.accentColor,
     required this.title,

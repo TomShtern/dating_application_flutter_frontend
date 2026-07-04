@@ -242,9 +242,23 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(result.message)));
+      final colorScheme = Theme.of(context).colorScheme;
+      final message = result.success
+          ? result.message
+          : (result.message.isNotEmpty
+                ? result.message
+                : 'Nothing to undo right now.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: result.success
+                ? null
+                : TextStyle(color: colorScheme.onErrorContainer),
+          ),
+          backgroundColor: result.success ? null : colorScheme.errorContainer,
+        ),
+      );
     } on ApiError catch (error) {
       if (!mounted) {
         return;

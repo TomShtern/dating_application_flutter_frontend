@@ -54,6 +54,16 @@ class SafetyController {
     return message;
   }
 
+  Future<String> gracefulExit(String targetId) async {
+    final currentUser = await _requireActionableTarget(targetId);
+    final message = await _ref
+        .read(apiClientProvider)
+        .gracefulExit(userId: currentUser.id, targetId: targetId);
+
+    _invalidateRelationshipData(targetId);
+    return message;
+  }
+
   void _invalidateRelationshipData(String targetId) {
     _ref.invalidate(browseProvider);
     _ref.invalidate(matchesProvider);

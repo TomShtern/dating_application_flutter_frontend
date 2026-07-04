@@ -41,6 +41,12 @@ class ApiEndpoints {
   static String unmatchUser(String userId, String targetId) =>
       '/api/users/$userId/relationships/$targetId/unmatch';
 
+  static String gracefulExit(String userId, String targetId) =>
+      '/api/users/$userId/relationships/$targetId/graceful-exit';
+
+  static String archiveMatch(String userId, String matchId) =>
+      '/api/users/$userId/matches/$matchId/archive';
+
   static String browse(String userId) => '/api/users/$userId/browse';
 
   static String like(String userId, String targetId) =>

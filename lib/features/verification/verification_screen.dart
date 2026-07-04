@@ -212,7 +212,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             ],
             if (confirmResult != null) ...[
               const SizedBox(height: AppTheme.compactCardGap),
-              _VerificationOutcomeCard(result: confirmResult),
+              _VerificationOutcomeCard(
+                result: confirmResult,
+                onDone: () => Navigator.of(context).maybePop(),
+              ),
             ],
           ],
         ),
@@ -596,9 +599,10 @@ class _DevelopmentOnlyCodeCard extends StatelessWidget {
 }
 
 class _VerificationOutcomeCard extends StatelessWidget {
-  const _VerificationOutcomeCard({required this.result});
+  const _VerificationOutcomeCard({required this.result, required this.onDone});
 
   final VerificationConfirmationResult result;
+  final VoidCallback onDone;
 
   @override
   Widget build(BuildContext context) {
@@ -617,32 +621,48 @@ class _VerificationOutcomeCard extends StatelessWidget {
         ),
         child: Padding(
           padding: AppTheme.sectionPadding(),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(Icons.verified_rounded, size: 32, color: textColor),
-              const SizedBox(width: AppTheme.cardPadding),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Account verified',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: textColor,
-                      ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.verified_rounded, size: 32, color: textColor),
+                  const SizedBox(width: AppTheme.cardPadding),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Account verified',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: AppTheme.cardGap),
+                        Text(
+                          result.verifiedAt == null
+                              ? 'Your contact details are confirmed and your profile can show the Verified badge to matches.'
+                              : 'Verified at ${formatDateTimeStamp(result.verifiedAt!)}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: textColor,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: AppTheme.cardGap),
-                    Text(
-                      result.verifiedAt == null
-                          ? 'Your contact details are confirmed and your profile can show the Verified badge to matches.'
-                          : 'Verified at ${formatDateTimeStamp(result.verifiedAt!)}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: textColor,
-                      ),
-                    ),
-                  ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.cardGap),
+              FilledButton.icon(
+                onPressed: onDone,
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.surface,
+                  foregroundColor: colorScheme.onSurface,
+                  minimumSize: const Size.fromHeight(44),
                 ),
+                icon: const Icon(Icons.check_rounded),
+                label: const Text('Done'),
               ),
             ],
           ),

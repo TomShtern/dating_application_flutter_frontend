@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
+import '../../shared/formatting/date_formatting.dart';
+import '../../shared/forms/input_validators.dart';
 import '../../theme/app_theme.dart';
 import 'auth_controller.dart';
 
@@ -22,6 +24,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   DateTime? _dateOfBirth;
   bool _submitting = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   @override
@@ -103,21 +106,29 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
                 textInputAction: TextInputAction.next,
-                validator: (value) {
-                  final v = value?.trim() ?? '';
-                  if (v.isEmpty) return 'Email is required.';
-                  if (!v.contains('@')) return 'Enter a valid email address.';
-                  return null;
-                },
+                validator: validateEmail,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Password',
                   helperText: 'At least 8 characters.',
+                  suffixIcon: IconButton(
+                    tooltip: _obscurePassword
+                        ? 'Show password'
+                        : 'Hide password',
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                    onPressed: () => setState(
+                      () => _obscurePassword = !_obscurePassword,
+                    ),
+                  ),
                 ),
-                obscureText: true,
+                obscureText: _obscurePassword,
                 textInputAction: TextInputAction.next,
                 validator: (value) {
                   final v = value ?? '';
@@ -134,7 +145,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 title: Text(
                   _dateOfBirth == null
                       ? 'Date of birth'
-                      : 'DOB: ${_dateOfBirth!.toLocal().toString().split(' ').first}',
+                      : 'Born ${formatShortDate(_dateOfBirth!, reference: DateTime(0))}',
                 ),
                 subtitle: const Text('Tap to choose'),
                 trailing: const Icon(Icons.calendar_today_rounded),

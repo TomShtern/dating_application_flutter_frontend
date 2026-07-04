@@ -7,6 +7,7 @@ import '../../models/match_summary.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../chat/conversation_thread_screen.dart';
@@ -555,11 +556,7 @@ class _MatchCard extends StatelessWidget {
                                       .withValues(alpha: 0.18),
                                 ),
                               ),
-                              child: SafetyActionsButton(
-                                targetUserId: match.otherUserId,
-                                targetUserName: match.otherUserName,
-                                canUnmatch: true,
-                              ),
+                              child: _MatchCardMenuButton(match: match),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -589,6 +586,112 @@ class _MatchCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+enum _MatchCardMenuAction { archive, safety }
+
+class _MatchCardMenuButton extends ConsumerWidget {
+  const _MatchCardMenuButton({required this.match});
+
+  final MatchSummary match;
+
+  Future<void> _handleArchive(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Archive match with ${match.otherUserName}?'),
+        content: const Text(
+          'The match moves out of your active list. Your conversation history '
+          'is kept on the backend.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Archive'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    try {
+      final message = await ref
+          .read(matchesControllerProvider)
+          .archiveMatch(match.matchId);
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } on ApiError catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to archive that match.')),
+      );
+    }
+  }
+
+  Future<void> _handleSafety(BuildContext context) async {
+    final outcome = await showModalBottomSheet<SafetyActionOutcome>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafetyActionSheet(
+        targetUserId: match.otherUserId,
+        targetUserName: match.otherUserName,
+        canUnmatch: true,
+      ),
+    );
+
+    if (!context.mounted || outcome == null) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(outcome.message)));
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AppOverflowMenuButton<_MatchCardMenuAction>(
+      tooltip: 'Match options',
+      items: const [
+        PopupMenuItem<_MatchCardMenuAction>(
+          value: _MatchCardMenuAction.archive,
+          child: Text('Archive match'),
+        ),
+        PopupMenuItem<_MatchCardMenuAction>(
+          value: _MatchCardMenuAction.safety,
+          child: Text('Safety actions'),
+        ),
+      ],
+      onSelected: (action) {
+        switch (action) {
+          case _MatchCardMenuAction.archive:
+            _handleArchive(context, ref);
+          case _MatchCardMenuAction.safety:
+            _handleSafety(context);
+        }
+      },
     );
   }
 }

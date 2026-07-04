@@ -85,6 +85,9 @@ class _DiscoveryPreferencesFormState
   final _formKey = GlobalKey<FormState>();
   final _minAgeController = TextEditingController();
   final _maxAgeController = TextEditingController();
+  final _minHeightController = TextEditingController();
+  final _maxHeightController = TextEditingController();
+  final _maxAgeDifferenceController = TextEditingController();
   late int? _maxDistanceKm;
   late Set<String> _selectedInterestedIn;
   late ProfileEditDealbreakers _dealbreakers;
@@ -98,12 +101,21 @@ class _DiscoveryPreferencesFormState
     _maxDistanceKm = widget.initial.maxDistanceKm;
     _selectedInterestedIn = widget.initial.interestedIn.toSet();
     _dealbreakers = widget.initial.dealbreakers;
+    _minHeightController.text =
+        widget.initial.dealbreakers.minHeightCm?.toString() ?? '';
+    _maxHeightController.text =
+        widget.initial.dealbreakers.maxHeightCm?.toString() ?? '';
+    _maxAgeDifferenceController.text =
+        widget.initial.dealbreakers.maxAgeDifference?.toString() ?? '';
   }
 
   @override
   void dispose() {
     _minAgeController.dispose();
     _maxAgeController.dispose();
+    _minHeightController.dispose();
+    _maxHeightController.dispose();
+    _maxAgeDifferenceController.dispose();
     super.dispose();
   }
 
@@ -331,38 +343,55 @@ class _DiscoveryPreferencesFormState
                     ),
                     SizedBox(height: AppTheme.compactSectionGap),
                     _DiscoverySection(
-                      icon: Icons.verified_outlined,
+                      icon: Icons.straighten_rounded,
                       accentColor: _prefMint,
-                      title: 'Verified only',
+                      title: 'Height & age gap',
                       description:
-                          'Show only verified profiles. Not supported by the backend yet.',
-                      child: _UnavailableControl(
-                        label: 'Verified-only filter',
-                        icon: Icons.verified_user_outlined,
-                      ),
-                    ),
-                    SizedBox(height: AppTheme.compactSectionGap),
-                    _DiscoverySection(
-                      icon: Icons.travel_explore_outlined,
-                      accentColor: _prefSky,
-                      title: 'Travel mode',
-                      description:
-                          'Browse in a different location. Not supported by the backend yet.',
-                      child: _UnavailableControl(
-                        label: 'Travel mode',
-                        icon: Icons.map_outlined,
-                      ),
-                    ),
-                    SizedBox(height: AppTheme.compactSectionGap),
-                    _DiscoverySection(
-                      icon: Icons.thumb_down_alt_outlined,
-                      accentColor: _prefSlate,
-                      title: 'Show me less like this',
-                      description:
-                          'Feedback to tune recommendations. Not supported by the backend yet.',
-                      child: _UnavailableControl(
-                        label: 'Show me less like this',
-                        icon: Icons.do_not_disturb_on_outlined,
+                          'Optional limits — leave a field empty to skip it.',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _minHeightController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Min height (cm)',
+                                    hintText: '150',
+                                  ),
+                                  validator: _validatePositiveInteger,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _maxHeightController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Max height (cm)',
+                                    hintText: '200',
+                                  ),
+                                  validator: (value) => _validateMaxHeight(
+                                    value,
+                                    minHeightValue: _minHeightController.text,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _maxAgeDifferenceController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Max age difference (years)',
+                              hintText: '10',
+                            ),
+                            validator: _validatePositiveInteger,
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(height: AppTheme.sectionSpacing(compact: true)),
@@ -393,7 +422,16 @@ class _DiscoveryPreferencesFormState
       maxAge: _parseOptionalInt(_maxAgeController.text),
       maxDistanceKm: _maxDistanceKm,
       interestedIn: _selectedInterestedIn.toList(growable: false),
-      dealbreakers: _dealbreakers,
+      dealbreakers: ProfileEditDealbreakers(
+        acceptableSmoking: _dealbreakers.acceptableSmoking,
+        acceptableDrinking: _dealbreakers.acceptableDrinking,
+        acceptableKidsStance: _dealbreakers.acceptableKidsStance,
+        acceptableLookingFor: _dealbreakers.acceptableLookingFor,
+        acceptableEducation: _dealbreakers.acceptableEducation,
+        minHeightCm: _parseOptionalInt(_minHeightController.text),
+        maxHeightCm: _parseOptionalInt(_maxHeightController.text),
+        maxAgeDifference: _parseOptionalInt(_maxAgeDifferenceController.text),
+      ),
     );
 
     try {
@@ -403,6 +441,11 @@ class _DiscoveryPreferencesFormState
         return;
       }
 
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Preferences saved — discover results will update.'),
+        ),
+      );
       Navigator.of(context).pop();
     } on ApiError catch (error) {
       if (mounted) {
@@ -767,80 +810,6 @@ class _DealbreakerTile extends StatelessWidget {
   }
 }
 
-class _UnavailableControl extends StatelessWidget {
-  const _UnavailableControl({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: AppTheme.cardRadius,
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.28),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            _DiscoveryStatusPill(
-              label: 'Unavailable',
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DiscoveryStatusPill extends StatelessWidget {
-  const _DiscoveryStatusPill({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.18 : 0.08),
-        borderRadius: AppTheme.chipRadius,
-        border: Border.all(color: color.withValues(alpha: 0.14)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 String? _validatePositiveInteger(String? value) {
   if (value == null || value.trim().isEmpty) {
     return null;
@@ -849,6 +818,24 @@ String? _validatePositiveInteger(String? value) {
   final parsed = int.tryParse(value.trim());
   if (parsed == null || parsed <= 0) {
     return 'Please enter a valid positive number.';
+  }
+
+  return null;
+}
+
+String? _validateMaxHeight(String? value, {required String minHeightValue}) {
+  final integerValidation = _validatePositiveInteger(value);
+  if (integerValidation != null) {
+    return integerValidation;
+  }
+
+  final minHeight = int.tryParse(minHeightValue.trim());
+  final maxHeight = int.tryParse(value?.trim() ?? '');
+  if (minHeight == null || maxHeight == null) {
+    return null;
+  }
+  if (maxHeight < minHeight) {
+    return 'Max height must be at least the min height.';
   }
 
   return null;

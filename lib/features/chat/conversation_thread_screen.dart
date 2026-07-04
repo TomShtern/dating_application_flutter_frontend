@@ -15,6 +15,7 @@ import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'conversation_thread_provider.dart';
+import 'conversations_provider.dart';
 
 enum _ConversationMenuAction { viewProfile, safetyActions, refresh }
 
@@ -48,6 +49,7 @@ class _ConversationThreadScreenState
   int _lastAutoScrolledMessageCount = -1;
   bool? _lastAutoScrollUsesBottomExtent;
   AppLifecycleState _appLifecycleState = AppLifecycleState.resumed;
+  bool _syncedConversationsAfterLoad = false;
 
   // TODO: Return backend-provided activity status once presence data exists.
   bool get _showActivityIndicator => false;
@@ -59,6 +61,18 @@ class _ConversationThreadScreenState
     _messageController = TextEditingController();
     _messagesScrollController = ScrollController();
     _startRefreshTimer();
+    // Once the thread loads, refetch the conversation list so the backend's
+    // updated unread count reaches the chats list and shell badge.
+    ref.listenManual(conversationThreadProvider(widget.conversation.id), (
+      previous,
+      next,
+    ) {
+      if (_syncedConversationsAfterLoad || !next.hasValue) {
+        return;
+      }
+      _syncedConversationsAfterLoad = true;
+      ref.invalidate(conversationsProvider);
+    });
   }
 
   @override
