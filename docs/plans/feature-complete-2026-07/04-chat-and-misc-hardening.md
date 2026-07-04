@@ -1,5 +1,7 @@
 # Plan 04 — Chat & Misc Hardening
 
+**Status:** ✅ COMPLETE — implemented and `flutter analyze` clean on 2026-07-05
+
 Read `00-overview.md` first. Rules there apply. These are small, independent tasks; if one gets stuck, revert it and move on.
 
 ## Task 1 — Local message id collision fix

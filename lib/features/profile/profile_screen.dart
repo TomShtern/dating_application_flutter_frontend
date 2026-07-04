@@ -250,7 +250,7 @@ class _CurrentUserProfileIntroCard extends StatelessWidget {
   }
 }
 
-class _ProfileContent extends StatelessWidget {
+class _ProfileContent extends ConsumerWidget {
   const _ProfileContent({
     required this.detail,
     required this.isCurrentUser,
@@ -268,13 +268,20 @@ class _ProfileContent extends StatelessWidget {
   final VoidCallback? onFixLocation;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final snapshotVerified = isCurrentUser
+        ? (ref.watch(profileEditSnapshotProvider).value?.readOnly.verified ??
+              false)
+        : false;
+    final showVerifiedBadge = snapshotVerified || detail.verified;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ProfileHeroCard(
           detail: detail,
           isCurrentUser: isCurrentUser,
+          showVerifiedBadge: showVerifiedBadge,
           decisionBar: isCurrentUser
               ? null
               : _ProfileDecisionRow(
@@ -310,6 +317,10 @@ class _ProfileContent extends StatelessWidget {
         ),
         SizedBox(height: AppTheme.sectionSpacing()),
         _ProfileDetailsCard(detail: detail, isCurrentUser: isCurrentUser),
+        if (isCurrentUser) ...[
+          SizedBox(height: AppTheme.listSpacing()),
+          const _LifestyleSection(),
+        ],
         if (isCurrentUser) ...[
           SizedBox(height: AppTheme.sectionSpacing()),
           _ProfileCompletenessCard(
@@ -431,11 +442,13 @@ class _ProfileHeroCard extends StatelessWidget {
     required this.detail,
     required this.isCurrentUser,
     this.decisionBar,
+    this.showVerifiedBadge = false,
   });
 
   final UserDetail detail;
   final bool isCurrentUser;
   final Widget? decisionBar;
+  final bool showVerifiedBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -506,8 +519,14 @@ class _ProfileHeroCard extends StatelessWidget {
                         spacing: AppTheme.cardGap,
                         runSpacing: 8,
                         children: [
+                          if (showVerifiedBadge)
+                            _ProfileMetaPill(
+                              icon: Icons.verified_rounded,
+                              label: 'Verified',
+                              color: _profileMint,
+                            ),
                           _ProfileMetaPill(
-                            icon: Icons.verified_user_outlined,
+                            icon: Icons.shield_outlined,
                             label: _state(detail),
                             color: _profileViolet,
                           ),
@@ -1106,6 +1125,102 @@ class _ProfileCompletenessCard extends StatelessWidget {
                   ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LifestyleSection extends ConsumerWidget {
+  const _LifestyleSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final editable = ref.watch(profileEditSnapshotProvider).value?.editable;
+    if (editable == null) {
+      return const SizedBox.shrink();
+    }
+
+    final facts = <(IconData, String, String)>[
+      if (editable.smoking != null)
+        (Icons.smoking_rooms_outlined, 'Smoking', formatDisplayLabel(editable.smoking!)),
+      if (editable.drinking != null)
+        (Icons.local_bar_outlined, 'Drinking', formatDisplayLabel(editable.drinking!)),
+      if (editable.wantsKids != null)
+        (Icons.child_care_outlined, 'Kids', formatDisplayLabel(editable.wantsKids!)),
+      if (editable.lookingFor != null)
+        (Icons.favorite_border_rounded, 'Looking for', formatDisplayLabel(editable.lookingFor!)),
+      if (editable.education != null)
+        (Icons.school_outlined, 'Education', formatDisplayLabel(editable.education!)),
+      if (editable.heightCm != null && editable.heightCm! > 0)
+        (Icons.height_rounded, 'Height', '${editable.heightCm} cm'),
+    ];
+
+    if (facts.isEmpty && editable.interests.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        color: _profileSurfaceColor(context, _profileSky),
+      ),
+      child: Padding(
+        padding: AppTheme.sectionPadding(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const _ProfileIconChip(
+                  icon: Icons.favorite_border_rounded,
+                  color: _profileSky,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Lifestyle',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+            ...facts.map(
+              (fact) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ProfileFactTile(
+                  icon: fact.$1,
+                  title: fact.$2,
+                  value: fact.$3,
+                  color: _profileSky,
+                ),
+              ),
+            ),
+            if (editable.interests.isNotEmpty) ...[
+              SizedBox(height: AppTheme.listSpacing()),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: editable.interests.map((interest) {
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: _profileSky.withValues(alpha: 0.10),
+                      borderRadius: AppTheme.chipRadius,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        interest,
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                    ),
+                  );
+                }).toList(growable: false),
+              ),
+            ],
           ],
         ),
       ),

@@ -29,20 +29,6 @@ class ProfileEditSnapshot {
     );
   }
 
-  ProfileUpdateRequest toUpdateRequest() {
-    return ProfileUpdateRequest(
-      name: editable.name,
-      bio: editable.bio,
-      gender: editable.gender,
-      interestedIn: editable.interestedIn,
-      maxDistanceKm: editable.maxDistanceKm,
-      minAge: editable.minAge,
-      maxAge: editable.maxAge,
-      heightCm: editable.heightCm,
-      location: editable.location?.toProfileLocationRequest(),
-      pacePreferences: editable.pacePreferences,
-    );
-  }
 }
 
 class ProfileEditEditable {

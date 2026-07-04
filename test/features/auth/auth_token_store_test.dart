@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,13 +13,16 @@ void main() {
     'readSession returns null for corrupt or schema-mismatched data',
     () async {
       final preferences = await SharedPreferences.getInstance();
-      final store = AuthTokenStore(preferences);
+      final store = AuthTokenStore(
+        const FlutterSecureStorage(),
+        preferences,
+      );
 
       await preferences.setString(AuthTokenStore.storageKey, '{not-json');
-      expect(store.readSession(), isNull);
+      expect(await store.readSession(), isNull);
 
       await preferences.setString(AuthTokenStore.storageKey, '{"user": 1}');
-      expect(store.readSession(), isNull);
+      expect(await store.readSession(), isNull);
     },
   );
 }

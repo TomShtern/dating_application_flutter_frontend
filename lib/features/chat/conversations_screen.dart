@@ -131,6 +131,22 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                           onClear: _clearSearch,
                         )
                       else ...[
+                        if (_searchQuery.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              bottom: AppTheme.listSpacing(),
+                            ),
+                            child: Text(
+                              '${filteredConversations.length} of ${conversations.length} ${conversations.length == 1 ? 'conversation' : 'conversations'} match',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
                         AppGroupLabel(
                           title: _searchQuery.isEmpty
                               ? 'Open conversations'

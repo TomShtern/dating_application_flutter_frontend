@@ -109,6 +109,7 @@ Direct dependencies from `pubspec.yaml` and exact locked versions from `pubspec.
 | `dio`                | `5.9.2`        | HTTP client                                 |
 | `image_picker`       | `1.2.2`        | photo selection and camera capture          |
 | `shared_preferences` | `2.5.5`        | local selected-user and preferences storage |
+| `flutter_secure_storage` | `10.3.1`   | secure auth token storage                   |
 | `flutter_test`       | SDK package    | tests                                       |
 | `flutter_lints`      | `6.0.0`        | analyzer lint set                           |
 
@@ -132,6 +133,11 @@ Important transitive/platform packages currently locked:
 - `path_provider_linux` `2.2.1`
 - `path_provider_windows` `2.3.0`
 - `plugin_platform_interface` `2.1.8`
+- `flutter_secure_storage_darwin` `0.3.2`
+- `flutter_secure_storage_linux` `3.0.1`
+- `flutter_secure_storage_platform_interface` `2.0.1`
+- `flutter_secure_storage_web` `2.1.1`
+- `flutter_secure_storage_windows` `4.2.2`
 - `test` `1.30.0`
 - `test_api` `0.7.10`
 - `test_core` `0.6.16`

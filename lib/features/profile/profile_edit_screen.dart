@@ -9,6 +9,7 @@ import '../../models/photo_dto.dart';
 import '../../models/profile_edit_snapshot.dart';
 import '../../models/profile_update_request.dart';
 import '../../models/user_detail.dart';
+import '../../shared/formatting/date_formatting.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/media/media_url.dart';
 import '../../shared/widgets/app_async_state.dart';
@@ -1099,19 +1100,29 @@ class _ProfileEditHeader extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Start with photos and basics. Optional filters stay lower down.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
+                  if (readOnly.verified && readOnly.verifiedAt != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Verified via ${formatDisplayLabel(readOnly.verificationMethod ?? 'unknown')} · ${formatShortDate(readOnly.verifiedAt!)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Start with photos and basics. Optional filters stay lower down.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
         ),
       ),
     );
@@ -1490,6 +1501,26 @@ class _PhotoEditSectionState extends ConsumerState<_PhotoEditSection> {
     final asyncPhotos = ref.watch(userPhotosProvider);
     final uploads = ref.watch(photoUploadProvider);
 
+    ref.listen(photoUploadProvider, (Map<String, PhotoUploadEntry>? previous, Map<String, PhotoUploadEntry> next) {
+      if (previous == null) return;
+      for (final localId in next.keys) {
+        final nextEntry = next[localId]!;
+        final prevEntry = previous[localId];
+        if (prevEntry == null || prevEntry.status == nextEntry.status) continue;
+        final messenger = ScaffoldMessenger.of(context);
+        switch (nextEntry.status) {
+          case PhotoUploadStatus.succeeded:
+            messenger.showSnackBar(const SnackBar(content: Text('Photo added.')));
+          case PhotoUploadStatus.rejected:
+            final reason = (nextEntry.rejectionReason ?? '').trim();
+            messenger.showSnackBar(SnackBar(
+              content: Text(reason.isNotEmpty ? 'Photo rejected: $reason' : 'Photo rejected by moderation.'),
+            ));
+          default:
+        }
+      }
+    });
+
     return _ProfileEditSection(
       icon: Icons.photo_library_outlined,
       accentColor: _profileSky,
@@ -1658,10 +1689,15 @@ class _UploadProgressTile extends ConsumerWidget {
                   ),
                   if (isRejected && entry.rejectionReason != null) ...[
                     const SizedBox(height: 2),
-                    Text(
-                      entry.rejectionReason!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    Tooltip(
+                      message: entry.rejectionReason!,
+                      child: Text(
+                        entry.rejectionReason!,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -1683,7 +1719,7 @@ class _UploadProgressTile extends ConsumerWidget {
                     ref.read(photoUploadProvider.notifier).dismissUpload(entry.localId),
                 child: const Text('Cancel'),
               ),
-            if (isFailed || isRejected)
+              if (isFailed || isRejected)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1693,11 +1729,15 @@ class _UploadProgressTile extends ConsumerWidget {
                         .retryUpload(entry.localId),
                     child: const Text('Retry'),
                   ),
-                  TextButton(
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: 'Dismiss',
+                    visualDensity: VisualDensity.compact,
+                    iconSize: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     onPressed: () => ref
                         .read(photoUploadProvider.notifier)
                         .dismissUpload(entry.localId),
-                    child: const Text('Dismiss'),
                   ),
                 ],
               ),
@@ -1779,69 +1819,55 @@ class _PhotoTile extends ConsumerWidget {
                   ),
                 ),
               if (isRejected)
-                Positioned.fill(
+                Positioned(
+                  bottom: 6,
+                  left: 6,
+                  right: 6,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.38),
-                      borderRadius: const BorderRadius.all(Radius.circular(22)),
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: AppTheme.chipRadius,
                     ),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.block_rounded,
-                            color: const Color(0xFFD95F84),
-                            size: 20,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Rejected',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      child: Text(
+                        'Rejected',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                        ),
                       ),
                     ),
                   ),
                 ),
               if (isPending && !isRejected && !isBusy)
                 Positioned(
-                  top: 3,
-                  left: 3,
+                  top: 4,
+                  left: 4,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD98914).withValues(alpha: 0.92),
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: AppTheme.chipRadius,
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
+                        horizontal: 6,
+                        vertical: 3,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.hourglass_bottom_rounded,
-                            size: 10,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            'Review',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 9,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'In review',
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                        ),
                       ),
                     ),
                   ),

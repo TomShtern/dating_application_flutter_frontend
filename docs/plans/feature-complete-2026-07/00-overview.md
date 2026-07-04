@@ -1,6 +1,7 @@
 # Feature-Complete Push — Overview & Ground Rules
 
 **Date:** 2026-07-04
+**Status:** ✅ **ALL PLANS COMPLETE** — implemented and `flutter analyze` clean on 2026-07-05
 **Repo:** `flutter_dating_application_1` (Flutter frontend; thin client over a Java backend)
 **Audience:** an implementing AI agent. Follow these plans literally. Where a plan gives a decision, that decision is final — do not re-litigate it.
 
@@ -41,13 +42,13 @@ A previous session already implemented and verified (analyze-clean) all of the f
 
 ## Plan files
 
-| File                                           | Scope                                                                                                                          | Risk                                |
-|------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
-| `01-profile-verified-and-lifestyle-display.md` | Verified badge on profiles; lifestyle facts on own profile; small edit-screen header addition; delete a dead model method      | Low                                 |
-| `02-photo-upload-ux.md`                        | Upload success/rejection feedback; dismiss for failed/rejected upload tiles                                                    | Medium                              |
-| `03-notifications-and-settings.md`             | Unread pill on Settings→Notifications row; client-side notification category muting; debug-only seeded-user switch in Settings | Medium                              |
-| `04-chat-and-misc-hardening.md`                | Local message id collision fix; standouts view-mode persistence; conversations search result count                             | Low                                 |
-| `05-secure-token-storage.md`                   | Move auth tokens to `flutter_secure_storage` with migration                                                                    | **High — do last, gate every step** |
+| File                                           | Scope                                                                                                                          | Risk                                | Status         |
+|------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------|
+| `01-profile-verified-and-lifestyle-display.md` | Verified badge on profiles; lifestyle facts on own profile; small edit-screen header addition; delete a dead model method      | Low                                 | ✅ Complete    |
+| `02-photo-upload-ux.md`                        | Upload success/rejection feedback; dismiss for failed/rejected upload tiles                                                    | Medium                              | ✅ Complete    |
+| `03-notifications-and-settings.md`             | Unread pill on Settings→Notifications row; client-side notification category muting; debug-only seeded-user switch in Settings | Medium                              | ✅ Complete    |
+| `04-chat-and-misc-hardening.md`                | Local message id collision fix; standouts view-mode persistence; conversations search result count                             | Low                                 | ✅ Complete    |
+| `05-secure-token-storage.md`                   | Move auth tokens to `flutter_secure_storage` with migration                                                                    | **High — do last, gate every step** | ✅ Complete    |
 
 ## Explicitly OUT OF SCOPE (do not attempt)
 

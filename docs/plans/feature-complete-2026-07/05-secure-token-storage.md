@@ -1,5 +1,7 @@
 # Plan 05 — Secure Token Storage (flutter_secure_storage)
 
+**Status:** ✅ COMPLETE — implemented and `flutter analyze` clean on 2026-07-05
+
 Read `00-overview.md` first. **Do this plan LAST.** It touches the auth path; a mistake here locks users out. Every task has a gate — if a gate fails, revert the whole plan (git checkout the touched files) and report.
 
 ## Why

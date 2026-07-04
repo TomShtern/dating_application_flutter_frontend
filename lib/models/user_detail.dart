@@ -10,6 +10,7 @@ class UserDetail {
     required this.maxDistanceKm,
     required this.photoUrls,
     required this.state,
+    this.verified = false,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class UserDetail {
   final int maxDistanceKm;
   final List<String> photoUrls;
   final String state;
+  final bool verified;
 
   factory UserDetail.fromJson(Map<String, dynamic> json) {
     return UserDetail(
@@ -43,6 +45,7 @@ class UserDetail {
           .where((value) => value.isNotEmpty)
           .toList(growable: false),
       state: json['state'] as String? ?? 'UNKNOWN',
+      verified: json['verified'] as bool? ?? false,
     );
   }
 
@@ -62,7 +65,8 @@ class UserDetail {
         other.approximateLocation == approximateLocation &&
         other.maxDistanceKm == maxDistanceKm &&
         _listEquals(other.photoUrls, photoUrls) &&
-        other.state == state;
+        other.state == state &&
+        other.verified == verified;
   }
 
   @override
@@ -77,6 +81,7 @@ class UserDetail {
     maxDistanceKm,
     Object.hashAll(photoUrls),
     state,
+    verified,
   );
 }
 

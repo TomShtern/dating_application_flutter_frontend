@@ -1,6 +1,8 @@
 enum MessageLocalState { none, sending, failed }
 
 class MessageDto {
+  static int _localSequence = 0;
+
   const MessageDto({
     required this.id,
     required this.conversationId,
@@ -31,7 +33,7 @@ class MessageDto {
   }) {
     final resolvedLocalId =
         localId ??
-        'local-${DateTime.now().microsecondsSinceEpoch}-${content.hashCode}';
+        'local-${DateTime.now().microsecondsSinceEpoch}-${_localSequence++}';
 
     return MessageDto(
       id: resolvedLocalId,

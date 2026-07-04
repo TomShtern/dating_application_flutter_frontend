@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,7 +10,9 @@ import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../auth/auth_controller.dart';
+import '../auth/dev_user_picker_screen.dart';
 import '../auth/selected_user_provider.dart';
+import '../notifications/notifications_provider.dart';
 import '../notifications/notifications_screen.dart';
 import '../safety/blocked_users_screen.dart';
 import '../stats/achievements_screen.dart';
@@ -31,6 +34,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedThemeMode = ref.watch(currentThemeModePreferenceProvider);
+    final unreadNotifications =
+        ref.watch(notificationsUnreadCountProvider).value ?? 0;
 
     return SafeArea(
       top: false,
@@ -97,6 +102,11 @@ class SettingsScreen extends ConsumerWidget {
                               title: 'Notifications',
                               subtitle:
                                   'Review recent activity and catch anything unread',
+                              badgeLabel: unreadNotifications > 0
+                                  ? (unreadNotifications > 99
+                                      ? '99+'
+                                      : '$unreadNotifications')
+                                  : null,
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute<void>(
@@ -367,14 +377,32 @@ class _SettingsSessionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          OutlinedButton.icon(
-            onPressed: onSwitchUser,
-            icon: const Icon(Icons.switch_account_outlined, size: 18),
-            label: const Text('Switch'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 40),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onSwitchUser,
+                icon: const Icon(Icons.switch_account_outlined, size: 18),
+                label: const Text('Switch'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
+              if (kDebugMode) ...[
+                const SizedBox(height: 6),
+                TextButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const DevUserPickerScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.developer_mode_rounded, size: 16),
+                  label: const Text('Pick seeded user'),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -448,6 +476,7 @@ class _SettingsLinkTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.badgeLabel,
   });
 
   final IconData icon;
@@ -455,6 +484,7 @@ class _SettingsLinkTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final String? badgeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -496,6 +526,25 @@ class _SettingsLinkTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (badgeLabel != null) ...[
+                  const SizedBox(width: 8),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: AppTheme.matchAccent(context),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      child: Text(
+                        badgeLabel!,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 8),
                 SizedBox.square(
                   dimension: 24,

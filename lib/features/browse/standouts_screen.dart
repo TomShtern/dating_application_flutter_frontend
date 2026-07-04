@@ -12,8 +12,6 @@ import '../../theme/app_theme.dart';
 import '../profile/profile_screen.dart';
 import 'standouts_provider.dart';
 
-enum _StandoutsViewMode { grid, list }
-
 enum _StandoutCardMode { grid, list }
 
 const double _standoutsCardGap = 16;
@@ -29,11 +27,10 @@ class StandoutsScreen extends ConsumerStatefulWidget {
 }
 
 class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
-  _StandoutsViewMode? _viewModeOverride;
-
-  _StandoutsViewMode _resolveViewMode(double width) {
-    return _viewModeOverride ??
-        (width < 600 ? _StandoutsViewMode.list : _StandoutsViewMode.grid);
+  StandoutsViewMode _resolveViewMode(double width) {
+    final viewModeOverride = ref.watch(standoutsViewModeProvider);
+    return viewModeOverride ??
+        (width < 600 ? StandoutsViewMode.list : StandoutsViewMode.grid);
   }
 
   @override
@@ -70,10 +67,10 @@ class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
                   _StandoutsHero(
                     snapshot: snapshot,
                     viewMode: viewMode,
-                    onViewModeChanged: (_StandoutsViewMode nextMode) {
-                      setState(() {
-                        _viewModeOverride = nextMode;
-                      });
+                    onViewModeChanged: (StandoutsViewMode nextMode) {
+                      ref
+                          .read(standoutsViewModeProvider.notifier)
+                          .setViewMode(nextMode);
                     },
                   ),
                   Expanded(
@@ -92,7 +89,7 @@ class _StandoutsScreenState extends ConsumerState<StandoutsScreen> {
                                   'No standouts are ready right now. Check back soon.',
                               onRefresh: controller.refresh,
                             )
-                          else if (viewMode == _StandoutsViewMode.grid)
+                          else if (viewMode == StandoutsViewMode.grid)
                             _StandoutsGrid(standouts: snapshot.standouts)
                           else
                             _StandoutsList(standouts: snapshot.standouts),
@@ -150,8 +147,8 @@ class _StandoutsHero extends StatelessWidget {
   });
 
   final StandoutsSnapshot snapshot;
-  final _StandoutsViewMode viewMode;
-  final ValueChanged<_StandoutsViewMode> onViewModeChanged;
+  final StandoutsViewMode viewMode;
+  final ValueChanged<StandoutsViewMode> onViewModeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -223,12 +220,12 @@ class _StandoutsHero extends StatelessWidget {
                   ),
                   ViewModeToggle(
                     key: const ValueKey('standouts-view-toggle'),
-                    isGrid: viewMode == _StandoutsViewMode.grid,
+                    isGrid: viewMode == StandoutsViewMode.grid,
                     onChanged: (isGrid) {
                       onViewModeChanged(
                         isGrid
-                            ? _StandoutsViewMode.grid
-                            : _StandoutsViewMode.list,
+                            ? StandoutsViewMode.grid
+                            : StandoutsViewMode.list,
                       );
                     },
                   ),

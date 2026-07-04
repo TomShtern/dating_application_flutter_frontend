@@ -33,6 +33,7 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   bool _markingAllRead = false;
   bool _requestingPermission = false;
+  bool _showMuted = false;
   String? _busyNotificationId;
 
   @override
@@ -53,6 +54,21 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 .length;
             final backendUnreadCount = unreadCountState.asData?.value;
             final unreadCount = backendUnreadCount ?? localUnreadCount;
+
+            final prefs = notificationPreferences;
+            final visible = <NotificationItem>[];
+            var hiddenCount = 0;
+            for (final item in notifications) {
+              final category = categoryForNotificationType(item.type);
+              if (category != null &&
+                  !prefs.isEnabled(category) &&
+                  !_showMuted) {
+                hiddenCount++;
+              } else {
+                visible.add(item);
+              }
+            }
+            final mutedHidden = hiddenCount > 0;
 
             return RefreshIndicator(
               onRefresh: controller.refresh,
@@ -85,21 +101,41 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     onCategoryChanged: _handleCategoryChanged,
                   ),
                   SizedBox(height: AppTheme.sectionSpacing(compact: true)),
-                  if (notifications.isEmpty)
+                  if (visible.isEmpty && !mutedHidden)
                     AppAsyncState.empty(
                       message: unreadOnly
                           ? 'You\'re all caught up — nothing unread.'
                           : 'You\'ll see matches, replies, and friend activity here.',
                       onRefresh: controller.refresh,
                     )
-                  else
-                    ..._buildNotificationSections(
-                      notifications: notifications,
-                      referenceTime: referenceTime,
-                      busyNotificationId: _busyNotificationId,
-                      onMarkRead: _handleMarkRead,
-                      onOpenRoute: _handleOpenRoute,
-                    ),
+                  else ...[
+                    if (visible.isNotEmpty)
+                      ..._buildNotificationSections(
+                        notifications: visible,
+                        referenceTime: referenceTime,
+                        busyNotificationId: _busyNotificationId,
+                        onMarkRead: _handleMarkRead,
+                        onOpenRoute: _handleOpenRoute,
+                      ),
+                    if (mutedHidden)
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () =>
+                              setState(() => _showMuted = !_showMuted),
+                          icon: Icon(
+                            _showMuted
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            size: 16,
+                          ),
+                          label: Text(
+                            _showMuted
+                                ? 'Hide muted again'
+                                : '$hiddenCount hidden by your preferences — show',
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
               ),
             );

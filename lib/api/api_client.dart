@@ -439,8 +439,7 @@ class ApiClient {
         ApiEndpoints.pass(userId, targetId),
         options: Options(extra: {'userId': userId}),
       );
-      final payload = _expectMap(response.data, context: 'passing a candidate');
-      return payload['message'] as String? ?? 'Passed';
+      return _extractMessage(response.data, fallback: 'Passed');
     } on DioException catch (error) {
       throw _toApiError(error);
     }

@@ -59,6 +59,12 @@ class PhotoUploadNotifier extends Notifier<Map<String, PhotoUploadEntry>> {
   }
 
   void dismissUpload(String localId) {
+    final entry = state[localId];
+    if (entry == null ||
+        entry.status == PhotoUploadStatus.preparing ||
+        entry.status == PhotoUploadStatus.uploading) {
+      return;
+    }
     final updated = Map<String, PhotoUploadEntry>.from(state);
     updated.remove(localId);
     state = updated;

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_client.dart';
@@ -44,7 +45,10 @@ class Authenticated extends AuthState {
 }
 
 final authTokenStoreProvider = Provider<AuthTokenStore>((ref) {
-  return AuthTokenStore(ref.watch(sharedPreferencesProvider));
+  return AuthTokenStore(
+    const FlutterSecureStorage(),
+    ref.watch(sharedPreferencesProvider),
+  );
 });
 
 final authControllerProvider =
@@ -66,7 +70,7 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> restoreSession() async {
-    final session = _store.readSession();
+    final session = await _store.readSession();
     if (session == null) {
       state = const Unauthenticated();
       return;
@@ -147,9 +151,10 @@ class AuthController extends Notifier<AuthState> {
 
   Future<String?> _performRefresh() async {
     final current = state;
+    final storedSession = current is Authenticated ? null : await _store.readSession();
     final refreshToken = switch (current) {
       Authenticated(:final session) => session.refreshToken,
-      _ => _store.readSession()?.refreshToken,
+      _ => storedSession?.refreshToken,
     };
     if (refreshToken == null || refreshToken.isEmpty) return null;
 

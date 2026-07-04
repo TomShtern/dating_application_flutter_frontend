@@ -102,3 +102,17 @@ bool _readBoolean(dynamic value, {required bool fallback}) {
 
   return fallback;
 }
+
+/// Maps a backend notification type to the device-local preference category
+/// that mutes it. Unknown types return null and are ALWAYS shown — never
+/// hide content we can't classify.
+NotificationPreferenceCategory? categoryForNotificationType(String type) {
+  return switch (type.trim().toUpperCase()) {
+    'NEW_MESSAGE' => NotificationPreferenceCategory.messages,
+    'MATCH_FOUND' ||
+    'FRIEND_REQUEST' ||
+    'FRIEND_REQUEST_ACCEPTED' => NotificationPreferenceCategory.matchesActivity,
+    'GRACEFUL_EXIT' => NotificationPreferenceCategory.safetyAccount,
+    _ => null,
+  };
+}

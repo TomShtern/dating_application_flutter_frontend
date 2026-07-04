@@ -1,5 +1,7 @@
 # Plan 01 — Verified Badge & Lifestyle Display on Profiles
 
+**Status:** ✅ COMPLETE — implemented and `flutter analyze` clean on 2026-07-05
+
 Read `00-overview.md` first. Rules there apply.
 
 ## Why
