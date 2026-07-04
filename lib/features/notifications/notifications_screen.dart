@@ -56,15 +56,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             final unreadCount = backendUnreadCount ?? localUnreadCount;
 
             final prefs = notificationPreferences;
-            final visible = <NotificationItem>[];
             var hiddenCount = 0;
+            final visible = <NotificationItem>[];
             for (final item in notifications) {
               final category = categoryForNotificationType(item.type);
-              if (category != null &&
-                  !prefs.isEnabled(category) &&
-                  !_showMuted) {
+              final isMuted = category != null && !prefs.isEnabled(category);
+              if (isMuted) {
                 hiddenCount++;
-              } else {
+              }
+              if (!isMuted || _showMuted) {
                 visible.add(item);
               }
             }

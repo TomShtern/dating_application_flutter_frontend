@@ -19,6 +19,9 @@ class AuthTokenStore {
   Future<AuthSession?> readSession() async {
     final secureRaw = await _readSecureRaw();
     if (secureRaw != null) {
+      // Opportunistic cleanup of any lingering legacy copy from a prior
+      // partial migration (secure write succeeded but legacy remove failed).
+      try { await _legacyPreferences.remove(storageKey); } catch (_) {}
       return _decode(secureRaw);
     }
 
@@ -32,19 +35,30 @@ class AuthTokenStore {
     if (session != null) {
       try {
         await _secureStorage.write(key: storageKey, value: legacyRaw);
+      } catch (_) {
+        // Secure write failed; migration skipped, session still valid from legacy.
+        return session;
+      }
+      // Best-effort cleanup of legacy copy after successful secure write.
+      try {
         await _legacyPreferences.remove(storageKey);
       } catch (_) {
-        // Migration is best-effort; the session itself is still valid.
+        // Legacy cleanup failure is non-fatal; will retry on next readSession.
       }
     }
     return session;
   }
 
   Future<void> saveSession(AuthSession session) async {
-    await _secureStorage.write(
-      key: storageKey,
-      value: jsonEncode(session.toStorageJson()),
-    );
+    try {
+      await _secureStorage.write(
+        key: storageKey,
+        value: jsonEncode(session.toStorageJson()),
+      );
+    } catch (_) {
+      // A failed secure write must not block auth flow;
+      // session remains valid in memory and in caller state.
+    }
   }
 
   Future<void> clearSession() async {

@@ -531,7 +531,7 @@ class _SettingsLinkTile extends StatelessWidget {
                   DecoratedBox(
                     decoration: BoxDecoration(
                       color: AppTheme.matchAccent(context),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: AppTheme.chipRadius,
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
