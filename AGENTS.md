@@ -31,8 +31,8 @@ Read the smallest relevant set before editing:
 - `README.md` — repo overview, dependency inventory, setup.
 - `docs/design-language.md` — canonical design-system reference.
 - `docs/visual-review-workflow.md` — screenshot workflow.
-- `FLUTTER_PROJECT_HANDOFF.md` — backend/mobile contract and product constraints.
-- `FLUTTER_FRONTEND_AGENT_GUIDE.md` — broader guidance and API cheat sheet.
+- `docs/specs/backend-contract-handoff.md` — backend/mobile contract and product constraints.
+- `docs/specs/frontend-agent-guide.md` — broader guidance and API cheat sheet.
 - `screen-transform-prompts/prompt-<screen>.md` — per-screen design intent.
 - `docs/superpowers/plans/` — historical and active plans. Treat status claims
   there as historical unless verified against current code.

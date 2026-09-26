@@ -1,61 +1,57 @@
-# Miscellaneous
-*.class
+﻿# Local environment and developer overrides
+.env
+.env.*
+!.env.example
+
+# Temporary agent logs and test dumps
 *.log
-*.pyc
-*.swp
+*.tmp
+.tmp_*
+.task1_*
+flutter_test_*.txt
+.ai_test_logs/
+.remember/
+design-reference/
+
+# Visual review ephemeral artifacts
+visual_review/
+!visual_review/.gitkeep
+
+# macOS metadata
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
+# Miscellaneous Flutter & IDE
 *.iml
-*.ipr
-*.iws
 .idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+.vscode/
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
-/visual_review/
-/coverage/
-.env
-/test/visual/failures/
-/.ai_test_logs/
 
-# Symbolication related
-app.*.symbols
+# Android build outputs
+android/**/gradle-wrapper.jar
+android/.gradle
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/**/GeneratedPluginRegistrant.java
 
-# Obfuscation related
-app.*.map.json
+# iOS / Xcode outputs
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/DerivedData/
+ios/.symlinks/
+ios/profileModeSummary.json
+ios/Pods/
+ios/.build/
+ios/*.lock
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-.vscode/settings.json
-.claude/settings.local.json
-design-reference/stats-run-0070-reference.png
-.gitignore
-.gitignore
-.gitignore
-.gitignore
-design-reference/notifications-dark-run-0065-reference.png
-design-reference/notifications-dark-run-0070-reference.png
-design-reference/notifications-run-0065-reference.png
-design-reference/stats-run-0065-reference.png
-design-reference/notifications-run-0070-reference.png
+# Exceptions
+!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages

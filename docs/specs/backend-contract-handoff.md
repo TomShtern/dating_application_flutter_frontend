@@ -4,6 +4,9 @@
 > Purpose: copy this file into the new blank Flutter project so the mobile codebase starts with the right mental model, server contract, and scope.
 > Source of truth for this document: current code and current verified runtime behavior, not stale docs.
 
+> **Historical Context Note (September 2026):** This specification served as the initial Phase 3 architectural handoff document from April 2026. Note that several items originally categorized as out-of-scope (specifically: real auth with JWT access/refresh lifecycle, user signup, photo upload management, and OS-level local notification channels) have since been fully implemented and verified in subsequent development sprints. The core architectural boundary—thin client presentation with authoritative backend domain rules—remains canonical.
+
+
 ## 1. What This Mobile Project Is
 
 This mobile app is a new Flutter frontend for an already-existing Java backend.

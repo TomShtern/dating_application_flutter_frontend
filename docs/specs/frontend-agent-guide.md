@@ -1,6 +1,9 @@
 # Flutter Frontend Agent Guide
 
 This document is the source-of-truth handoff for building the separate Flutter mobile frontend for this dating app. Copy it into the new Flutter project if you want the mobile workspace to start with the right product, platform, and API assumptions.
+> **Historical Context Note (September 2026):** This guide captured the initial mobile client assumptions from April 2026. Real auth (JWT access + refresh flow), user account creation/signup, photo uploads, and native local notifications have since been implemented. The architectural philosophy and API cheat sheet below remain foundational.
+
+
 
 ## 1. Mission
 
