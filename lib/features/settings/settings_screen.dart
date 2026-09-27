@@ -223,6 +223,15 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+                _SettingsSectionCard(
+                  icon: Icons.manage_accounts_outlined,
+                  accentColor: _settingsRose,
+                  title: 'Account',
+                  subtitle:
+                      'Delete your profile, photos, and matches permanently. This cannot be undone.',
+                  child: _DeleteAccountTile(currentUser: currentUser),
+                ),
+                SizedBox(height: AppTheme.sectionSpacing(compact: true)),
               ],
             ),
           ),
@@ -410,6 +419,121 @@ class _SettingsSessionCard extends StatelessWidget {
   }
 }
 
+class _DeleteAccountTile extends ConsumerStatefulWidget {
+  const _DeleteAccountTile({required this.currentUser});
+
+  final UserSummary currentUser;
+
+  @override
+  ConsumerState<_DeleteAccountTile> createState() => _DeleteAccountTileState();
+}
+
+class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
+  bool _isDeleting = false;
+
+  Future<void> _confirmAndDelete() async {
+    final typedName = TextEditingController();
+    try {
+      final firstConfirm = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('Delete ${widget.currentUser.name}\'s account?'),
+          content: const Text(
+            'This permanently deletes your profile, photos, matches, and '
+            'messages. This cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Keep my account'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(
+                  dialogContext,
+                ).colorScheme.error,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+      if (firstConfirm != true || !mounted) return;
+
+      final typedConfirm = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Type DELETE to confirm'),
+          content: TextField(
+            controller: typedName,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              hintText: 'DELETE',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) => Navigator.of(dialogContext).pop(
+              value.trim().toUpperCase() == 'DELETE',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(
+                  dialogContext,
+                ).colorScheme.error,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(
+                typedName.text.trim().toUpperCase() == 'DELETE',
+              ),
+              child: const Text('Delete account'),
+            ),
+          ],
+        ),
+      );
+      if (typedConfirm != true || !mounted) return;
+
+      setState(() => _isDeleting = true);
+      await ref.read(authControllerProvider.notifier).deleteAccount();
+      await ref.read(selectUserControllerProvider).clearSelection();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your account has been deleted.')),
+      );
+    } finally {
+      typedName.dispose();
+      if (mounted) setState(() => _isDeleting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        Icons.delete_forever_outlined,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      title: const Text('Delete account'),
+      subtitle: Text(
+        'Signed in as ${widget.currentUser.name}. Deletion is permanent.',
+      ),
+      trailing: _isDeleting
+          ? const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : null,
+      onTap: _isDeleting ? null : _confirmAndDelete,
+    );
+  }
+}
+
 class _SettingsSectionCard extends StatelessWidget {
   const _SettingsSectionCard({
     required this.icon,
@@ -432,37 +556,40 @@ class _SettingsSectionCard extends StatelessWidget {
         context,
         color: _settingsSurfaceColor(context, accentColor),
       ),
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _SettingsIconChip(icon: icon, color: accentColor),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
+      child: Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: EdgeInsets.all(AppTheme.cardPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SettingsIconChip(icon: icon, color: accentColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTheme.cardGap),
-            child,
-          ],
+                ],
+              ),
+              const SizedBox(height: AppTheme.cardGap),
+              child,
+            ],
+          ),
         ),
       ),
     );

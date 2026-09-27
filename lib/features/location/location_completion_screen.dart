@@ -332,24 +332,30 @@ class _LocationCompletionScreenState
                               ),
                               borderRadius: AppTheme.cardRadius,
                             ),
-                            child: SwitchListTile.adaptive(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 0,
+                            // A transparent Material must sit between the
+                            // tinted box and the tile so ListTile ink
+                            // effects are not hidden.
+                            child: Material(
+                              type: MaterialType.transparency,
+                              child: SwitchListTile.adaptive(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 0,
+                                ),
+                                dense: true,
+                                value: _allowApproximate,
+                                title: const Text(
+                                  'Use the closest match if needed',
+                                ),
+                                subtitle: const Text(
+                                  "If we can't resolve the exact city or ZIP, we'll use the nearest available area.",
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _allowApproximate = value;
+                                  });
+                                },
                               ),
-                              dense: true,
-                              value: _allowApproximate,
-                              title: const Text(
-                                'Use the closest match if needed',
-                              ),
-                              subtitle: const Text(
-                                "If we can't resolve the exact city or ZIP, we'll use the nearest available area.",
-                              ),
-                              onChanged: (value) {
-                                setState(() {
-                                  _allowApproximate = value;
-                                });
-                              },
                             ),
                           ),
                           const SizedBox(height: AppTheme.sectionGap),

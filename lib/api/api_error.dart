@@ -12,13 +12,40 @@ class ApiError implements Exception {
     final payload = response?.data;
 
     if (payload is Map) {
+      final statusCode = response?.statusCode;
+      final backendMessage = payload['message'] as String?;
+      final code = payload['code'] as String?;
+
+      if (statusCode == 429) {
+        final retryAfter = response?.headers.value('retry-after');
+        final suffix = retryAfter != null && retryAfter.isNotEmpty
+            ? ' Try again in $retryAfter.'
+            : ' Try again shortly.';
+        return ApiError(
+          message:
+              '${backendMessage ?? 'Too many requests.'}$suffix',
+          code: code,
+          statusCode: statusCode,
+        );
+      }
+
+      if (statusCode == 403) {
+        return ApiError(
+          message:
+              backendMessage ??
+              'This action is not allowed for your account right now.',
+          code: code,
+          statusCode: statusCode,
+        );
+      }
+
       return ApiError(
         message:
-            payload['message'] as String? ??
+            backendMessage ??
             exception.message ??
             'Request failed.',
-        code: payload['code'] as String?,
-        statusCode: response?.statusCode,
+        code: code,
+        statusCode: statusCode,
       );
     }
 

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/api/api_error.dart';
+import 'package:flutter_dating_application_1/api/report_reason.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversations_provider.dart';
@@ -74,7 +75,7 @@ void main() {
   );
 
   test(
-    'reportUser calls the API without invalidating cached relationship data',
+    'reportUser sends a report body and skips invalidation unless blocking',
     () async {
       final apiClient = _FakeSafetyApiClient(detail: otherUserDetail);
       final container = ProviderContainer(
@@ -90,7 +91,10 @@ void main() {
       await container.read(conversationsProvider.future);
       await container.read(otherUserProfileProvider(_otherUserId).future);
 
-      await container.read(safetyControllerProvider).reportUser(_otherUserId);
+      await container.read(safetyControllerProvider).reportUser(
+        _otherUserId,
+        const ReportUserRequest(reason: ReportReason.spam),
+      );
 
       await container.read(browseProvider.future);
       await container.read(matchesProvider.future);
@@ -98,10 +102,44 @@ void main() {
       await container.read(otherUserProfileProvider(_otherUserId).future);
 
       expect(apiClient.reportCalls, [(_otherUserId, _currentUser.id)]);
+      expect(apiClient.lastReport?.reason, ReportReason.spam);
+      expect(apiClient.lastReport?.blockUser, isFalse);
       expect(apiClient.getBrowseCalls, 1);
       expect(apiClient.getMatchesCalls, 1);
       expect(apiClient.getConversationsCalls, 1);
       expect(apiClient.getUserDetailCalls, 1);
+    },
+  );
+
+  test(
+    'reportUser with blockUser invalidates cached relationship data',
+    () async {
+      final apiClient = _FakeSafetyApiClient(detail: otherUserDetail);
+      final container = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => _currentUser),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(browseProvider.future);
+      await container.read(matchesProvider.future);
+
+      await container.read(safetyControllerProvider).reportUser(
+        _otherUserId,
+        const ReportUserRequest(
+          reason: ReportReason.harassment,
+          blockUser: true,
+        ),
+      );
+
+      await container.read(browseProvider.future);
+      await container.read(matchesProvider.future);
+
+      expect(apiClient.lastReport?.blockUser, isTrue);
+      expect(apiClient.getBrowseCalls, 2);
+      expect(apiClient.getMatchesCalls, 2);
     },
   );
 
@@ -192,7 +230,10 @@ void main() {
       ),
     );
     await expectLater(
-      controller.reportUser(_currentUser.id),
+      controller.reportUser(
+        _currentUser.id,
+        const ReportUserRequest(reason: ReportReason.spam),
+      ),
       throwsA(isA<ApiError>()),
     );
     await expectLater(
@@ -222,6 +263,7 @@ class _FakeSafetyApiClient extends ApiClient {
   final List<(String, String)> unblockCalls = <(String, String)>[];
   final List<(String, String)> reportCalls = <(String, String)>[];
   final List<(String, String)> unmatchCalls = <(String, String)>[];
+  ReportUserRequest? lastReport;
 
   @override
   Future<BrowseResponse> getBrowse({required String userId}) async {
@@ -314,8 +356,10 @@ class _FakeSafetyApiClient extends ApiClient {
   Future<String> reportUser({
     required String userId,
     required String targetId,
+    required ReportUserRequest report,
   }) async {
     reportCalls.add((targetId, userId));
+    lastReport = report;
     return 'User reported.';
   }
 

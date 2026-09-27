@@ -21,6 +21,7 @@ import '../profile/profile_screen.dart';
 import '../profile/profile_provider.dart';
 import '../safety/safety_action_sheet.dart';
 import 'discovery_preferences_screen.dart';
+import 'match_celebration_dialog.dart';
 import 'pending_likers_screen.dart';
 import 'browse_provider.dart';
 import 'standouts_screen.dart';
@@ -138,36 +139,47 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
         return;
       }
 
+      final messenger = ScaffoldMessenger.of(context);
+      void openThread() {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => ConversationThreadScreen(
+              currentUser: widget.currentUser,
+              conversation: ConversationSummary(
+                // Stage A backend contract: matchId is the live
+                // conversation id and can be used directly.
+                id: result.matchId!,
+                otherUserId: result.matchedUserId ?? candidate.id,
+                otherUserName: result.matchedUserName ?? candidate.name,
+                messageCount: 0,
+                lastMessageAt: DateTime.now(),
+              ),
+            ),
+          ),
+        );
+      }
+
+      if (result.isMatch && result.matchId != null) {
+        await MatchCelebrationDialog.show(
+          context,
+          matchedUserName: result.matchedUserName ?? candidate.name,
+          currentUserName: widget.currentUser.name,
+          onMessageNow: openThread,
+        );
+      }
+
+      if (!mounted) {
+        return;
+      }
+
       final message = result.isMatch && result.matchedUserName != null
           ? 'It\'s a match with ${result.matchedUserName}!'
           : result.message;
-      final messenger = ScaffoldMessenger.of(context);
       messenger.showSnackBar(
         SnackBar(
           content: Text(message),
           action: result.isMatch && result.matchId != null
-              ? SnackBarAction(
-                  label: 'Message now',
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (context) => ConversationThreadScreen(
-                          currentUser: widget.currentUser,
-                          conversation: ConversationSummary(
-                            // Stage A backend contract: matchId is the live
-                            // conversation id and can be used directly.
-                            id: result.matchId!,
-                            otherUserId: result.matchedUserId ?? candidate.id,
-                            otherUserName:
-                                result.matchedUserName ?? candidate.name,
-                            messageCount: 0,
-                            lastMessageAt: DateTime.now(),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                )
+              ? SnackBarAction(label: 'Message now', onPressed: openThread)
               : null,
         ),
       );
@@ -905,13 +917,13 @@ class _BrowseActionBar extends StatelessWidget {
   }
 }
 
-class _DailyPickCard extends StatelessWidget {
+class _DailyPickCard extends ConsumerWidget {
   const _DailyPickCard({required this.dailyPick});
 
   final DailyPick dailyPick;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -958,54 +970,107 @@ class _DailyPickCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PersonMediaThumbnail(
-                  key: ValueKey('daily-pick-media-${dailyPick.userId}'),
-                  name: dailyPick.userName,
-                  photoUrl: _primaryPhotoUrl(
-                    dailyPick.primaryPhotoUrl,
-                    dailyPick.photoUrls,
+            InkWell(
+              borderRadius: AppTheme.cardRadius,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => ProfileScreen.otherUser(
+                      userId: dailyPick.userId,
+                      userName: dailyPick.userName,
+                    ),
                   ),
-                  width: 72,
-                  height: 88,
-                  borderRadius: AppTheme.cardRadius,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${dailyPick.userName}, ${dailyPick.userAge}',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        headline,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (supportingLine.isNotEmpty) ...[
-                        const SizedBox(height: 6),
+                );
+              },
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PersonMediaThumbnail(
+                    key: ValueKey('daily-pick-media-${dailyPick.userId}'),
+                    name: dailyPick.userName,
+                    photoUrl: _primaryPhotoUrl(
+                      dailyPick.primaryPhotoUrl,
+                      dailyPick.photoUrls,
+                    ),
+                    width: 72,
+                    height: 88,
+                    borderRadius: AppTheme.cardRadius,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          supportingLine,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                          '${dailyPick.userName}, ${dailyPick.userAge}',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
+                        const SizedBox(height: 6),
+                        Text(
+                          headline,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (supportingLine.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            supportingLine,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (context) =>
+                                        ProfileScreen.otherUser(
+                                          userId: dailyPick.userId,
+                                          userName: dailyPick.userName,
+                                        ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.person_outline_rounded,
+                                size: 18,
+                              ),
+                              label: const Text('View profile'),
+                            ),
+                            const SizedBox(width: 4),
+                            FilledButton.icon(
+                              onPressed: () => ref
+                                  .read(browseControllerProvider)
+                                  .likeCandidate(dailyPick.userId),
+                              icon: const Icon(
+                                Icons.favorite_rounded,
+                                size: 18,
+                              ),
+                              label: const Text('Like'),
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(0, 40),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -1306,26 +1371,29 @@ class _BrowseReasonCard extends StatelessWidget {
           theme.colorScheme.surfaceContainerLow,
         ),
       ),
-      child: Theme(
-        data: theme.copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-          collapsedIconColor: _browseSky,
-          iconColor: _browseSky,
-          title: const _BrowseReasonHeader(),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              summary,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Theme(
+          data: theme.copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+            childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+            collapsedIconColor: _browseSky,
+            iconColor: _browseSky,
+            title: const _BrowseReasonHeader(),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                summary,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
+            children: [child],
           ),
-          children: [child],
         ),
       ),
     );

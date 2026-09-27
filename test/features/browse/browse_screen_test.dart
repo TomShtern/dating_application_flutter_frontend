@@ -97,9 +97,10 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Like'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Message now'), findsOneWidget);
+    // Mutual like now opens the celebration dialog instead of only a snackbar.
+    expect(find.text("It's a Match!"), findsOneWidget);
 
-    await tester.tap(find.text('Message now'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Message now'));
     await tester.pumpAndSettle();
 
     expect(find.text('Conversation'), findsOneWidget);

@@ -778,34 +778,37 @@ class _DealbreakerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ExpansionTile(
-      tilePadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-      childrenPadding: const EdgeInsets.only(bottom: 12),
-      iconColor: _prefSlate,
-      collapsedIconColor: _prefSlate,
-      title: Text(title, style: Theme.of(context).textTheme.titleSmall),
-      subtitle: Text(
-        selected.isEmpty ? 'No preference set' : '${selected.length} selected',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return Material(
+      type: MaterialType.transparency,
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+        childrenPadding: const EdgeInsets.only(bottom: 12),
+        iconColor: _prefSlate,
+        collapsedIconColor: _prefSlate,
+        title: Text(title, style: Theme.of(context).textTheme.titleSmall),
+        subtitle: Text(
+          selected.isEmpty ? 'No preference set' : '${selected.length} selected',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
+        children: [
+          _DiscoveryOptionGrid(
+            options: options,
+            accentColor: _prefSlate,
+            selectedOptions: selected,
+            onOptionToggled: (option, isSelected) {
+              final updated = Set<String>.of(selected);
+              if (isSelected) {
+                updated.add(option);
+              } else {
+                updated.remove(option);
+              }
+              onChanged(updated);
+            },
+          ),
+        ],
       ),
-      children: [
-        _DiscoveryOptionGrid(
-          options: options,
-          accentColor: _prefSlate,
-          selectedOptions: selected,
-          onOptionToggled: (option, isSelected) {
-            final updated = Set<String>.of(selected);
-            if (isSelected) {
-              updated.add(option);
-            } else {
-              updated.remove(option);
-            }
-            onChanged(updated);
-          },
-        ),
-      ],
     );
   }
 }

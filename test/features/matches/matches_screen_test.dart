@@ -145,7 +145,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Safety actions'));
+    await tester.tap(find.byTooltip('Match options'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Safety actions').last);

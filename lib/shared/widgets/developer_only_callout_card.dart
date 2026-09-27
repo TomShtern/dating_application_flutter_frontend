@@ -93,7 +93,13 @@ class DeveloperOnlyCalloutCard extends StatelessWidget {
                 ),
               ),
             ],
-            if (child != null) ...[const SizedBox(height: 10), child!],
+            if (child != null) ...[
+              const SizedBox(height: 10),
+              // Material transparency keeps ListTile/ExpansionTile ink effects
+              // working inside this tinted card instead of tripping the
+              // framework assertion about hidden ListTile splashes.
+              Material(type: MaterialType.transparency, child: child!),
+            ],
             if (actions.isNotEmpty) ...[
               const SizedBox(height: 10),
               Wrap(spacing: 8, runSpacing: 6, children: actions),

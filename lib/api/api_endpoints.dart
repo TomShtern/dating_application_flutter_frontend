@@ -21,6 +21,8 @@ class ApiEndpoints {
 
   static String userDetail(String userId) => '/api/users/$userId';
 
+  static String deleteUser(String userId) => '/api/users/$userId';
+
   static String updateProfile(String userId) => '/api/users/$userId/profile';
 
   static String profileEditSnapshot(String userId) =>

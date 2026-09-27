@@ -129,6 +129,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
   String? _selectedEducation;
   late final Set<String> _selectedInterestedIn;
   late List<String> _interests;
+  late List<String> _initialInterests;
   int? _maxDistanceKm;
   late String _approximateLocation;
   ResolvedLocation? _resolvedLocation;
@@ -151,6 +152,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
       editable.interestedIn,
     ).toSet();
     _interests = List<String>.of(editable.interests);
+    _initialInterests = List<String>.of(editable.interests);
     _approximateLocation = editable.location?.label ?? '';
     _maxDistanceKm =
         editable.maxDistanceKm != null && editable.maxDistanceKm! > 0
@@ -632,7 +634,11 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                             ),
                             borderRadius: AppTheme.cardRadius,
                           ),
-                          child: ExpansionTile(
+                          // A transparent Material must sit between the tinted
+                          // box and the tile so ListTile ink effects render.
+                          child: Material(
+                            type: MaterialType.transparency,
+                            child: ExpansionTile(
                             tilePadding: const EdgeInsets.symmetric(
                               horizontal: 14,
                               vertical: 2,
@@ -688,6 +694,7 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
                         ),
                       ),
                     ),
+                  ),
                     SizedBox(height: AppTheme.sectionSpacing(compact: true)),
                   ],
                 ),
@@ -697,6 +704,18 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
         ),
       ),
     );
+  }
+
+  bool get _interestsChanged {
+    if (_interests.length != _initialInterests.length) {
+      return true;
+    }
+    for (var index = 0; index < _interests.length; index++) {
+      if (_interests[index] != _initialInterests[index]) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _handleSave() async {
@@ -731,7 +750,11 @@ class _ProfileEditScreenState extends ConsumerState<_ProfileEditForm> {
       wantsKids: _selectedWantsKids,
       lookingFor: _selectedLookingFor,
       education: _selectedEducation,
-      interests: List<String>.of(_interests, growable: false),
+      // Only send interests when the user actually edited them: an omitted
+      // field is preserved server-side, while an empty list would wipe them.
+      interests: _interestsChanged
+          ? List<String>.of(_interests, growable: false)
+          : null,
     );
 
     try {

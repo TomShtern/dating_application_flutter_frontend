@@ -141,6 +141,7 @@ class _ConversationThreadScreenState
                         return _ConversationThreadEmptyState(
                           otherUserName: widget.conversation.otherUserName,
                           onRefresh: threadController.refresh,
+                          onUseOpener: _handleUseOpener,
                         );
                       }
 
@@ -306,6 +307,14 @@ class _ConversationThreadScreenState
             .read(conversationThreadControllerProvider(widget.conversation.id))
             .refresh();
     }
+  }
+
+  void _handleUseOpener(String opener) {
+    _messageController.text = opener;
+    _messageController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _messageController.text.length),
+    );
+    setState(() {});
   }
 
   Future<void> _handleSend() async {
@@ -784,10 +793,12 @@ class _ConversationThreadEmptyState extends StatelessWidget {
   const _ConversationThreadEmptyState({
     required this.otherUserName,
     required this.onRefresh,
+    required this.onUseOpener,
   });
 
   final String otherUserName;
   final Future<void> Function() onRefresh;
+  final ValueChanged<String> onUseOpener;
 
   @override
   Widget build(BuildContext context) {
@@ -840,6 +851,26 @@ class _ConversationThreadEmptyState extends StatelessWidget {
                   Text(
                     'Start the conversation with $otherUserName when you\'re ready.',
                     style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final opener in [
+                        'Hi $otherUserName! What has your week been like?',
+                        'Your photos caught my eye — what do you enjoy doing on weekends?',
+                        'Quick question: coffee or a walk for a first meet?',
+                      ])
+                        ActionChip(
+                          label: Text(
+                            opener,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onPressed: () => onUseOpener(opener),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   TextButton.icon(
@@ -962,7 +993,7 @@ class _MessageBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                SelectableText(
                   message.content,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: entry.isOutgoing

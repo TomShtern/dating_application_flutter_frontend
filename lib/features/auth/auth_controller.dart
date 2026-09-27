@@ -149,6 +149,24 @@ class AuthController extends Notifier<AuthState> {
     state = const Unauthenticated();
   }
 
+  Future<void> deleteAccount() async {
+    final selected = await ref.read(selectedUserProvider.future);
+    try {
+      if (selected != null) {
+        await _api.deleteUser(userId: selected.id);
+      }
+    } on ApiError {
+      // Best effort — local cleanup still runs so a deleted backend profile
+      // cannot leave a stale session behind.
+    } catch (_) {
+      // Non-API errors (network, timeout) — proceed with local cleanup.
+    }
+    await _clearAuth();
+    state = const Unauthenticated(
+      message: 'Your account has been deleted.',
+    );
+  }
+
   Future<String?> _performRefresh() async {
     final current = state;
     final storedSession = current is Authenticated ? null : await _store.readSession();

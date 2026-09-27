@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
+import '../../api/report_reason.dart';
 import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../auth/selected_user_provider.dart';
 import 'safety_provider.dart';
@@ -232,6 +233,11 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
       return;
     }
 
+    if (action == SafetyAction.report) {
+      await _handleReport();
+      return;
+    }
+
     final confirmed = await _confirmAction(action);
     if (!confirmed || !mounted) {
       return;
@@ -248,7 +254,7 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
         SafetyAction.unblock => await controller.unblockUser(
           widget.targetUserId,
         ),
-        SafetyAction.report => await controller.reportUser(widget.targetUserId),
+        SafetyAction.report => throw StateError('unreachable'),
         SafetyAction.unmatch => await controller.unmatchUser(
           widget.targetUserId,
         ),
@@ -279,6 +285,66 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to complete that safety action.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleReport() async {
+    final request = await showModalBottomSheet<ReportUserRequest>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => _ReportReasonSheet(
+        targetUserName: widget.targetUserName,
+      ),
+    );
+
+    if (request == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final message = await ref
+          .read(safetyControllerProvider)
+          .reportUser(widget.targetUserId, request);
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop(
+        SafetyActionOutcome(
+          action: request.blockUser
+              ? SafetyAction.block
+              : SafetyAction.report,
+          message: message,
+        ),
+      );
+    } on ApiError catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to report that profile.')),
       );
     } finally {
       if (mounted) {
@@ -327,6 +393,136 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
     );
 
     return confirmed ?? false;
+  }
+}
+
+class _ReportReasonSheet extends StatefulWidget {
+  const _ReportReasonSheet({required this.targetUserName});
+
+  final String targetUserName;
+
+  @override
+  State<_ReportReasonSheet> createState() => _ReportReasonSheetState();
+}
+
+class _ReportReasonSheetState extends State<_ReportReasonSheet> {
+  ReportReason _reason = ReportReason.harassment;
+  bool _blockUser = true;
+  final TextEditingController _detailsController = TextEditingController();
+
+  @override
+  void dispose() {
+    _detailsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottomInset),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Report ${widget.targetUserName}?',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Choose a reason so moderation can review this profile. '
+                'Reports are reviewed and repeated violations can lead to a ban.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Text('Reason', style: theme.textTheme.titleSmall),
+              const SizedBox(height: 8),
+              RadioGroup<ReportReason>(
+                groupValue: _reason,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _reason = value);
+                  }
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final reason in ReportReason.values)
+                      RadioListTile<ReportReason>(
+                        value: reason,
+                        title: Text(reason.label),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _detailsController,
+                decoration: const InputDecoration(
+                  labelText: 'Details (optional)',
+                  hintText: 'Add anything reviewers should know',
+                  border: OutlineInputBorder(),
+                ),
+                minLines: 2,
+                maxLines: 4,
+                maxLength: 500,
+              ),
+              SwitchListTile(
+                value: _blockUser,
+                onChanged: (value) => setState(() => _blockUser = value),
+                title: Text(
+                  'Also block ${widget.targetUserName}',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Blocking stops contact and hides both profiles immediately.',
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(
+                          ReportUserRequest(
+                            reason: _reason,
+                            description: _detailsController.text.trim().isEmpty
+                                ? null
+                                : _detailsController.text.trim(),
+                            blockUser: _blockUser,
+                          ),
+                        );
+                      },
+                      child: const Text('Submit report'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -990,38 +990,45 @@ class _NotificationPreferencesCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: AppTheme.surfaceDecoration(context, color: surface),
-      child: Padding(
-        padding: AppTheme.sectionPadding(compact: true),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Delivery categories', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              'These preferences are stored on this device until backend preference sync lands.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 8),
-            for (final category in NotificationPreferenceCategory.values) ...[
-              _NotificationPreferenceTile(
-                title: _notificationCategoryTitle(category),
-                subtitle: _notificationCategorySubtitle(category),
-                value: preferences.isEnabled(category),
-                onChanged: (value) => onCategoryChanged(category, value),
-              ),
-              if (category != NotificationPreferenceCategory.values.last)
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.3,
-                  ),
+      // A transparent Material must sit between the tinted box and the
+      // SwitchListTiles so their ink effects are not hidden (framework
+      // assertion: "ListTile background color or ink splashes may be
+      // invisible").
+      child: Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: AppTheme.sectionPadding(compact: true),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Delivery categories', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                'These preferences are stored on this device until backend preference sync lands.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.35,
                 ),
+              ),
+              const SizedBox(height: 8),
+              for (final category in NotificationPreferenceCategory.values) ...[
+                _NotificationPreferenceTile(
+                  title: _notificationCategoryTitle(category),
+                  subtitle: _notificationCategorySubtitle(category),
+                  value: preferences.isEnabled(category),
+                  onChanged: (value) => onCategoryChanged(category, value),
+                ),
+                if (category != NotificationPreferenceCategory.values.last)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.3,
+                    ),
+                  ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

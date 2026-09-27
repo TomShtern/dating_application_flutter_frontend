@@ -90,7 +90,7 @@ void main() {
     expect(find.text('Discovery preferences'), findsNothing);
   });
 
-  testWidgets('shows unavailable controls for unsupported features', (
+  testWidgets('no longer renders removed unsupported-feature placeholders', (
     WidgetTester tester,
   ) async {
     final apiClient = _FakeDiscoveryPrefsApiClient();
@@ -108,14 +108,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Scroll down to find unavailable controls
-    await tester.drag(find.byType(ListView), const Offset(0, -1200));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Verified only'), findsOneWidget);
-    expect(find.text('Travel mode'), findsWidgets);
-    expect(find.text('Show me less like this'), findsWidgets);
-    expect(find.text('Unavailable'), findsNWidgets(3));
+    // The "Verified only" / "Travel mode" / "Show me less like this" rows were
+    // dead placeholders for backend gaps and have been removed.
+    expect(find.text('Verified only'), findsNothing);
+    expect(find.text('Travel mode'), findsNothing);
+    expect(find.text('Show me less like this'), findsNothing);
+    expect(find.text('Unavailable'), findsNothing);
   });
 
   testWidgets('changing distance updates slider label', (

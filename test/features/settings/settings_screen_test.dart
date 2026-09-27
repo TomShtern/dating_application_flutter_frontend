@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +18,15 @@ import 'package:flutter_dating_application_1/shared/persistence/shared_preferenc
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // The switch-user flow awaits AuthTokenStore.clearSession(), which calls
+  // flutter_secure_storage's platform channel. Without a mock handler that
+  // future never completes and the callback stalls before clearSelection().
+  const secureStorageChannel = MethodChannel(
+    'plugins.it_nomads.com/flutter_secure_storage',
+  );
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(secureStorageChannel, (call) async => null);
 
   const currentUser = UserSummary(
     id: '11111111-1111-1111-1111-111111111111',

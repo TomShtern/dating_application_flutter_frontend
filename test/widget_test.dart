@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,6 +29,15 @@ import 'package:flutter_dating_application_1/shared/persistence/shared_preferenc
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // AuthController.restoreSession() awaits flutter_secure_storage's platform
+  // channel. Without a mock handler that future never completes, the app
+  // stays in AuthUnknown and pumpAndSettle times out on the startup spinner.
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+    (methodCall) async => null,
+  );
 
   /// Seeds a valid session into SharedPreferences so AuthController
   /// restores into the Authenticated state during widget tests. The
@@ -185,8 +194,10 @@ void main() {
     await tester.scrollUntilVisible(find.text('Noa'), 200);
     await tester.pumpAndSettle();
     expect(find.text('Noa'), findsOneWidget);
-    expect(find.text('Like'), findsOneWidget);
-    expect(find.text('Pass'), findsOneWidget);
+    // "Like" appears twice as FilledButton labels: the candidate action bar
+    // and the daily-pick card.
+    expect(find.text('Like'), findsNWidgets(2));
+    expect(find.text('Pass'), findsAtLeastNWidgets(1));
     expect(find.text('Matches'), findsOneWidget);
     expect(find.text('Chats'), findsOneWidget);
 

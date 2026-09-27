@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/api/api_endpoints.dart';
+import 'package:flutter_dating_application_1/api/report_reason.dart';
 import 'package:flutter_dating_application_1/models/match_quality.dart';
 import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
 import 'package:flutter_dating_application_1/models/profile_presentation_context.dart';
@@ -199,7 +200,7 @@ void main() {
   );
 
   test(
-    'reportUser uses the user-scoped route and extracts the response message',
+    'reportUser sends reason, description, and blockUser and extracts the response message',
     () async {
       final recorder = _RequestRecorder();
       const userId = '11111111-1111-1111-1111-111111111111';
@@ -214,6 +215,11 @@ void main() {
       final message = await client.reportUser(
         userId: userId,
         targetId: targetId,
+        report: const ReportUserRequest(
+          reason: ReportReason.harassment,
+          description: 'Sent abusive messages',
+          blockUser: true,
+        ),
       );
 
       final request = recorder.requests.single;
@@ -221,8 +227,31 @@ void main() {
       expect(request.method, 'POST');
       expect(request.path, ApiEndpoints.reportUser(userId, targetId));
       expect(request.extra['userId'], userId);
+      expect(request.data, {
+        'reason': 'HARASSMENT',
+        'description': 'Sent abusive messages',
+        'blockUser': true,
+      });
     },
   );
+
+  test('deleteUser sends DELETE to the user route', () async {
+    final recorder = _RequestRecorder();
+    const userId = '11111111-1111-1111-1111-111111111111';
+    final client = ApiClient(
+      dio: _buildTestDio(
+        recorder: recorder,
+        responder: (options) => {'message': 'User deleted.'},
+      ),
+    );
+
+    await client.deleteUser(userId: userId);
+
+    final request = recorder.requests.single;
+    expect(request.method, 'DELETE');
+    expect(request.path, ApiEndpoints.deleteUser(userId));
+    expect(request.extra['userId'], userId);
+  });
 
   test(
     'undoLastSwipe posts to the undo route and parses the payload',

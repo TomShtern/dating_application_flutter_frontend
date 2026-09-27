@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/app_config.dart';
 import '../models/auth_session.dart';
-import '../models/auth_user.dart';
 import '../models/blocked_user_summary.dart';
 import '../models/browse_response.dart';
 import '../models/conversation_summary.dart';
@@ -28,10 +27,12 @@ import '../models/user_stats.dart';
 import '../models/user_detail.dart';
 import '../models/user_summary.dart';
 import '../models/verification_result.dart';
+import '../models/auth_user.dart';
 import 'api_endpoints.dart';
 import 'api_error.dart';
 import 'api_headers.dart';
 import 'auth_token_holder.dart';
+import 'report_reason.dart';
 
 const String _authRetryFlag = '_authRetried';
 
@@ -333,10 +334,12 @@ class ApiClient {
   Future<String> reportUser({
     required String userId,
     required String targetId,
+    required ReportUserRequest report,
   }) async {
     try {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.reportUser(userId, targetId),
+        data: report.toJson(),
         options: Options(extra: {'userId': userId}),
       );
 
@@ -879,6 +882,17 @@ class ApiClient {
 
       return PhotoUploadResponse.fromJson(
         _expectMap(response.data, context: 'uploading a photo'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<void> deleteUser({required String userId}) async {
+    try {
+      await _dio.delete<dynamic>(
+        ApiEndpoints.deleteUser(userId),
+        options: Options(extra: {'userId': userId}),
       );
     } on DioException catch (error) {
       throw _toApiError(error);

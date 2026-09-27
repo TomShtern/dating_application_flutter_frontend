@@ -125,6 +125,14 @@ void main() {
     },
   );
 
+  // AuthController.restoreSession() awaits flutter_secure_storage's platform
+  // channel; without a mock handler the startup spinner never settles.
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+    (MethodCall methodCall) async => null,
+  );
+
   final GoldenFileComparator previousComparator = goldenFileComparator;
   final ScreenshotWriter screenshotWriter = ScreenshotWriter(
     Uri.file(

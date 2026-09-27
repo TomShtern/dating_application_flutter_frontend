@@ -17,9 +17,14 @@ final conversationThreadProvider =
     ) async {
       final apiClient = ref.watch(apiClientProvider);
       final currentUser = await user_guard.watchSelectedUser(ref);
+      // Interim mitigation for the oldest-first backend ordering: request the
+      // backend maximum window (100) so long threads expose more history.
+      // The backend still returns the oldest page first, so threads beyond
+      // this window remain truncated until BE P0-5 adds order=desc/totalCount.
       return apiClient.getMessages(
         conversationId: conversationId,
         userId: currentUser.id,
+        limit: 100,
       );
     });
 

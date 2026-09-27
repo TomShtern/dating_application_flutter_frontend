@@ -13,6 +13,7 @@ import '../../theme/app_theme.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
+import 'match_factors_sheet.dart';
 import 'matches_provider.dart';
 
 const _matchRose = Color(0xFFD95F84);
@@ -590,7 +591,7 @@ class _MatchCard extends StatelessWidget {
   }
 }
 
-enum _MatchCardMenuAction { archive, safety }
+enum _MatchCardMenuAction { whyWeMatch, archive, safety }
 
 class _MatchCardMenuButton extends ConsumerWidget {
   const _MatchCardMenuButton({required this.match});
@@ -676,6 +677,10 @@ class _MatchCardMenuButton extends ConsumerWidget {
       tooltip: 'Match options',
       items: const [
         PopupMenuItem<_MatchCardMenuAction>(
+          value: _MatchCardMenuAction.whyWeMatch,
+          child: Text('Why we match'),
+        ),
+        PopupMenuItem<_MatchCardMenuAction>(
           value: _MatchCardMenuAction.archive,
           child: Text('Archive match'),
         ),
@@ -686,6 +691,12 @@ class _MatchCardMenuButton extends ConsumerWidget {
       ],
       onSelected: (action) {
         switch (action) {
+          case _MatchCardMenuAction.whyWeMatch:
+            showModalBottomSheet<void>(
+              context: context,
+              showDragHandle: true,
+              builder: (sheetContext) => MatchFactorsSheet(match: match),
+            );
           case _MatchCardMenuAction.archive:
             _handleArchive(context, ref);
           case _MatchCardMenuAction.safety:
