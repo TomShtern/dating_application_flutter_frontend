@@ -223,8 +223,14 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Save changes'));
       await tester.pumpAndSettle();
 
+      // `interestedIn`/`interests` ride along from the stored profile so the
+      // backend does not clear them.
       expect(apiClient.updatedRequests, const [
-        ProfileUpdateRequest(bio: 'A short bio for a sparse profile.'),
+        ProfileUpdateRequest(
+          bio: 'A short bio for a sparse profile.',
+          interestedIn: <String>[],
+          interests: <String>[],
+        ),
       ]);
     },
   );
@@ -271,12 +277,12 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.ensureVisible(find.text('Non-binary').at(0));
+    await tester.ensureVisible(find.text('Other').at(0));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Non-binary').at(0), warnIfMissed: false);
+    await tester.tap(find.text('Other').at(0), warnIfMissed: false);
     await tester.pump();
 
-    final interestedInChip = find.text('Non-binary').at(1);
+    final interestedInChip = find.text('Other').at(1);
     await tester.ensureVisible(interestedInChip);
     await tester.pumpAndSettle();
     await tester.tap(interestedInChip);
@@ -299,14 +305,14 @@ void main() {
       apiClient.updatedRequests.last.bio,
       'Updated bio for the edit flow.',
     );
-    expect(apiClient.updatedRequests.last.gender, 'NON_BINARY');
+    expect(apiClient.updatedRequests.last.gender, 'OTHER');
     expect(apiClient.updatedRequests.last.maxDistanceKm, 50);
     expect(apiClient.updatedRequests.last.minAge, 25);
     expect(apiClient.updatedRequests.last.maxAge, 35);
     expect(apiClient.updatedRequests.last.heightCm, 172);
     expect(
       apiClient.updatedRequests.last.interestedIn,
-      containsAllInOrder(const ['MALE', 'NON_BINARY']),
+      containsAllInOrder(const ['MALE', 'OTHER']),
     );
   });
 

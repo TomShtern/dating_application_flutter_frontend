@@ -127,6 +127,36 @@ class ConversationThreadController {
     );
   }
 
+  /// Unsends one of the user's own delivered messages; the backend removes it
+  /// for both people.
+  Future<void> deleteMessage(MessageDto message) async {
+    if (message.localState != MessageLocalState.none || message.id.isEmpty) {
+      throw const ApiError(
+        message: 'Only delivered messages can be unsent.',
+      );
+    }
+
+    await _ref
+        .read(apiClientProvider)
+        .deleteMessage(conversationId: _conversationId, messageId: message.id);
+
+    if (!_ref.mounted) {
+      return;
+    }
+
+    _ref
+        .read(conversationLocalMessagesProvider.notifier)
+        .removeMessage(conversationId: _conversationId, message: message);
+    _ref.invalidate(conversationsProvider);
+
+    try {
+      await refresh();
+    } on ApiError {
+      // The message is already gone on the backend; the next poll of the
+      // thread drops it from the list.
+    }
+  }
+
   Future<MessageDto> _sendQueuedMessage({
     required UserSummary currentUser,
     required MessageDto queuedMessage,
@@ -236,6 +266,18 @@ class ConversationLocalMessagesNotifier
     upsertMessage(
       conversationId: conversationId,
       message: confirmedMessage.copyWith(localId: queuedMessage.localId),
+    );
+  }
+
+  void removeMessage({
+    required String conversationId,
+    required MessageDto message,
+  }) {
+    _storeMessages(
+      conversationId,
+      _messagesForConversation(conversationId)
+          .where((item) => !_matchesLocalMessage(item, message))
+          .toList(growable: false),
     );
   }
 

@@ -1,14 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_client.dart';
 import '../../api/api_error.dart';
-import '../../models/auth_session.dart';
+import '../../models/auth_user.dart';
 import '../../models/user_summary.dart';
-import '../../shared/persistence/shared_preferences_provider.dart';
-import 'auth_token_store.dart';
+import 'clerk_auth_provider.dart';
 import 'selected_user_provider.dart';
 
 sealed class AuthEvent {
@@ -30,125 +29,91 @@ sealed class AuthState {
   const AuthState();
 }
 
+/// Starting up, or provisioning the local profile after a Clerk sign-in.
 class AuthUnknown extends AuthState {
   const AuthUnknown();
 }
 
+/// Not signed in to Clerk.
 class Unauthenticated extends AuthState {
   const Unauthenticated({this.message});
   final String? message;
 }
 
-class Authenticated extends AuthState {
-  const Authenticated(this.session);
-  final AuthSession session;
+/// Signed in to Clerk but `POST /api/auth/session` failed (backend down,
+/// network). The user can retry or sign out.
+class AuthProvisionFailed extends AuthState {
+  const AuthProvisionFailed(this.message);
+  final String message;
 }
 
-final authTokenStoreProvider = Provider<AuthTokenStore>((ref) {
-  return AuthTokenStore(
-    const FlutterSecureStorage(),
-    ref.watch(sharedPreferencesProvider),
-  );
-});
+/// Signed in to Clerk with a provisioned local profile.
+class Authenticated extends AuthState {
+  const Authenticated(this.user);
+  final AuthUser user;
+}
 
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthState>(AuthController.new);
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);
 
+/// Bridges Clerk (who the user is) and the backend (their local profile).
+///
+/// Clerk owns sign-in, passwords and sessions. This controller only reacts to
+/// Clerk's state: signed in -> provision the local profile and store its id in
+/// `selectedUserProvider`; signed out -> clear that id.
 class AuthController extends Notifier<AuthState> {
   late final ApiClient _api;
-  late final AuthTokenStore _store;
+  late final ClerkAuthState _clerk;
+  Future<AuthUser>? _inflightSession;
 
   @override
   AuthState build() {
     _api = ref.read(apiClientProvider);
-    _store = ref.read(authTokenStoreProvider);
-
-    final holder = ref.read(authTokenHolderProvider);
-    holder.setRefreshCallback(_performRefresh);
-
+    _clerk = ref.read(clerkAuthStateProvider);
+    _clerk.addListener(_onClerkChanged);
+    ref.onDispose(() => _clerk.removeListener(_onClerkChanged));
     return const AuthUnknown();
   }
 
+  /// Startup: provision if Clerk restored a session, else show sign-in.
   Future<void> restoreSession() async {
-    final session = await _store.readSession();
-    if (session == null) {
+    if (_clerk.isSignedIn) {
+      await _provisionAfterSignIn();
+    } else {
       state = const Unauthenticated();
-      return;
-    }
-
-    final holder = ref.read(authTokenHolderProvider);
-    holder.setAccessToken(session.accessToken);
-    state = Authenticated(session);
-
-    final originalSession = session;
-    try {
-      final user = await _api.getMe();
-      final synced = session.copyWith(user: user);
-      await _store.saveSession(synced);
-      state = Authenticated(synced);
-      await _bridgeToSelectedUser(synced);
-    } on ApiError catch (error) {
-      if (error.statusCode == 401) {
-        await _clearAuth();
-        state = const Unauthenticated(message: 'Please sign in again.');
-      } else {
-        await _bridgeToSelectedUser(originalSession);
-      }
     }
   }
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
-    final session = await _api.login(email: email, password: password);
-    await _acceptSession(session);
+  /// Re-provisions the local profile and updates the stored id. Used by the
+  /// HTTP interceptor on 401 `NOT_PROVISIONED`; throws [ApiError] on failure
+  /// so the interceptor can pass the original error on.
+  Future<void> provision() async {
+    final user = await (_inflightSession ??= _api
+        .provisionSession()
+        .whenComplete(() => _inflightSession = null));
+    await _acceptUser(user);
   }
 
-  Future<void> signup({
-    required String email,
-    required String password,
-    required String dateOfBirth,
-  }) async {
-    final session = await _api.signup(
-      email: email,
-      password: password,
-      dateOfBirth: dateOfBirth,
-    );
-    await _acceptSession(session);
-  }
+  Future<void> retryProvision() => _provisionAfterSignIn();
 
+  /// Best-effort refresh of the profile-completion snapshot after edits.
   Future<void> refreshMe() async {
-    final current = state;
-    if (current is! Authenticated) return;
+    if (state is! Authenticated) return;
     try {
-      final user = await _api.getMe();
-      final synced = current.session.copyWith(user: user);
-      await _store.saveSession(synced);
-      state = Authenticated(synced);
-    } on ApiError {
-      // Best-effort — do not log out on a background me-refresh failure.
+      state = Authenticated(await _api.provisionSession());
     } catch (_) {
-      // Non-API errors (network, timeout) — still best-effort, no logout.
+      // Best-effort — never sign out on a background refresh failure.
     }
   }
 
   Future<void> logout() async {
-    final current = state;
-    if (current is Authenticated) {
-      try {
-        await _api.logout(refreshToken: current.session.refreshToken);
-      } on ApiError {
-        // Best effort — proceed with local cleanup even if the server
-        // rejects the refresh token (e.g. already revoked).
-      } catch (_) {
-        // Non-API errors (network, timeout) — proceed with local cleanup.
-      }
-    }
-    await _clearAuth();
+    await _signOutAndClear();
     state = const Unauthenticated();
   }
 
+  /// Deletes the backend profile, then signs out of Clerk. The Clerk account
+  /// itself is not deleted, so signing in again provisions a fresh profile.
   Future<void> deleteAccount() async {
     final selected = await ref.read(selectedUserProvider.future);
     try {
@@ -161,80 +126,94 @@ class AuthController extends Notifier<AuthState> {
     } catch (_) {
       // Non-API errors (network, timeout) — proceed with local cleanup.
     }
-    await _clearAuth();
-    state = const Unauthenticated(
-      message: 'Your account has been deleted.',
-    );
+    await _signOutAndClear();
+    state = const Unauthenticated(message: 'Your account has been deleted.');
   }
 
-  Future<String?> _performRefresh() async {
+  /// Called by the interceptor when a retried request is still 401.
+  Future<void> expireSession() async {
+    const message = 'Session expired. Please sign in again.';
+    await _signOutAndClear();
+    state = const Unauthenticated(message: message);
+    _authEventController.add(const AuthSessionExpired(message: message));
+  }
+
+  void _onClerkChanged() {
     final current = state;
-    final storedSession = current is Authenticated ? null : await _store.readSession();
-    final refreshToken = switch (current) {
-      Authenticated(:final session) => session.refreshToken,
-      _ => storedSession?.refreshToken,
-    };
-    if (refreshToken == null || refreshToken.isEmpty) return null;
+    if (_clerk.isSignedIn) {
+      // A sign-in just completed (sign-in screen, quick sign-in, sign-up).
+      if (current is Unauthenticated) {
+        unawaited(_provisionAfterSignIn());
+      }
+    } else if (current is Authenticated || current is AuthProvisionFailed) {
+      // Signed out elsewhere (Clerk UI, revoked session).
+      unawaited(_clearLocal());
+      state = const Unauthenticated();
+    }
+  }
 
+  Future<void> _provisionAfterSignIn() async {
+    state = const AuthUnknown();
     try {
-      final session = await _api.refreshSession(refreshToken: refreshToken);
-      await _acceptSession(session, bridgeUser: false);
-      return session.accessToken;
-    } on ApiError {
-      await _clearAuth();
-      const event = AuthSessionExpired(
-        message: 'Session expired. Please sign in again.',
-      );
-      state = const Unauthenticated(
-        message: 'Session expired. Please sign in again.',
-      );
-      _authEventController.add(event);
-      return null;
+      await provision();
+    } on ApiError catch (error) {
+      // A forced sign-out (expireSession) already set the final state.
+      if (_clerk.isSignedIn) state = AuthProvisionFailed(error.message);
+    } catch (error) {
+      if (_clerk.isSignedIn) {
+        state = const AuthProvisionFailed('Could not load your profile.');
+      }
+    }
+    // Clerk signed out while provisioning was in flight and nothing else set
+    // a final state: leave the startup spinner for the sign-in screen.
+    if (!_clerk.isSignedIn && state is AuthUnknown) {
+      state = const Unauthenticated();
     }
   }
 
-  Future<void> _acceptSession(
-    AuthSession session, {
-    bool bridgeUser = true,
-  }) async {
-    await _store.saveSession(session);
-    ref.read(authTokenHolderProvider).setAccessToken(session.accessToken);
-    state = Authenticated(session);
-    if (bridgeUser) {
-      await _bridgeToSelectedUser(session);
-    }
-  }
-
-  Future<void> _bridgeToSelectedUser(AuthSession session) async {
-    final store = ref.read(selectedUserStoreProvider);
+  Future<void> _acceptUser(AuthUser user) async {
     UserSummary summary;
     try {
-      final detail = await _api.getUserDetail(userId: session.user.id);
+      final detail = await _api.getUserDetail(userId: user.id);
       summary = UserSummary(
         id: detail.id,
         name: detail.name.isNotEmpty
             ? detail.name
-            : (session.user.displayName ?? session.user.email),
+            : (user.displayName ?? 'New member'),
         age: detail.age,
         state: detail.state,
       );
     } on ApiError {
+      // A just-provisioned profile may not be readable as a full detail yet.
+      // Its state is not guessed: a fresh profile can start `UNDER_REVIEW`,
+      // so an unread state stays unknown until the backend reports it.
       summary = UserSummary(
-        id: session.user.id,
-        name: session.user.displayName ?? session.user.email,
+        id: user.id,
+        name: user.displayName ?? 'New member',
         age: 0,
-        state: 'ACTIVE',
+        state: 'UNKNOWN',
       );
     }
-    await store.saveSelectedUser(summary);
+    // Signed out while the profile was loading: do not sign back in.
+    if (!_clerk.isSignedIn) {
+      return;
+    }
+    await ref.read(selectedUserStoreProvider).saveSelectedUser(summary);
     ref.invalidate(selectedUserProvider);
+    state = Authenticated(user);
   }
 
-  Future<void> _clearAuth() async {
-    ref.read(authTokenHolderProvider).clear();
-    await _store.clearSession();
-    final selectedStore = ref.read(selectedUserStoreProvider);
-    await selectedStore.clearSelectedUser();
+  Future<void> _signOutAndClear() async {
+    try {
+      await _clerk.signOut();
+    } catch (_) {
+      // Already signed out, or offline — local cleanup still runs.
+    }
+    await _clearLocal();
+  }
+
+  Future<void> _clearLocal() async {
+    await ref.read(selectedUserStoreProvider).clearSelectedUser();
     ref.invalidate(selectedUserProvider);
   }
 }

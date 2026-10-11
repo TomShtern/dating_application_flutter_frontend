@@ -10,7 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dating_application_1/features/browse/pending_likers_screen.dart';
 import 'package:flutter_dating_application_1/features/browse/standouts_screen.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_screen.dart';
-import 'package:flutter_dating_application_1/features/home/app_home_screen.dart';
 import 'package:flutter_dating_application_1/features/home/signed_in_shell.dart';
 import 'package:flutter_dating_application_1/features/location/location_completion_screen.dart';
 import 'package:flutter_dating_application_1/features/notifications/notifications_screen.dart';
@@ -18,6 +17,7 @@ import 'package:flutter_dating_application_1/features/profile/profile_edit_scree
 import 'package:flutter_dating_application_1/features/profile/profile_screen.dart';
 import 'package:flutter_dating_application_1/features/safety/blocked_users_screen.dart';
 import 'package:flutter_dating_application_1/features/settings/app_preferences_store.dart';
+import 'package:flutter_dating_application_1/features/settings/info_page_screen.dart';
 import 'package:flutter_dating_application_1/features/stats/stats_screen.dart';
 import 'package:flutter_dating_application_1/features/stats/achievements_screen.dart';
 import 'package:flutter_dating_application_1/features/verification/verification_screen.dart';
@@ -30,10 +30,6 @@ import 'support/screenshot_capture.dart';
 final DateTime _notificationsReferenceNow = DateTime.utc(2026, 4, 23, 12);
 
 const _expectedVisualReviewScenarios = [
-  ScreenshotScenarioDefinition(
-    fileName: 'app_home_startup.png',
-    scenarioName: 'app startup dev-user picker',
-  ),
   ScreenshotScenarioDefinition(
     fileName: 'shell_discover.png',
     scenarioName: 'signed-in shell discover tab',
@@ -57,6 +53,34 @@ const _expectedVisualReviewScenarios = [
   ScreenshotScenarioDefinition(
     fileName: 'shell_settings.png',
     scenarioName: 'signed-in shell settings tab',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_settings_help_legal.png',
+    scenarioName: 'signed-in shell settings tab help and legal',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_chats_archived.png',
+    scenarioName: 'signed-in shell chats tab archived group',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_discover_paused.png',
+    scenarioName: 'signed-in shell discover tab paused',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_settings_account.png',
+    scenarioName: 'signed-in shell settings tab account',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'info_help.png',
+    scenarioName: 'help info page',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'info_terms.png',
+    scenarioName: 'terms info page',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'info_about.png',
+    scenarioName: 'about info page',
   ),
   ScreenshotScenarioDefinition(
     fileName: 'conversation_thread.png',
@@ -113,25 +137,25 @@ void main() {
 
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('plugins.flutter.io/path_provider'),
-    (MethodCall methodCall) async {
-      if (methodCall.method == 'getTemporaryDirectory') {
-        return '.';
-      }
-      if (methodCall.method == 'getApplicationSupportDirectory') {
-        return '.';
-      }
-      return null;
-    },
-  );
+        const MethodChannel('plugins.flutter.io/path_provider'),
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'getTemporaryDirectory') {
+            return '.';
+          }
+          if (methodCall.method == 'getApplicationSupportDirectory') {
+            return '.';
+          }
+          return null;
+        },
+      );
 
   // AuthController.restoreSession() awaits flutter_secure_storage's platform
   // channel; without a mock handler the startup spinner never settles.
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-    (MethodCall methodCall) async => null,
-  );
+        const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+        (MethodCall methodCall) async => null,
+      );
 
   final GoldenFileComparator previousComparator = goldenFileComparator;
   final ScreenshotWriter screenshotWriter = ScreenshotWriter(
@@ -148,34 +172,6 @@ void main() {
   goldenFileComparator = screenshotWriter;
   tearDownAll(() {
     goldenFileComparator = previousComparator;
-  });
-
-  testWidgets('captures the app startup dev-user picker state', (
-    WidgetTester tester,
-  ) async {
-    final preferences = await _preferencesWithTheme(
-      AppThemeModePreference.light,
-    );
-
-    await _pumpVisualHarness(
-      tester,
-      child: ProviderScope(
-        overrides: [...devUserPickerOverrides(preferences)],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.light,
-          home: AppHomeScreen(),
-        ),
-      ),
-    );
-
-    await _captureAndSave(
-      tester,
-      scenarioName: 'app startup dev-user picker',
-      fileName: 'app_home_startup.png',
-    );
   });
 
   testWidgets('captures the signed-in shell discover tab', (
@@ -493,6 +489,121 @@ void main() {
     );
   });
 
+  testWidgets('captures the settings help and legal group', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInShell(tester, preferences: preferences);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('About'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'signed-in shell settings tab help and legal',
+      fileName: 'shell_settings_help_legal.png',
+    );
+  });
+
+  testWidgets('captures the archived group on the chats tab', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInShell(tester, preferences: preferences);
+
+    await tester.tap(find.text('Chats'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Yael'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'signed-in shell chats tab archived group',
+      fileName: 'shell_chats_archived.png',
+    );
+  });
+
+  testWidgets('captures the discover tab while the profile is paused', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInShell(
+      tester,
+      preferences: preferences,
+      user: pausedCurrentUser,
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'signed-in shell discover tab paused',
+      fileName: 'shell_discover_paused.png',
+    );
+  });
+
+  testWidgets('captures the settings account group', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInShell(tester, preferences: preferences);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Pause profile'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'signed-in shell settings tab account',
+      fileName: 'shell_settings_account.png',
+    );
+  });
+
+  for (final (page, name, fileName) in const [
+    (InfoPage.help, 'help info page', 'info_help.png'),
+    (InfoPage.terms, 'terms info page', 'info_terms.png'),
+    (InfoPage.about, 'about info page', 'info_about.png'),
+  ]) {
+    testWidgets('captures the $name', (WidgetTester tester) async {
+      final preferences = await _preferencesWithTheme(
+        AppThemeModePreference.light,
+      );
+
+      await _pumpSignedInVisualScreen(
+        tester,
+        preferences: preferences,
+        child: InfoPageScreen(page: page),
+      );
+
+      await _captureAndSave(tester, scenarioName: name, fileName: fileName);
+    });
+  }
+
   testWidgets('captures the blocked users screen', (WidgetTester tester) async {
     final preferences = await _preferencesWithTheme(
       AppThemeModePreference.light,
@@ -603,17 +714,18 @@ Future<void> _pumpSignedInShell(
   WidgetTester tester, {
   required SharedPreferences preferences,
   ThemeMode themeMode = ThemeMode.light,
+  UserSummary user = currentUser,
 }) async {
   await _pumpVisualHarness(
     tester,
     child: ProviderScope(
-      overrides: [...signedInShellOverrides(preferences)],
+      overrides: [...signedInShellOverrides(preferences, user: user)],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: themeMode,
-        home: SignedInShell(currentUser: currentUser),
+        home: SignedInShell(currentUser: user),
       ),
     ),
   );

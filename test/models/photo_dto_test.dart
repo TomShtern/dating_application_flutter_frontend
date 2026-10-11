@@ -15,10 +15,10 @@ void main() {
 
       expect(response.primaryUrl, 'http://localhost:7070/photos/u/p1.jpg');
       expect(response.photos, hasLength(2));
-      expect(response.photos.first, const PhotoDto(
-        id: 'p1',
-        url: 'http://localhost:7070/photos/u/p1.jpg',
-      ));
+      expect(
+        response.photos.first,
+        const PhotoDto(id: 'p1', url: 'http://localhost:7070/photos/u/p1.jpg'),
+      );
     });
 
     test('treats null primaryUrl + empty photos as a valid empty state', () {

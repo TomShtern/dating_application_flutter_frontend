@@ -10,4 +10,17 @@ class Env {
     'DATING_APP_SHARED_SECRET',
     defaultValue: 'lan-dev-secret',
   );
+
+  /// Clerk publishable key (`pk_...`). Public by design; never put a Clerk
+  /// secret key (`sk_...`) in the app.
+  static const String clerkPublishableKey = String.fromEnvironment(
+    'CLERK_PUBLISHABLE_KEY',
+  );
+
+  /// Debug-only quick sign-in accounts, `label|email|password` entries
+  /// separated by `;`. Ignored outside debug builds. See
+  /// `quick_sign_in_accounts.dart`.
+  static const String clerkTestAccounts = String.fromEnvironment(
+    'CLERK_TEST_ACCOUNTS',
+  );
 }

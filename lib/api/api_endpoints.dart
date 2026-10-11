@@ -4,11 +4,9 @@ class ApiEndpoints {
   static const String health = '/api/health';
   static const String users = '/api/users';
 
-  static const String authSignup = '/api/auth/signup';
-  static const String authLogin = '/api/auth/login';
-  static const String authRefresh = '/api/auth/refresh';
-  static const String authLogout = '/api/auth/logout';
-  static const String authMe = '/api/auth/me';
+  /// Provisions (201) or returns (200) the local profile for the Clerk user
+  /// identified by the Bearer token. Sent with no body.
+  static const String authSession = '/api/auth/session';
 
   static String userPhotos(String userId) => '/api/users/$userId/photos';
   static String userPhoto(String userId, String photoId) =>
@@ -54,6 +52,9 @@ class ApiEndpoints {
   static String like(String userId, String targetId) =>
       '/api/users/$userId/like/$targetId';
 
+  static String superLike(String userId, String targetId) =>
+      '/api/users/$userId/super-like/$targetId';
+
   static String pass(String userId, String targetId) =>
       '/api/users/$userId/pass/$targetId';
 
@@ -66,6 +67,25 @@ class ApiEndpoints {
 
   static String conversations(String userId) =>
       '/api/users/$userId/conversations';
+
+  /// DELETE hides the conversation for the caller only; a new message from
+  /// either side brings it back.
+  static String conversation(String userId, String conversationId) =>
+      '/api/users/$userId/conversations/$conversationId';
+
+  static String archiveConversation(String userId, String conversationId) =>
+      '/api/users/$userId/conversations/$conversationId/archive';
+
+  static String unarchiveConversation(String userId, String conversationId) =>
+      '/api/users/$userId/conversations/$conversationId/unarchive';
+
+  /// Own id only: today's like, super-like and pass allowance.
+  static String dailyStatus(String userId) =>
+      '/api/users/$userId/daily-status';
+
+  static String pauseProfile(String userId) => '/api/users/$userId/pause';
+
+  static String resumeProfile(String userId) => '/api/users/$userId/resume';
 
   static String stats(String userId) => '/api/users/$userId/stats';
 
@@ -95,6 +115,19 @@ class ApiEndpoints {
   static String confirmVerification(String userId) =>
       '/api/users/$userId/verification/confirm';
 
+  /// Own id only: marks the caller as online.
+  static String heartbeat(String userId) => '/api/users/$userId/heartbeat';
+
+  /// Own id only: marks the caller as typing in a conversation.
+  static String typing(String userId) => '/api/users/$userId/typing';
+
+  /// Takes the *other* user's id. 403 unless that user is an active match.
+  static String presence(String userId) => '/api/users/$userId/presence';
+
   static String messages(String conversationId) =>
       '/api/conversations/$conversationId/messages';
+
+  /// Sender only: removes the message for both people.
+  static String message(String conversationId, String messageId) =>
+      '/api/conversations/$conversationId/messages/$messageId';
 }

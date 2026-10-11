@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../models/discovery_preferences.dart';
+import '../../models/lifestyle_options.dart';
 import '../../models/profile_edit_snapshot.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
@@ -787,7 +788,9 @@ class _DealbreakerTile extends StatelessWidget {
         collapsedIconColor: _prefSlate,
         title: Text(title, style: Theme.of(context).textTheme.titleSmall),
         subtitle: Text(
-          selected.isEmpty ? 'No preference set' : '${selected.length} selected',
+          selected.isEmpty
+              ? 'No preference set'
+              : '${selected.length} selected',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -884,38 +887,8 @@ const List<String> _genderOptions = <String>[
   'OTHER',
 ];
 
-const List<String> _smokingOptions = <String>[
-  'NEVER',
-  'SOCIALLY',
-  'REGULARLY',
-  'QUITTING',
-];
-
-const List<String> _drinkingOptions = <String>[
-  'NEVER',
-  'SOCIALLY',
-  'REGULARLY',
-  'QUITTING',
-];
-
-const List<String> _kidsStanceOptions = <String>[
-  'WANT_KIDS',
-  'OPEN',
-  'SOMEDAY',
-  'DO_NOT_WANT',
-];
-
-const List<String> _lookingForOptions = <String>[
-  'CASUAL',
-  'LONG_TERM',
-  'MARRIAGE',
-  'NOT_SURE',
-];
-
-const List<String> _educationOptions = <String>[
-  'HIGH_SCHOOL',
-  'BACHELORS',
-  'MASTERS',
-  'PHD',
-  'OTHER',
-];
+const List<String> _smokingOptions = smokingOptions;
+const List<String> _drinkingOptions = drinkingOptions;
+const List<String> _kidsStanceOptions = kidsStanceOptions;
+const List<String> _lookingForOptions = lookingForOptions;
+const List<String> _educationOptions = educationOptions;

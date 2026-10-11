@@ -7,6 +7,7 @@ import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/location/location_completion_screen.dart';
 import 'package:flutter_dating_application_1/models/location_metadata.dart';
+import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
 import 'package:flutter_dating_application_1/models/profile_update_request.dart';
 import 'package:flutter_dating_application_1/models/profile_update_response.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
@@ -136,6 +137,8 @@ void main() {
           cityName: 'Tel Aviv',
           allowApproximate: true,
         ),
+        interestedIn: <String>[],
+        interests: <String>[],
       ),
     ]);
   });
@@ -202,5 +205,20 @@ class _FakeLocationApiClient extends ApiClient {
   }) async {
     updatedRequests.add(request);
     return const ProfileUpdateResponse();
+  }
+
+  @override
+  Future<ProfileEditSnapshot> getProfileEditSnapshot({
+    required String userId,
+  }) async {
+    return ProfileEditSnapshot(
+      userId: userId,
+      editable: const EditableProfileSnapshot(),
+      readOnly: const ReadOnlyProfileSnapshot(
+        name: 'Dana',
+        photoUrls: [],
+        state: 'ACTIVE',
+      ),
+    );
   }
 }

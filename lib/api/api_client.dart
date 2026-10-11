@@ -1,12 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/app_config.dart';
-import '../models/auth_session.dart';
 import '../models/blocked_user_summary.dart';
 import '../models/browse_response.dart';
 import '../models/conversation_summary.dart';
+import '../models/daily_status.dart';
 import '../models/health_status.dart';
 import '../models/like_result.dart';
 import '../models/location_metadata.dart';
@@ -21,28 +22,24 @@ import '../models/profile_edit_snapshot.dart';
 import '../models/profile_presentation_context.dart';
 import '../models/profile_update_request.dart';
 import '../models/profile_update_response.dart';
+import '../models/report_result.dart';
 import '../models/standout.dart';
 import '../models/undo_swipe_result.dart';
 import '../models/user_stats.dart';
 import '../models/user_detail.dart';
+import '../models/user_presence.dart';
 import '../models/user_summary.dart';
 import '../models/verification_result.dart';
 import '../models/auth_user.dart';
 import 'api_endpoints.dart';
 import 'api_error.dart';
-import 'api_headers.dart';
-import 'auth_token_holder.dart';
+import '../features/auth/auth_controller.dart';
+import '../features/auth/clerk_auth_provider.dart';
+import 'clerk_auth_interceptor.dart';
 import 'report_reason.dart';
-
-const String _authRetryFlag = '_authRetried';
-
-final authTokenHolderProvider = Provider<AuthTokenHolder>((ref) {
-  return AuthTokenHolder();
-});
 
 final dioProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
-  final tokenHolder = ref.watch(authTokenHolderProvider);
 
   final dio = Dio(
     BaseOptions(
@@ -55,52 +52,23 @@ final dioProvider = Provider<Dio>((ref) {
   );
 
   dio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) {
-        final userId = options.extra['userId'] as String?;
-        options.headers.addAll(
-          ApiHeaders.build(
-            path: options.path,
-            sharedSecret: config.lanSharedSecret,
-            userId: userId,
-            accessToken: tokenHolder.accessToken,
-          ),
-        );
-
-        handler.next(options);
-      },
-      onError: (error, handler) async {
-        final response = error.response;
-        final options = error.requestOptions;
-
-        // Only handle 401s, only once per request, never on the auth
-        // endpoints themselves (refresh failure must not recurse).
-        final shouldRetry = response?.statusCode == 401 &&
-            options.extra[_authRetryFlag] != true &&
-            options.path != ApiEndpoints.authRefresh &&
-            options.path != ApiEndpoints.authLogin &&
-            options.path != ApiEndpoints.authSignup &&
-            options.path != ApiEndpoints.authLogout;
-
-        if (!shouldRetry) {
-          return handler.next(error);
-        }
-
+    ClerkAuthInterceptor(
+      dio: dio,
+      sharedSecret: config.lanSharedSecret,
+      // Collaborators are read lazily so building the client never builds the
+      // auth controller (which itself needs the client).
+      getToken: () async {
         try {
-          final newToken = await tokenHolder.refresh();
-          if (newToken == null || newToken.isEmpty) {
-            return handler.next(error);
-          }
-
-          options.extra[_authRetryFlag] = true;
-          options.headers[ApiHeaders.authorizationHeader] = 'Bearer $newToken';
-          final retried = await dio.fetch<dynamic>(options);
-          return handler.resolve(retried);
-        } catch (refreshError, stackTrace) {
-          debugPrint('Token refresh failed: $refreshError\n$stackTrace');
-          return handler.next(error);
+          final token = await ref.read(clerkAuthStateProvider).sessionToken();
+          return token.jwt;
+        } catch (_) {
+          // Signed out, or Clerk could not produce a token.
+          return null;
         }
       },
+      provision: () => ref.read(authControllerProvider.notifier).provision(),
+      onSessionInvalid: () =>
+          ref.read(authControllerProvider.notifier).expireSession(),
     ),
   );
 
@@ -146,15 +114,9 @@ class ApiClient {
     }
   }
 
-  Future<UserDetail> getUserDetail({
-    required String userId,
-    String? actingUserId,
-  }) async {
+  Future<UserDetail> getUserDetail({required String userId}) async {
     try {
-      final response = await _dio.get<dynamic>(
-        ApiEndpoints.userDetail(userId),
-        options: Options(extra: {'userId': actingUserId ?? userId}),
-      );
+      final response = await _dio.get<dynamic>(ApiEndpoints.userDetail(userId));
 
       return UserDetail.fromJson(
         _expectMap(response.data, context: 'loading a user profile'),
@@ -172,7 +134,6 @@ class ApiClient {
       final response = await _dio.put<dynamic>(
         ApiEndpoints.updateProfile(userId),
         data: request.toJson(),
-        options: Options(extra: {'userId': userId}),
       );
 
       return ProfileUpdateResponse.fromJson(
@@ -189,7 +150,6 @@ class ApiClient {
     try {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.profileEditSnapshot(userId),
-        options: Options(extra: {'userId': userId}),
       );
 
       return ProfileEditSnapshot.fromJson(
@@ -207,7 +167,6 @@ class ApiClient {
     try {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.profilePresentationContext(viewerUserId, targetUserId),
-        options: Options(extra: {'userId': viewerUserId}),
       );
 
       return ProfilePresentationContext.fromJson(
@@ -306,7 +265,6 @@ class ApiClient {
     try {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.blockUser(userId, targetId),
-        options: Options(extra: {'userId': userId}),
       );
 
       return _extractMessage(response.data, fallback: 'User blocked.');
@@ -322,7 +280,6 @@ class ApiClient {
     try {
       final response = await _dio.delete<dynamic>(
         ApiEndpoints.unblockUser(userId, targetId),
-        options: Options(extra: {'userId': userId}),
       );
 
       return _extractMessage(response.data, fallback: 'User unblocked.');
@@ -331,7 +288,7 @@ class ApiClient {
     }
   }
 
-  Future<String> reportUser({
+  Future<ReportResult> reportUser({
     required String userId,
     required String targetId,
     required ReportUserRequest report,
@@ -340,10 +297,11 @@ class ApiClient {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.reportUser(userId, targetId),
         data: report.toJson(),
-        options: Options(extra: {'userId': userId}),
       );
 
-      return _extractMessage(response.data, fallback: 'User reported.');
+      return ReportResult.fromJson(
+        _expectMap(response.data, context: 'reporting a user'),
+      );
     } on DioException catch (error) {
       throw _toApiError(error);
     }
@@ -356,7 +314,6 @@ class ApiClient {
     try {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.unmatchUser(userId, targetId),
-        options: Options(extra: {'userId': userId}),
       );
 
       return _extractMessage(response.data, fallback: 'Match removed.');
@@ -372,7 +329,6 @@ class ApiClient {
     try {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.gracefulExit(userId, targetId),
-        options: Options(extra: {'userId': userId}),
       );
 
       return _extractMessage(
@@ -391,7 +347,6 @@ class ApiClient {
     try {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.archiveMatch(userId, matchId),
-        options: Options(extra: {'userId': userId}),
       );
 
       return _extractMessage(response.data, fallback: 'Match archived.');
@@ -402,10 +357,7 @@ class ApiClient {
 
   Future<BrowseResponse> getBrowse({required String userId}) async {
     try {
-      final response = await _dio.get<dynamic>(
-        ApiEndpoints.browse(userId),
-        options: Options(extra: {'userId': userId}),
-      );
+      final response = await _dio.get<dynamic>(ApiEndpoints.browse(userId));
 
       return BrowseResponse.fromJson(
         _expectMap(response.data, context: 'loading browse candidates'),
@@ -422,11 +374,27 @@ class ApiClient {
     try {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.like(userId, targetId),
-        options: Options(extra: {'userId': userId}),
       );
 
       return LikeResult.fromJson(
         _expectMap(response.data, context: 'liking a candidate'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<LikeResult> superLikeUser({
+    required String userId,
+    required String targetId,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.superLike(userId, targetId),
+      );
+
+      return LikeResult.fromJson(
+        _expectMap(response.data, context: 'super-liking a candidate'),
       );
     } on DioException catch (error) {
       throw _toApiError(error);
@@ -440,7 +408,6 @@ class ApiClient {
     try {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.pass(userId, targetId),
-        options: Options(extra: {'userId': userId}),
       );
       return _extractMessage(response.data, fallback: 'Passed');
     } on DioException catch (error) {
@@ -450,10 +417,7 @@ class ApiClient {
 
   Future<UndoSwipeResult> undoLastSwipe({required String userId}) async {
     try {
-      final response = await _dio.post<dynamic>(
-        ApiEndpoints.undo(userId),
-        options: Options(extra: {'userId': userId}),
-      );
+      final response = await _dio.post<dynamic>(ApiEndpoints.undo(userId));
 
       return UndoSwipeResult.fromJson(
         _expectMap(response.data, context: 'undoing the last swipe'),
@@ -472,7 +436,6 @@ class ApiClient {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.matches(userId),
         queryParameters: {'limit': limit, 'offset': offset},
-        options: Options(extra: {'userId': userId}),
       );
 
       return MatchesResponse.fromJson(
@@ -490,7 +453,6 @@ class ApiClient {
     try {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.matchQuality(userId, matchId),
-        options: Options(extra: {'userId': userId}),
       );
 
       return MatchQuality.fromJson(
@@ -510,7 +472,6 @@ class ApiClient {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.conversations(userId),
         queryParameters: {'limit': limit, 'offset': offset},
-        options: Options(extra: {'userId': userId}),
       );
 
       final payload = _expectList(
@@ -530,12 +491,94 @@ class ApiClient {
     }
   }
 
-  Future<UserStats> getStats({required String userId}) async {
+  /// Hides the conversation for [userId] only. No messages are removed, and a
+  /// new message from either side brings it back.
+  Future<void> deleteConversation({
+    required String userId,
+    required String conversationId,
+  }) async {
+    try {
+      await _dio.delete<dynamic>(
+        ApiEndpoints.conversation(userId, conversationId),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<void> archiveConversation({
+    required String userId,
+    required String conversationId,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        ApiEndpoints.archiveConversation(userId, conversationId),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<void> unarchiveConversation({
+    required String userId,
+    required String conversationId,
+  }) async {
+    try {
+      await _dio.post<dynamic>(
+        ApiEndpoints.unarchiveConversation(userId, conversationId),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<DailyStatus> getDailyStatus({required String userId}) async {
     try {
       final response = await _dio.get<dynamic>(
-        ApiEndpoints.stats(userId),
-        options: Options(extra: {'userId': userId}),
+        ApiEndpoints.dailyStatus(userId),
       );
+
+      return DailyStatus.fromJson(
+        _expectMap(response.data, context: 'loading today\'s swipe allowance'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  /// Returns the caller's profile with its new `state` (`PAUSED`).
+  Future<UserDetail> pauseProfile({required String userId}) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.pauseProfile(userId),
+      );
+
+      return UserDetail.fromJson(
+        _expectMap(response.data, context: 'pausing your profile'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  /// Returns the caller's profile with its new `state` (`ACTIVE`).
+  Future<UserDetail> resumeProfile({required String userId}) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.resumeProfile(userId),
+      );
+
+      return UserDetail.fromJson(
+        _expectMap(response.data, context: 'resuming your profile'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  Future<UserStats> getStats({required String userId}) async {
+    try {
+      final response = await _dio.get<dynamic>(ApiEndpoints.stats(userId));
 
       return UserStats.fromJson(
         _expectMap(response.data, context: 'loading stats'),
@@ -551,7 +594,6 @@ class ApiClient {
     try {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.blockedUsers(userId),
-        options: Options(extra: {'userId': userId}),
       );
 
       final payload = _extractWrappedList(
@@ -572,7 +614,6 @@ class ApiClient {
     try {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.achievements(userId),
-        options: Options(extra: {'userId': userId}),
       );
 
       final payload = _extractAchievementItems(
@@ -590,7 +631,6 @@ class ApiClient {
     try {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.pendingLikers(userId),
-        options: Options(extra: {'userId': userId}),
       );
 
       final payload = _extractWrappedList(
@@ -607,10 +647,7 @@ class ApiClient {
 
   Future<StandoutsSnapshot> getStandouts({required String userId}) async {
     try {
-      final response = await _dio.get<dynamic>(
-        ApiEndpoints.standouts(userId),
-        options: Options(extra: {'userId': userId}),
-      );
+      final response = await _dio.get<dynamic>(ApiEndpoints.standouts(userId));
 
       return StandoutsSnapshot.fromJson(
         _expectMap(response.data, context: 'loading standouts'),
@@ -628,7 +665,6 @@ class ApiClient {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.notifications(userId),
         queryParameters: {'unreadOnly': unreadOnly},
-        options: Options(extra: {'userId': userId}),
       );
 
       final payload = _expectList(
@@ -655,7 +691,6 @@ class ApiClient {
     try {
       await _dio.post<dynamic>(
         ApiEndpoints.markNotificationRead(userId, notificationId),
-        options: Options(extra: {'userId': userId}),
       );
     } on DioException catch (error) {
       throw _toApiError(error);
@@ -666,7 +701,6 @@ class ApiClient {
     try {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.markAllNotificationsRead(userId),
-        options: Options(extra: {'userId': userId}),
       );
       final payload = _expectMap(
         response.data,
@@ -688,7 +722,6 @@ class ApiClient {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.startVerification(userId),
         data: {'method': method, 'contact': contact},
-        options: Options(extra: {'userId': userId}),
       );
 
       return VerificationStartResult.fromJson(
@@ -707,7 +740,6 @@ class ApiClient {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.confirmVerification(userId),
         data: {'verificationCode': verificationCode},
-        options: Options(extra: {'userId': userId}),
       );
 
       return VerificationConfirmationResult.fromJson(
@@ -728,7 +760,6 @@ class ApiClient {
       final response = await _dio.get<dynamic>(
         ApiEndpoints.messages(conversationId),
         queryParameters: {'limit': limit, 'offset': offset},
-        options: Options(extra: {'userId': userId}),
       );
 
       final payload = _expectList(response.data, context: 'loading messages');
@@ -753,7 +784,6 @@ class ApiClient {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.messages(conversationId),
         data: {'senderId': userId, 'content': content},
-        options: Options(extra: {'userId': userId}),
       );
 
       return MessageDto.fromJson(
@@ -764,94 +794,145 @@ class ApiClient {
     }
   }
 
-  // ── Auth ────────────────────────────────────────────────────────────────
-
-  Future<AuthSession> signup({
-    required String email,
-    required String password,
-    required String dateOfBirth,
+  Future<void> deleteMessage({
+    required String conversationId,
+    required String messageId,
   }) async {
     try {
-      final response = await _dio.post<dynamic>(
-        ApiEndpoints.authSignup,
-        data: {
-          'email': email,
-          'password': password,
-          'dateOfBirth': dateOfBirth,
-        },
-      );
-
-      return AuthSession.fromAuthResponse(
-        _expectMap(response.data, context: 'signing up'),
+      await _dio.delete<dynamic>(
+        ApiEndpoints.message(conversationId, messageId),
       );
     } on DioException catch (error) {
       throw _toApiError(error);
     }
   }
 
-  Future<AuthSession> login({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      final response = await _dio.post<dynamic>(
-        ApiEndpoints.authLogin,
-        data: {'email': email, 'password': password},
-      );
+  // ── Presence ────────────────────────────────────────────────────────────
+  //
+  // Presence is decoration. These calls are marked passive so a failure is
+  // never retried and never signs the user out; callers swallow the error.
 
-      return AuthSession.fromAuthResponse(
-        _expectMap(response.data, context: 'logging in'),
-      );
-    } on DioException catch (error) {
-      throw _toApiError(error);
-    }
-  }
+  static final Options _passive = Options(
+    extra: {ClerkAuthInterceptor.passiveExtra: true},
+  );
 
-  Future<AuthSession> refreshSession({required String refreshToken}) async {
-    try {
-      final response = await _dio.post<dynamic>(
-        ApiEndpoints.authRefresh,
-        data: {'refreshToken': refreshToken},
-      );
-
-      return AuthSession.fromAuthResponse(
-        _expectMap(response.data, context: 'refreshing the session'),
-      );
-    } on DioException catch (error) {
-      throw _toApiError(error);
-    }
-  }
-
-  Future<void> logout({required String refreshToken}) async {
+  Future<void> sendHeartbeat({required String userId}) async {
     try {
       await _dio.post<dynamic>(
-        ApiEndpoints.authLogout,
-        data: {'refreshToken': refreshToken},
+        ApiEndpoints.heartbeat(userId),
+        options: _passive,
       );
     } on DioException catch (error) {
       throw _toApiError(error);
     }
   }
 
-  Future<AuthUser> getMe() async {
+  /// [conversationId] must be the id the conversations API returned.
+  Future<void> sendTyping({
+    required String userId,
+    required String conversationId,
+  }) async {
     try {
-      final response = await _dio.get<dynamic>(ApiEndpoints.authMe);
-      return AuthUser.fromJson(
-        _expectMap(response.data, context: 'loading the current user'),
+      await _dio.post<dynamic>(
+        ApiEndpoints.typing(userId),
+        data: {'conversationId': conversationId},
+        options: _passive,
       );
     } on DioException catch (error) {
       throw _toApiError(error);
+    }
+  }
+
+  /// Presence of another user. `typing` is only meaningful when
+  /// [conversationId] is given.
+  Future<UserPresence> getPresence({
+    required String userId,
+    String? conversationId,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiEndpoints.presence(userId),
+        queryParameters: {'conversationId': ?conversationId},
+        options: _passive,
+      );
+
+      return UserPresence.fromJson(
+        _expectMap(response.data, context: 'loading presence'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  // ── Auth ────────────────────────────────────────────────────────────────
+
+  /// `POST /api/auth/session`, no body. 201 on first call (a local profile was
+  /// created), 200 afterwards; both are safe to repeat. The Bearer token is
+  /// attached by the interceptor.
+  Future<AuthUser> provisionSession() async {
+    try {
+      final response = await _dio.post<dynamic>(ApiEndpoints.authSession);
+      return AuthUser.fromJson(
+        _expectMap(response.data, context: 'provisioning your profile'),
+      );
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    } on FormatException catch (error) {
+      throw ApiError(message: error.message);
     }
   }
 
   // ── Photos ──────────────────────────────────────────────────────────────
 
+  /// Downloads an image. A URL on this backend goes out with the shared
+  /// secret and a fresh Clerk token, like any API call; a URL on another host
+  /// (legacy external photos) goes out with no auth headers at all.
+  ///
+  /// Failures are never retried and never sign the user out: the caller shows
+  /// its fallback instead.
+  Future<Uint8List> getPhotoBytes(String url) async {
+    try {
+      final response = await _dio.get<List<int>>(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          extra: {
+            if (_isBackendUrl(url))
+              ClerkAuthInterceptor.passiveExtra: true
+            else
+              ClerkAuthInterceptor.skipAuthExtra: true,
+          },
+        ),
+      );
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) {
+        throw const ApiError(message: 'The image was empty.');
+      }
+      return bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    } on DioException catch (error) {
+      throw _toApiError(error);
+    }
+  }
+
+  bool _isBackendUrl(String url) {
+    final target = Uri.tryParse(url);
+    final base = Uri.tryParse(_dio.options.baseUrl);
+    if (target == null || base == null) {
+      return false;
+    }
+    if (!target.hasScheme) {
+      // Path-relative: Dio resolves it against the backend base URL.
+      // Protocol-relative (`//host/...`) names another host.
+      return !target.hasAuthority;
+    }
+    return target.scheme == base.scheme &&
+        target.host == base.host &&
+        target.port == base.port;
+  }
+
   Future<PhotoListResponse> listUserPhotos({required String userId}) async {
     try {
-      final response = await _dio.get<dynamic>(
-        ApiEndpoints.userPhotos(userId),
-        options: Options(extra: {'userId': userId}),
-      );
+      final response = await _dio.get<dynamic>(ApiEndpoints.userPhotos(userId));
 
       return PhotoListResponse.fromJson(
         _expectMap(response.data, context: 'listing photos'),
@@ -876,7 +957,6 @@ class ApiClient {
       final response = await _dio.post<dynamic>(
         ApiEndpoints.userPhotos(userId),
         data: FormData.fromMap({'photo': photo}),
-        options: Options(extra: {'userId': userId}),
         onSendProgress: onSendProgress,
       );
 
@@ -890,10 +970,7 @@ class ApiClient {
 
   Future<void> deleteUser({required String userId}) async {
     try {
-      await _dio.delete<dynamic>(
-        ApiEndpoints.deleteUser(userId),
-        options: Options(extra: {'userId': userId}),
-      );
+      await _dio.delete<dynamic>(ApiEndpoints.deleteUser(userId));
     } on DioException catch (error) {
       throw _toApiError(error);
     }
@@ -906,7 +983,6 @@ class ApiClient {
     try {
       final response = await _dio.delete<dynamic>(
         ApiEndpoints.userPhoto(userId, photoId),
-        options: Options(extra: {'userId': userId}),
       );
 
       return PhotoListResponse.fromJson(
@@ -925,7 +1001,6 @@ class ApiClient {
       final response = await _dio.put<dynamic>(
         ApiEndpoints.userPhotosOrder(userId),
         data: {'photoIds': photoIds},
-        options: Options(extra: {'userId': userId}),
       );
 
       return PhotoListResponse.fromJson(

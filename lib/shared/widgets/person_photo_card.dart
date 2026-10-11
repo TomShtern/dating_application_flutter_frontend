@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/app_config.dart';
 import '../../theme/app_theme.dart';
 import '../media/media_url.dart';
+import 'app_network_image.dart';
 import 'user_avatar.dart';
 
 /// Photo-backed person card with fallback when photo is unavailable.
@@ -123,20 +124,13 @@ class _PersonPhoto extends ConsumerWidget {
       child: ClipOval(
         child: resolvedUrl == null
             ? _MonogramFallback(name: name, colorScheme: colorScheme)
-            : Image.network(
-                resolvedUrl,
+            : AppNetworkImage(
+                url: resolvedUrl,
                 fit: BoxFit.cover,
                 width: diameter,
                 height: diameter,
-                errorBuilder: (_, error, stackTrace) =>
+                fallbackBuilder: (_) =>
                     _MonogramFallback(name: name, colorScheme: colorScheme),
-                loadingBuilder: (_, child, progress) {
-                  if (progress == null) return child;
-                  return _MonogramFallback(
-                    name: name,
-                    colorScheme: colorScheme,
-                  );
-                },
               ),
       ),
     );

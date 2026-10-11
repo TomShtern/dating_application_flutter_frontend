@@ -22,6 +22,15 @@ class AppTheme {
   static const Color _darkTextSecondary = Color(0xFFCDD6D2);
   static const Color _darkTextTertiary = Color(0xFF9AA4A6);
 
+  // Semantic product accents shared across features. Prefer these over
+  // per-screen `_xxxRose` constants so love/trust/chat signals stay stable.
+  static const Color loveRose = Color(0xFFD95F84);
+  static const Color loveViolet = Color(0xFF8E6DE8);
+  static const Color trustGreen = Color(0xFF16A871);
+  static const Color chatTeal = Color(0xFF009688);
+  static const Color infoSky = Color(0xFF188DC8);
+  static const Color warmAmber = Color(0xFFD98914);
+
   static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(20));
   static const BorderRadius panelRadius = BorderRadius.all(Radius.circular(20));
   static const BorderRadius chipRadius = BorderRadius.all(Radius.circular(999));
@@ -523,5 +532,20 @@ class AppTheme {
 
   static double listSpacing({bool compact = false}) {
     return compact ? compactCardGap : cardGap;
+  }
+
+  /// Shared staggered entrance delay for list rows. Keeps per-screen motion
+  /// consistent while remaining a cheap built-in animation (no new package).
+  static Duration staggerDelay(int index, {int maxItems = 8}) {
+    final clamped = index.clamp(0, maxItems);
+    return Duration(milliseconds: clamped * 45);
+  }
+
+  /// Constrain phone-first columns on wide desktop windows so content does
+  /// not stretch edge-to-edge.
+  static double contentMaxWidth(double availableWidth) {
+    if (availableWidth >= 1100) return 720;
+    if (availableWidth >= 720) return 640;
+    return availableWidth;
   }
 }

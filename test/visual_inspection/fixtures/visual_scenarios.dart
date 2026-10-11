@@ -31,21 +31,18 @@ final _healthOverride = backendHealthProvider.overrideWith(
   (ref) async => _healthStatus,
 );
 
-List devUserPickerOverrides(SharedPreferences preferences) => [
-  sharedPreferencesProvider.overrideWithValue(preferences),
-  _healthOverride,
-  selectedUserProvider.overrideWith((ref) async => null),
-  availableUsersProvider.overrideWith((ref) async => availableUsers),
-];
-
-List signedInShellOverrides(SharedPreferences preferences) => [
+List signedInShellOverrides(
+  SharedPreferences preferences, {
+  UserSummary user = currentUser,
+}) => [
   sharedPreferencesProvider.overrideWithValue(preferences),
   _healthOverride,
   browseProvider.overrideWith((ref) async => browseResponse),
+  dailyStatusProvider.overrideWith((ref) async => dailyStatus),
   matchesProvider.overrideWith((ref) async => matchesResponse),
   conversationsProvider.overrideWith((ref) async => conversations),
   profileProvider.overrideWith((ref) async => profileDetail),
-  selectedUserProvider.overrideWith((ref) async => currentUser),
+  selectedUserProvider.overrideWith((ref) async => user),
   ..._presentationContextOverrides(<String>[
     browseResponse.candidates.first.id,
     dailyPick.userId,

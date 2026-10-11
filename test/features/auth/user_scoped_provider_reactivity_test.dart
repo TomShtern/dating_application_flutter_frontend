@@ -95,7 +95,6 @@ void main() {
     expect(apiClient.matchesUserIds, ['user-a', 'user-b']);
     expect(apiClient.conversationUserIds, ['user-a', 'user-b']);
     expect(apiClient.profileUserIds, ['user-a', 'user-b']);
-    expect(apiClient.profileActingUserIds, ['user-a', 'user-b']);
     expect(apiClient.statsUserIds, ['user-a', 'user-b']);
     expect(apiClient.achievementUserIds, ['user-a', 'user-b']);
   });
@@ -122,7 +121,6 @@ class _ReactiveUserApiClient extends ApiClient {
   final List<String> matchesUserIds = <String>[];
   final List<String> conversationUserIds = <String>[];
   final List<String> profileUserIds = <String>[];
-  final List<String?> profileActingUserIds = <String?>[];
   final List<String> statsUserIds = <String>[];
   final List<String> achievementUserIds = <String>[];
 
@@ -233,12 +231,8 @@ class _ReactiveUserApiClient extends ApiClient {
   }
 
   @override
-  Future<UserDetail> getUserDetail({
-    required String userId,
-    String? actingUserId,
-  }) async {
+  Future<UserDetail> getUserDetail({required String userId}) async {
     profileUserIds.add(userId);
-    profileActingUserIds.add(actingUserId);
     return switch (userId) {
       'user-a' => const UserDetail(
         id: 'user-a',

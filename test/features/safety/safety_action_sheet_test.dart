@@ -7,6 +7,7 @@ import 'package:flutter_dating_application_1/api/api_client.dart';
 import 'package:flutter_dating_application_1/api/report_reason.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/safety/safety_action_sheet.dart';
+import 'package:flutter_dating_application_1/models/report_result.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 void main() {
@@ -103,7 +104,55 @@ void main() {
     expect(apiClient.reportCalls, [otherUser.id]);
     expect(apiClient.lastReport?.reason, ReportReason.spam);
     expect(apiClient.lastReport?.blockUser, isTrue);
-    expect(find.text('User reported.'), findsOneWidget);
+    expect(find.text('User reported and blocked.'), findsOneWidget);
+  });
+
+  testWidgets('an auto-flagged report says under review, never banned', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(
+            _FakeSafetyActionApiClient(autoFlagged: true),
+          ),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SafetyActionsButton(
+                targetUserId: otherUser.id,
+                targetUserName: otherUser.name,
+                canUnmatch: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Safety actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Safety actions').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Report user'));
+    await tester.tap(find.text('Report user'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Spam or scam'));
+    await tester.tap(find.text('Spam or scam'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Submit report'));
+    await tester.tap(find.text('Submit report'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('account is now under review'), findsOneWidget);
+    expect(find.textContaining('banned'), findsNothing);
   });
 
   testWidgets('hides safety actions for the current user', (
@@ -164,19 +213,25 @@ void main() {
 }
 
 class _FakeSafetyActionApiClient extends ApiClient {
-  _FakeSafetyActionApiClient() : super(dio: Dio());
+  _FakeSafetyActionApiClient({this.autoFlagged = false}) : super(dio: Dio());
+
+  final bool autoFlagged;
 
   final List<String> reportCalls = <String>[];
   ReportUserRequest? lastReport;
 
   @override
-  Future<String> reportUser({
+  Future<ReportResult> reportUser({
     required String userId,
     required String targetId,
     required ReportUserRequest report,
   }) async {
     reportCalls.add(targetId);
     lastReport = report;
-    return 'User reported.';
+    return ReportResult(
+      success: true,
+      autoFlagged: autoFlagged,
+      blockedByReporter: report.blockUser,
+    );
   }
 }

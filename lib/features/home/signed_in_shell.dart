@@ -8,8 +8,12 @@ import '../chat/conversations_provider.dart';
 import '../chat/conversations_screen.dart';
 import '../matches/matches_provider.dart';
 import '../matches/matches_screen.dart';
+import '../notifications/notifications_provider.dart';
+import '../presence/presence_provider.dart';
 import '../profile/profile_screen.dart';
 import '../settings/settings_screen.dart';
+import '../browse/pending_likers_provider.dart';
+import '../updates/app_update_provider.dart';
 
 class _ShellDestination {
   const _ShellDestination({
@@ -57,14 +61,47 @@ class _SignedInShellState extends ConsumerState<SignedInShell> {
       return 0;
     }
 
-    return conversations.fold<int>(
-      0,
-      (total, conversation) => total + conversation.unreadCount,
+    // An archived chat stays archived when a message arrives, so it must not
+    // light the badge either.
+    return conversations
+        .where((conversation) => !conversation.archived)
+        .fold<int>(
+          0,
+          (total, conversation) => total + conversation.unreadCount,
+        );
+  }
+
+  int _pendingLikerCount() {
+    return ref.watch(pendingLikersProvider).value?.length ?? 0;
+  }
+
+  int _unreadNotificationCount() {
+    return ref.watch(notificationsUnreadCountProvider).value ?? 0;
+  }
+
+  void _announceUpdate(AppUpdateState? previous, AppUpdateState next) {
+    final installed = next.justInstalledPatch;
+    final String message;
+    if (installed != null) {
+      ref.read(appUpdateControllerProvider.notifier).acknowledgeInstall();
+      message = 'App updated. Now running update $installed.';
+    } else if (next.phase == AppUpdatePhase.restartRequired &&
+        previous?.phase != AppUpdatePhase.restartRequired) {
+      message = 'Update downloaded. Close and reopen the app to apply it.';
+    } else {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 6)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(appUpdateControllerProvider, _announceUpdate);
+    // Keeps the one app-wide presence heartbeat alive while signed in.
+    ref.listen(presenceControllerProvider, (previous, next) {});
+
     final colorScheme = Theme.of(context).colorScheme;
     final pages = [
       BrowseScreen(currentUser: widget.currentUser),
@@ -75,11 +112,15 @@ class _SignedInShellState extends ConsumerState<SignedInShell> {
     ];
 
     final unreadChats = _unreadChatCount();
+    final likerCount = _pendingLikerCount();
+    final unreadNotifications = _unreadNotificationCount();
     final destinations = [
-      const _ShellDestination(
+      _ShellDestination(
         label: 'Discover',
         icon: Icons.explore_outlined,
         selectedIcon: Icons.explore,
+        showBadge: likerCount > 0,
+        badgeCount: likerCount,
       ),
       _ShellDestination(
         label: 'Matches',
@@ -99,10 +140,12 @@ class _SignedInShellState extends ConsumerState<SignedInShell> {
         icon: Icons.person_outline_rounded,
         selectedIcon: Icons.person_rounded,
       ),
-      const _ShellDestination(
+      _ShellDestination(
         label: 'Settings',
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,
+        showBadge: unreadNotifications > 0,
+        badgeCount: unreadNotifications,
       ),
     ];
 
@@ -118,52 +161,75 @@ class _SignedInShellState extends ConsumerState<SignedInShell> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: IndexedStack(index: _selectedIndex, children: pages),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: AppTheme.contentMaxWidth(
+                MediaQuery.sizeOf(context).width,
+              ),
+            ),
+            child: IndexedStack(index: _selectedIndex, children: pages),
+          ),
+        ),
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-        child: DecoratedBox(
-          decoration: AppTheme.surfaceDecoration(
-            context,
-            gradient: LinearGradient(
-              colors: [
-                colorScheme.surface.withValues(alpha: 0.94),
-                colorScheme.surfaceContainerLow.withValues(alpha: 0.92),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          // Without this the Align fills the whole screen height and the
+          // Scaffold body collapses to zero.
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: AppTheme.contentMaxWidth(
+                MediaQuery.sizeOf(context).width,
+              ),
             ),
-            borderRadius: AppTheme.panelRadius,
-            prominent: true,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-            child: ClipRRect(
-              borderRadius: AppTheme.panelRadius,
-              child: NavigationBar(
-                selectedIndex: _selectedIndex,
-                onDestinationSelected: (index) {
-                  setState(() {
-                    _selectedIndex = index;
-                  });
-                },
-                destinations: destinations
-                    .map(
-                      (destination) => NavigationDestination(
-                        icon: _NavIcon(
-                          icon: destination.icon,
-                          showBadge: destination.showBadge,
-                          badgeCount: destination.badgeCount,
-                        ),
-                        selectedIcon: _NavIcon(
-                          icon: destination.selectedIcon,
-                          showBadge: destination.showBadge,
-                          badgeCount: destination.badgeCount,
-                        ),
-                        label: destination.label,
-                      ),
-                    )
-                    .toList(growable: false),
+            child: DecoratedBox(
+              decoration: AppTheme.surfaceDecoration(
+                context,
+                gradient: LinearGradient(
+                  colors: [
+                    colorScheme.surface.withValues(alpha: 0.94),
+                    colorScheme.surfaceContainerLow.withValues(alpha: 0.92),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: AppTheme.panelRadius,
+                prominent: true,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                child: ClipRRect(
+                  borderRadius: AppTheme.panelRadius,
+                  child: NavigationBar(
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: (index) {
+                      setState(() {
+                        _selectedIndex = index;
+                      });
+                    },
+                    destinations: destinations
+                        .map(
+                          (destination) => NavigationDestination(
+                            icon: _NavIcon(
+                              icon: destination.icon,
+                              showBadge: destination.showBadge,
+                              badgeCount: destination.badgeCount,
+                            ),
+                            selectedIcon: _NavIcon(
+                              icon: destination.selectedIcon,
+                              showBadge: destination.showBadge,
+                              badgeCount: destination.badgeCount,
+                            ),
+                            label: destination.label,
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                ),
               ),
             ),
           ),

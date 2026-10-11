@@ -47,7 +47,9 @@ class PhotoDto {
       url: url,
       thumbnailUrl: json['thumbnailUrl'] as String?,
       mediumUrl: json['mediumUrl'] as String?,
-      moderationStatus: PhotoModerationStatus.fromJson(json['moderationStatus']),
+      moderationStatus: PhotoModerationStatus.fromJson(
+        json['moderationStatus'],
+      ),
       rejectionReason: json['rejectionReason'] as String?,
     );
   }
@@ -75,13 +77,13 @@ class PhotoDto {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        url,
-        thumbnailUrl,
-        mediumUrl,
-        moderationStatus,
-        rejectionReason,
-      );
+    id,
+    url,
+    thumbnailUrl,
+    mediumUrl,
+    moderationStatus,
+    rejectionReason,
+  );
 }
 
 class PhotoListResponse {
@@ -100,9 +102,7 @@ class PhotoListResponse {
     final photos = raw is List
         ? raw
               .whereType<Map>()
-              .map(
-                (item) => PhotoDto.fromJson(Map<String, dynamic>.from(item)),
-              )
+              .map((item) => PhotoDto.fromJson(Map<String, dynamic>.from(item)))
               .toList(growable: false)
         : const <PhotoDto>[];
 
@@ -119,10 +119,7 @@ class PhotoListResponse {
 }
 
 class PhotoUploadResponse {
-  const PhotoUploadResponse({
-    required this.photo,
-    required this.list,
-  });
+  const PhotoUploadResponse({required this.photo, required this.list});
 
   final PhotoDto photo;
   final PhotoListResponse list;

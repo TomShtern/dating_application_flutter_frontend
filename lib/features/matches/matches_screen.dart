@@ -11,6 +11,7 @@ import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../chat/conversation_thread_screen.dart';
+import '../presence/presence_widgets.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'match_factors_sheet.dart';
@@ -42,6 +43,15 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
     AppTheme.navBarHeight + 8,
   );
 
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final matchesState = ref.watch(matchesProvider);
@@ -69,6 +79,34 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
             selectedFilter: _selectedFilter,
             onSelected: (filter) => setState(() => _selectedFilter = filter),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppTheme.pagePadding,
+              10,
+              AppTheme.pagePadding,
+              0,
+            ),
+            child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              onChanged: (value) => setState(() => _searchQuery = value.trim()),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Search matches by name',
+                prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      ),
+              ),
+            ),
+          ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: controller.refresh,
@@ -77,7 +115,22 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                   final visibleMatches = _filteredMatches(
                     response.matches,
                     _selectedFilter,
+                    searchQuery: _searchQuery,
                   );
+
+                  if (visibleMatches.isEmpty && _searchQuery.isNotEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: _matchesListPadding,
+                      children: [
+                        AppAsyncState.empty(
+                          message:
+                              'No matches named "$_searchQuery". Try another '
+                              'name or clear the search.',
+                        ),
+                      ],
+                    );
+                  }
 
                   if (visibleMatches.isEmpty) {
                     return ListView(
@@ -527,11 +580,7 @@ class _MatchCard extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _MatchAvatar(
-                        match: match,
-                        photoUrl: photoUrl,
-                        isActive: isActive,
-                      ),
+                      _MatchAvatar(match: match, photoUrl: photoUrl),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _MatchSummaryBlock(
@@ -708,15 +757,10 @@ class _MatchCardMenuButton extends ConsumerWidget {
 }
 
 class _MatchAvatar extends StatelessWidget {
-  const _MatchAvatar({
-    required this.match,
-    required this.photoUrl,
-    required this.isActive,
-  });
+  const _MatchAvatar({required this.match, required this.photoUrl});
 
   final MatchSummary match;
   final String? photoUrl;
-  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -737,22 +781,11 @@ class _MatchAvatar extends StatelessWidget {
             ),
           ),
         ),
-        if (isActive)
-          Positioned(
-            right: 4,
-            bottom: 4,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: _matchMint,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.surface,
-                  width: 2,
-                ),
-              ),
-              child: const SizedBox(width: 10, height: 10),
-            ),
-          ),
+        Positioned(
+          right: 4,
+          bottom: 4,
+          child: PresenceDot(userId: match.otherUserId),
+        ),
       ],
     );
   }
@@ -931,12 +964,24 @@ bool _isActive(String state) => state.trim().toUpperCase() == 'ACTIVE';
 
 List<MatchSummary> _filteredMatches(
   List<MatchSummary> matches,
-  _MatchFilter filter,
-) {
-  return switch (filter) {
+  _MatchFilter filter, {
+  String searchQuery = '',
+}) {
+  final filtered = switch (filter) {
     _MatchFilter.all => matches,
     _MatchFilter.newMatches => matches.where(_isNewMatch).toList(),
   };
+
+  final query = searchQuery.trim().toLowerCase();
+  if (query.isEmpty) {
+    return filtered;
+  }
+
+  return filtered
+      .where(
+        (match) => match.otherUserName.trim().toLowerCase().contains(query),
+      )
+      .toList();
 }
 
 bool _isNewMatch(MatchSummary match) {

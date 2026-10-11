@@ -9,6 +9,7 @@ class ConversationSummary {
     this.unreadCount = 0,
     this.lastSenderId,
     this.lastSenderName,
+    this.archived = false,
   });
 
   final String id;
@@ -20,6 +21,10 @@ class ConversationSummary {
   final int unreadCount;
   final String? lastSenderId;
   final String? lastSenderName;
+
+  /// The signed-in user's own flag. The backend also sets it after an
+  /// unmatch, a graceful exit or a block.
+  final bool archived;
 
   factory ConversationSummary.fromJson(Map<String, dynamic> json) {
     final lastMessage = _asMap(json['lastMessage']);
@@ -57,6 +62,7 @@ class ConversationSummary {
         lastMessage?['senderName'],
         lastMessageSender?['name'],
       ]),
+      archived: json['archived'] as bool? ?? false,
     );
   }
 

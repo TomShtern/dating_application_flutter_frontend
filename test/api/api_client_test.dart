@@ -52,7 +52,6 @@ void main() {
         recorder.requests.single.path,
         ApiEndpoints.matchQuality(userId, matchId),
       );
-      expect(recorder.requests.single.extra['userId'], userId);
     },
   );
 
@@ -88,7 +87,6 @@ void main() {
         recorder.requests.single.path,
         ApiEndpoints.profilePresentationContext(viewerId, targetId),
       );
-      expect(recorder.requests.single.extra['userId'], viewerId);
     },
   );
 
@@ -137,7 +135,6 @@ void main() {
         recorder.requests.single.path,
         ApiEndpoints.profileEditSnapshot(userId),
       );
-      expect(recorder.requests.single.extra['userId'], userId);
     },
   );
 
@@ -195,12 +192,11 @@ void main() {
       expect(request.method, 'GET');
       expect(request.path, ApiEndpoints.conversations(userId));
       expect(request.queryParameters, {'limit': 20, 'offset': 5});
-      expect(request.extra['userId'], userId);
     },
   );
 
   test(
-    'reportUser sends reason, description, and blockUser and extracts the response message',
+    'reportUser sends reason, description, and blockUser and reads autoFlagged',
     () async {
       final recorder = _RequestRecorder();
       const userId = '11111111-1111-1111-1111-111111111111';
@@ -208,11 +204,17 @@ void main() {
       final client = ApiClient(
         dio: _buildTestDio(
           recorder: recorder,
-          responder: (options) => {'message': 'User reported.'},
+          responder: (options) => {
+            'success': true,
+            'autoFlagged': true,
+            'autoBanned': true,
+            'errorMessage': null,
+            'blockedByReporter': true,
+          },
         ),
       );
 
-      final message = await client.reportUser(
+      final result = await client.reportUser(
         userId: userId,
         targetId: targetId,
         report: const ReportUserRequest(
@@ -223,10 +225,11 @@ void main() {
       );
 
       final request = recorder.requests.single;
-      expect(message, 'User reported.');
+      expect(result.success, isTrue);
+      expect(result.autoFlagged, isTrue);
+      expect(result.blockedByReporter, isTrue);
       expect(request.method, 'POST');
       expect(request.path, ApiEndpoints.reportUser(userId, targetId));
-      expect(request.extra['userId'], userId);
       expect(request.data, {
         'reason': 'HARASSMENT',
         'description': 'Sent abusive messages',
@@ -234,6 +237,111 @@ void main() {
       });
     },
   );
+
+  test('superLikeUser posts to the super-like route and parses the result', () async {
+    final recorder = _RequestRecorder();
+    const userId = '11111111-1111-1111-1111-111111111111';
+    const targetId = '22222222-2222-2222-2222-222222222222';
+    final client = ApiClient(
+      dio: _buildTestDio(
+        recorder: recorder,
+        responder: (options) => {
+          'isMatch': false,
+          'message': 'Super-like recorded',
+          'match': null,
+        },
+      ),
+    );
+
+    final result = await client.superLikeUser(
+      userId: userId,
+      targetId: targetId,
+    );
+
+    expect(result.isMatch, isFalse);
+    expect(result.message, 'Super-like recorded');
+    final request = recorder.requests.single;
+    expect(request.method, 'POST');
+    expect(request.path, '/api/users/$userId/super-like/$targetId');
+  });
+
+  test('deleteMessage sends DELETE to the message route', () async {
+    final recorder = _RequestRecorder();
+    const conversationId = 'conversation-1';
+    final client = ApiClient(
+      dio: _buildTestDio(recorder: recorder, responder: (options) => null),
+    );
+
+    await client.deleteMessage(
+      conversationId: conversationId,
+      messageId: 'message-2',
+    );
+
+    final request = recorder.requests.single;
+    expect(request.method, 'DELETE');
+    expect(
+      request.path,
+      '/api/conversations/$conversationId/messages/message-2',
+    );
+  });
+
+  test('conversation, daily-status and pause calls use their routes', () async {
+    final recorder = _RequestRecorder();
+    const userId = '11111111-1111-1111-1111-111111111111';
+    const conversationId = 'conversation-1';
+    final client = ApiClient(
+      dio: _buildTestDio(
+        recorder: recorder,
+        responder: (options) {
+          if (options.path.endsWith('/daily-status')) {
+            return {
+              'likes': {'used': 1, 'remaining': 2, 'unlimited': false},
+            };
+          }
+          if (options.path.endsWith('/pause')) {
+            return {'id': userId, 'state': 'PAUSED'};
+          }
+          if (options.path.endsWith('/resume')) {
+            return {'id': userId, 'state': 'ACTIVE'};
+          }
+          // Archive, unarchive and delete answer 204 with no body.
+          return null;
+        },
+      ),
+    );
+
+    await client.archiveConversation(
+      userId: userId,
+      conversationId: conversationId,
+    );
+    await client.unarchiveConversation(
+      userId: userId,
+      conversationId: conversationId,
+    );
+    await client.deleteConversation(
+      userId: userId,
+      conversationId: conversationId,
+    );
+    final status = await client.getDailyStatus(userId: userId);
+    final paused = await client.pauseProfile(userId: userId);
+    final resumed = await client.resumeProfile(userId: userId);
+
+    expect(status.likes.remaining, 2);
+    expect(paused.state, 'PAUSED');
+    expect(resumed.state, 'ACTIVE');
+    const base = '/api/users/$userId';
+    expect(
+      [for (final request in recorder.requests) (request.method, request.path)],
+      [
+        ('POST', '$base/conversations/$conversationId/archive'),
+        ('POST', '$base/conversations/$conversationId/unarchive'),
+        ('DELETE', '$base/conversations/$conversationId'),
+        ('GET', '$base/daily-status'),
+        ('POST', '$base/pause'),
+        ('POST', '$base/resume'),
+      ],
+    );
+  });
 
   test('deleteUser sends DELETE to the user route', () async {
     final recorder = _RequestRecorder();
@@ -250,7 +358,6 @@ void main() {
     final request = recorder.requests.single;
     expect(request.method, 'DELETE');
     expect(request.path, ApiEndpoints.deleteUser(userId));
-    expect(request.extra['userId'], userId);
   });
 
   test(
@@ -277,7 +384,6 @@ void main() {
       expect(result.matchDeleted, isTrue);
       expect(request.method, 'POST');
       expect(request.path, ApiEndpoints.undo(userId));
-      expect(request.extra['userId'], userId);
     },
   );
 
@@ -439,7 +545,6 @@ void main() {
 
     expect(blockedUsers.single.name, 'Noa');
     expect(recorder.requests.single.path, ApiEndpoints.blockedUsers(userId));
-    expect(recorder.requests.single.extra['userId'], userId);
   });
 
   test(
@@ -689,7 +794,6 @@ void main() {
       final request = recorder.requests.single;
       expect(request.method, 'GET');
       expect(request.path, ApiEndpoints.userPhotos(userId));
-      expect(request.extra['userId'], userId);
     },
   );
 
@@ -715,43 +819,38 @@ void main() {
       final request = recorder.requests.single;
       expect(request.method, 'DELETE');
       expect(request.path, ApiEndpoints.userPhoto(userId, photoId));
-      expect(request.extra['userId'], userId);
     },
   );
 
-  test(
-    'reorderPhotos PUTs the order route with the photo id list',
-    () async {
-      final recorder = _RequestRecorder();
-      const userId = '11111111-1111-1111-1111-111111111111';
-      final client = ApiClient(
-        dio: _buildTestDio(
-          recorder: recorder,
-          responder: (options) => {
-            'primaryUrl': '/photos/dana-2.jpg',
-            'photos': [
-              {'id': 'photo-2', 'url': '/photos/dana-2.jpg'},
-              {'id': 'photo-1', 'url': '/photos/dana-1.jpg'},
-            ],
-          },
-        ),
-      );
+  test('reorderPhotos PUTs the order route with the photo id list', () async {
+    final recorder = _RequestRecorder();
+    const userId = '11111111-1111-1111-1111-111111111111';
+    final client = ApiClient(
+      dio: _buildTestDio(
+        recorder: recorder,
+        responder: (options) => {
+          'primaryUrl': '/photos/dana-2.jpg',
+          'photos': [
+            {'id': 'photo-2', 'url': '/photos/dana-2.jpg'},
+            {'id': 'photo-1', 'url': '/photos/dana-1.jpg'},
+          ],
+        },
+      ),
+    );
 
-      final list = await client.reorderPhotos(
-        userId: userId,
-        photoIds: ['photo-2', 'photo-1'],
-      );
+    final list = await client.reorderPhotos(
+      userId: userId,
+      photoIds: ['photo-2', 'photo-1'],
+    );
 
-      expect(list.photos.first.id, 'photo-2');
-      final request = recorder.requests.single;
-      expect(request.method, 'PUT');
-      expect(request.path, ApiEndpoints.userPhotosOrder(userId));
-      expect(request.data, {
-        'photoIds': ['photo-2', 'photo-1'],
-      });
-      expect(request.extra['userId'], userId);
-    },
-  );
+    expect(list.photos.first.id, 'photo-2');
+    final request = recorder.requests.single;
+    expect(request.method, 'PUT');
+    expect(request.path, ApiEndpoints.userPhotosOrder(userId));
+    expect(request.data, {
+      'photoIds': ['photo-2', 'photo-1'],
+    });
+  });
 }
 
 Dio _buildTestDio({

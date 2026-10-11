@@ -36,7 +36,7 @@ trusting any enumeration, including this one. Purposes, for selection:
 | `PersonPhotoCard` | person card: avatar + name/age/location |
 | `UserAvatar` | circular avatar, ring, monogram fallback |
 | `PersonMediaThumbnail` | rectangular thumbnail with gradient fallback |
-| `AppNetworkImage` | cached network image; DPR-aware cache sizing, fallback builder |
+| `AppNetworkImage` | authenticated backend photo; DPR-aware cache sizing, fallback builder |
 | `CompactContextStrip` | single-line metadata: icon + label |
 | `CompactSummaryHeader` | name + subtitle + action row |
 | `CompatibilityMeter` | 0-100 score bar with colour-coded label |

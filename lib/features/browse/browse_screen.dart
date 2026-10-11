@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
@@ -6,13 +7,16 @@ import '../../models/browse_candidate.dart';
 import '../../models/browse_response.dart';
 import '../../models/conversation_summary.dart';
 import '../../models/daily_pick.dart';
+import '../../models/daily_status.dart';
 import '../../models/profile_presentation_context.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/widgets/person_media_thumbnail.dart';
+import '../../shared/widgets/photo_viewer_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../shared/widgets/app_async_state.dart';
+import '../auth/selected_user_provider.dart';
 import '../../shared/widgets/shell_hero.dart';
 import '../chat/conversation_thread_screen.dart';
 import '../home/backend_health_banner.dart';
@@ -44,10 +48,47 @@ class BrowseScreen extends ConsumerStatefulWidget {
 class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   bool _isSubmitting = false;
 
+  /// Candidates already swiped but possibly still in the loaded list. Their
+  /// card is hidden at once instead of waiting for the next browse response.
+  final Set<String> _dismissedIds = <String>{};
+
+  /// The swipe the backend has not answered yet; its card stays hidden even
+  /// if a browse response arrives in the meantime.
+  String? _pendingSwipeId;
+
+  /// Bumped when a swipe lands while another action is still in flight and is
+  /// therefore dropped, so the card that flew off is rebuilt in place.
+  int _cardGeneration = 0;
+
   @override
   Widget build(BuildContext context) {
-    final browseState = ref.watch(browseProvider);
+    // A paused profile cannot browse: the backend refuses the request, so it
+    // is not made, and a list loaded before the pause is not shown.
+    final paused = widget.currentUser.isPaused;
+    final browseState = paused
+        ? const AsyncValue<BrowseResponse>.loading()
+        : ref.watch(browseProvider);
     final browseData = browseState.asData?.value;
+
+    // A 409 on browse usually means the account state changed under us
+    // (paused, under review). Re-read it so the right screen shows.
+    if (!paused) {
+      ref.listen(browseProvider, (previous, next) {
+        final error = next.error;
+        if (error is ApiError && error.statusCode == 409) {
+          ref.read(selectUserControllerProvider).refreshAccountState();
+        }
+
+        // A settled response is the backend's own view of who is left, so the
+        // local "already swiped" list is no longer needed.
+        if (!next.isLoading &&
+            _dismissedIds.any((id) => id != _pendingSwipeId)) {
+          setState(() {
+            _dismissedIds.removeWhere((id) => id != _pendingSwipeId);
+          });
+        }
+      });
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -63,54 +104,70 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                 children: [
                   _BrowseIntroCard(
                     currentUserName: widget.currentUser.name,
-                    candidateCount: browseData?.candidates.length,
+                    candidateCount: browseData?.candidates
+                        .where(
+                          (candidate) => !_dismissedIds.contains(candidate.id),
+                        )
+                        .length,
                     hasDailyPick: browseData?.dailyPick != null,
                     locationMissing: browseData?.locationMissing ?? false,
                     onUndo: _handleUndo,
                     onRefresh: () =>
                         ref.read(browseControllerProvider).refresh(),
                     onOpenDiscoveryPreferences: _openDiscoveryPreferences,
-                    actionsDisabled: _isSubmitting,
+                    actionsDisabled:
+                        _isSubmitting || widget.currentUser.isPaused,
                   ),
                   SizedBox(height: sectionSpacing),
                   Expanded(
-                    child: browseState.when(
-                      data: (browse) => _BrowseContent(
-                        browse: browse,
-                        developerPanel: _DeveloperSessionPanel(
-                          user: widget.currentUser,
-                        ),
-                        isSubmitting: _isSubmitting,
-                        onLike: (candidate) => _handleLike(candidate),
-                        onPass: (candidate) => _handlePass(candidate),
-                        onViewProfile: (candidate) =>
-                            _openCandidateProfile(candidate),
-                        onOpenPendingLikers: () => _openPendingLikers(),
-                        onOpenStandouts: () => _openStandouts(),
-                        onFixLocation: () => _openLocationCompletion(),
-                        onRefresh: () =>
-                            ref.read(browseControllerProvider).refresh(),
-                      ),
-                      loading: () => const AppAsyncState.loading(
-                        message: 'Loading candidates…',
-                      ),
-                      error: (error, stackTrace) {
-                        if (error is ApiError && error.statusCode == 409) {
-                          return _BrowseConflictState(
-                            message: error.message,
-                            onRetry: () => ref.invalidate(browseProvider),
-                          );
-                        }
+                    child: widget.currentUser.isUnderReview
+                        ? _AccountUnderReviewState(
+                            onCheckAgain: _recheckAccountState,
+                          )
+                        : widget.currentUser.isPaused
+                        ? _ProfilePausedState(onResume: _resumeProfile)
+                        : browseState.when(
+                            data: (browse) => _BrowseContent(
+                              browse: browse,
+                              developerPanel: _DeveloperSessionPanel(
+                                user: widget.currentUser,
+                              ),
+                              dismissedIds: _dismissedIds,
+                              cardGeneration: _cardGeneration,
+                              isSubmitting: _isSubmitting,
+                              onLike: (candidate) => _handleLike(candidate),
+                              onSuperLike: (candidate) =>
+                                  _handleLike(candidate, superLike: true),
+                              onPass: (candidate) => _handlePass(candidate),
+                              onViewProfile: (candidate) =>
+                                  _openCandidateProfile(candidate),
+                              onOpenPendingLikers: () => _openPendingLikers(),
+                              onOpenStandouts: () => _openStandouts(),
+                              onFixLocation: () => _openLocationCompletion(),
+                              onRefresh: () =>
+                                  ref.read(browseControllerProvider).refresh(),
+                            ),
+                            loading: () => const AppAsyncState.loading(
+                              message: 'Loading candidates…',
+                            ),
+                            error: (error, stackTrace) {
+                              if (error is ApiError &&
+                                  error.statusCode == 409) {
+                                return _BrowseConflictState(
+                                  message: error.message,
+                                  onRetry: () => ref.invalidate(browseProvider),
+                                );
+                              }
 
-                        final message = error is ApiError
-                            ? error.message
-                            : 'Unable to load browse candidates right now.';
-                        return AppAsyncState.error(
-                          message: message,
-                          onRetry: () => ref.invalidate(browseProvider),
-                        );
-                      },
-                    ),
+                              final message = error is ApiError
+                                  ? error.message
+                                  : 'Unable to load browse candidates right now.';
+                              return AppAsyncState.error(
+                                message: message,
+                                onRetry: () => ref.invalidate(browseProvider),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
@@ -121,19 +178,73 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     );
   }
 
-  Future<void> _handleLike(BrowseCandidate candidate) async {
+  Future<void> _recheckAccountState() async {
+    await ref.read(selectUserControllerProvider).refreshAccountState();
+    ref.invalidate(browseProvider);
+  }
+
+  Future<void> _resumeProfile() async {
     if (_isSubmitting) {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
-
+    setState(() => _isSubmitting = true);
     try {
-      final result = await ref
-          .read(browseControllerProvider)
-          .likeCandidate(candidate.id);
+      await ref.read(selectUserControllerProvider).resumeProfile();
+    } on ApiError catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _hideCard(BrowseCandidate candidate) {
+    _isSubmitting = true;
+    _dismissedIds.add(candidate.id);
+    _pendingSwipeId = candidate.id;
+  }
+
+  /// Ends a swipe: a refused one gets its card back.
+  void _settleSwipe(BrowseCandidate candidate, {required bool accepted}) {
+    if (_pendingSwipeId == candidate.id) {
+      _pendingSwipeId = null;
+    }
+    if (!accepted) {
+      _dismissedIds.remove(candidate.id);
+    }
+  }
+
+  Future<void> _handleLike(
+    BrowseCandidate candidate, {
+    bool superLike = false,
+  }) async {
+    if (_isSubmitting) {
+      setState(() => _cardGeneration++);
+      return;
+    }
+
+    if (superLike) {
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.selectionClick();
+    }
+
+    setState(() => _hideCard(candidate));
+
+    var accepted = false;
+    try {
+      final controller = ref.read(browseControllerProvider);
+      final result = superLike
+          ? await controller.superLikeCandidate(candidate.id)
+          : await controller.likeCandidate(candidate.id);
+      accepted = true;
+      _settleSwipe(candidate, accepted: true);
 
       if (!mounted) {
         return;
@@ -160,10 +271,27 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       }
 
       if (result.isMatch && result.matchId != null) {
+        if (!mounted) {
+          return;
+        }
+        String? selfPhotoUrl;
+        try {
+          final detail = await ref.read(profileProvider.future);
+          selfPhotoUrl = detail.photoUrls.isEmpty
+              ? null
+              : detail.photoUrls.first;
+        } catch (_) {
+          selfPhotoUrl = null;
+        }
+        if (!mounted) {
+          return;
+        }
         await MatchCelebrationDialog.show(
           context,
           matchedUserName: result.matchedUserName ?? candidate.name,
           currentUserName: widget.currentUser.name,
+          matchedUserPhotoUrl: candidate.primaryPhotoUrl,
+          currentUserPhotoUrl: selfPhotoUrl,
           onMessageNow: openThread,
         );
       }
@@ -195,6 +323,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
+          if (!accepted) {
+            _settleSwipe(candidate, accepted: false);
+          }
         });
       }
     }
@@ -202,17 +333,21 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
 
   Future<void> _handlePass(BrowseCandidate candidate) async {
     if (_isSubmitting) {
+      setState(() => _cardGeneration++);
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    HapticFeedback.lightImpact();
 
+    setState(() => _hideCard(candidate));
+
+    var accepted = false;
     try {
       final message = await ref
           .read(browseControllerProvider)
           .passCandidate(candidate.id);
+      accepted = true;
+      _settleSwipe(candidate, accepted: true);
 
       if (!mounted) {
         return;
@@ -233,6 +368,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       if (mounted) {
         setState(() {
           _isSubmitting = false;
+          if (!accepted) {
+            _settleSwipe(candidate, accepted: false);
+          }
         });
       }
     }
@@ -242,6 +380,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     if (_isSubmitting) {
       return;
     }
+
+    HapticFeedback.lightImpact();
 
     setState(() {
       _isSubmitting = true;
@@ -425,7 +565,9 @@ class _BrowseIntroCard extends StatelessWidget {
                 ],
                 IconButton(
                   tooltip: 'Discovery preferences',
-                  onPressed: actionsDisabled ? null : onOpenDiscoveryPreferences,
+                  onPressed: actionsDisabled
+                      ? null
+                      : onOpenDiscoveryPreferences,
                   icon: const Icon(Icons.tune_rounded, size: 20),
                 ),
                 IconButton(
@@ -539,8 +681,11 @@ class _BrowseContent extends ConsumerWidget {
   const _BrowseContent({
     required this.browse,
     required this.developerPanel,
+    required this.dismissedIds,
+    required this.cardGeneration,
     required this.isSubmitting,
     required this.onLike,
+    required this.onSuperLike,
     required this.onPass,
     required this.onViewProfile,
     required this.onOpenPendingLikers,
@@ -551,8 +696,11 @@ class _BrowseContent extends ConsumerWidget {
 
   final BrowseResponse browse;
   final Widget developerPanel;
+  final Set<String> dismissedIds;
+  final int cardGeneration;
   final bool isSubmitting;
   final ValueChanged<BrowseCandidate> onLike;
+  final ValueChanged<BrowseCandidate> onSuperLike;
   final ValueChanged<BrowseCandidate> onPass;
   final ValueChanged<BrowseCandidate> onViewProfile;
   final VoidCallback onOpenPendingLikers;
@@ -562,7 +710,17 @@ class _BrowseContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (browse.candidates.isEmpty) {
+    final limits = ref.watch(swipeLimitProvider);
+    final candidates = browse.candidates
+        .where((candidate) => !dismissedIds.contains(candidate.id))
+        .toList(growable: false);
+
+    // Every loaded card has been swiped and the next batch is on its way.
+    if (candidates.isEmpty && browse.candidates.isNotEmpty) {
+      return const AppAsyncState.loading(message: 'Finding the next profile…');
+    }
+
+    if (candidates.isEmpty) {
       return RefreshIndicator(
         onRefresh: onRefresh,
         child: ListView(
@@ -588,7 +746,7 @@ class _BrowseContent extends ConsumerWidget {
       );
     }
 
-    final currentCandidate = browse.candidates.first;
+    final currentCandidate = candidates.first;
 
     return Column(
       children: [
@@ -598,10 +756,8 @@ class _BrowseContent extends ConsumerWidget {
             child: ListView(
               children: [
                 Dismissible(
-                  key: ValueKey(currentCandidate.id),
-                  direction: isSubmitting
-                      ? DismissDirection.none
-                      : DismissDirection.horizontal,
+                  key: ValueKey('${currentCandidate.id}-$cardGeneration'),
+                  direction: _swipeDirection(limits),
                   background: const _SwipeCue(
                     alignment: Alignment.centerLeft,
                     icon: Icons.favorite_rounded,
@@ -612,18 +768,20 @@ class _BrowseContent extends ConsumerWidget {
                     icon: Icons.close_rounded,
                     label: 'Pass',
                   ),
-                  confirmDismiss: (direction) async {
+                  // The card flies off first; the swipe is sent once it is
+                  // gone, and a refused swipe brings the card back.
+                  resizeDuration: null,
+                  confirmDismiss: (direction) async => !isSubmitting,
+                  onDismissed: (direction) {
                     if (direction == DismissDirection.startToEnd) {
                       onLike(currentCandidate);
                     } else {
                       onPass(currentCandidate);
                     }
-
-                    return false;
                   },
                   child: _CandidateCard(
                     candidate: currentCandidate,
-                    remainingCount: browse.candidates.length,
+                    remainingCount: candidates.length,
                     onViewProfile: () => onViewProfile(currentCandidate),
                   ),
                 ),
@@ -656,11 +814,28 @@ class _BrowseContent extends ConsumerWidget {
         _BrowseActionBar(
           candidate: currentCandidate,
           isSubmitting: isSubmitting,
+          limits: limits,
           onLike: onLike,
+          onSuperLike: onSuperLike,
           onPass: onPass,
         ),
       ],
     );
+  }
+
+  /// A swipe whose daily limit is used up is not offered: start-to-end is
+  /// like, end-to-start is pass.
+  DismissDirection _swipeDirection(SwipeLimits limits) {
+    if (isSubmitting || (limits.likeReached && limits.passReached)) {
+      return DismissDirection.none;
+    }
+    if (limits.likeReached) {
+      return DismissDirection.endToStart;
+    }
+    if (limits.passReached) {
+      return DismissDirection.startToEnd;
+    }
+    return DismissDirection.horizontal;
   }
 }
 
@@ -837,19 +1012,28 @@ class _BrowseActionBar extends StatelessWidget {
   const _BrowseActionBar({
     required this.candidate,
     required this.isSubmitting,
+    required this.limits,
     required this.onLike,
+    required this.onSuperLike,
     required this.onPass,
   });
 
   final BrowseCandidate candidate;
   final bool isSubmitting;
+  final SwipeLimits limits;
   final ValueChanged<BrowseCandidate> onLike;
+  final ValueChanged<BrowseCandidate> onSuperLike;
   final ValueChanged<BrowseCandidate> onPass;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final limitMessages = [
+      ?limits.passMessage,
+      ?limits.superLikeMessage,
+      ?limits.likeMessage,
+    ];
 
     return SafeArea(
       top: false,
@@ -872,42 +1056,87 @@ class _BrowseActionBar extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(10),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: isSubmitting ? null : () => onPass(candidate),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
-                    foregroundColor: theme.brightness == Brightness.dark
-                        ? const Color(0xFFEAF4FB)
-                        : const Color(0xFF2D4657),
-                    side: BorderSide(
-                      color: theme.brightness == Brightness.dark
-                          ? const Color(0xFF6790A5)
-                          : const Color(0xFF84AAC0),
-                      width: 1.5,
+              for (final message in limitMessages)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.hourglass_bottom_rounded,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          message,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (limitMessages.isEmpty) const _DailyAllowanceLine(),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: isSubmitting || limits.passReached
+                          ? null
+                          : () => onPass(candidate),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        foregroundColor: theme.brightness == Brightness.dark
+                            ? const Color(0xFFEAF4FB)
+                            : const Color(0xFF2D4657),
+                        side: BorderSide(
+                          color: theme.brightness == Brightness.dark
+                              ? const Color(0xFF6790A5)
+                              : const Color(0xFF84AAC0),
+                          width: 1.5,
+                        ),
+                        backgroundColor: theme.brightness == Brightness.dark
+                            ? const Color(0xFF16303D)
+                            : const Color(0xFFF2F8FB),
+                      ),
+                      icon: const Icon(Icons.close_rounded),
+                      label: const Text('Pass'),
                     ),
-                    backgroundColor: theme.brightness == Brightness.dark
-                        ? const Color(0xFF16303D)
-                        : const Color(0xFFF2F8FB),
                   ),
-                  icon: const Icon(Icons.close_rounded),
-                  label: const Text('Pass'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: isSubmitting ? null : () => onLike(candidate),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
-                    backgroundColor: _browseRose,
-                    foregroundColor: Colors.white,
+                  const SizedBox(width: 10),
+                  IconButton.filled(
+                    tooltip: 'Super Like',
+                    onPressed: isSubmitting || limits.superLikeReached
+                        ? null
+                        : () => onSuperLike(candidate),
+                    style: IconButton.styleFrom(
+                      fixedSize: const Size.square(52),
+                      backgroundColor: _browseSky,
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.star_rounded),
                   ),
-                  icon: const Icon(Icons.favorite_rounded),
-                  label: const Text('Like'),
-                ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: isSubmitting || limits.likeReached
+                          ? null
+                          : () => onLike(candidate),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        backgroundColor: _browseRose,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.favorite_rounded),
+                      label: const Text('Like'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -915,6 +1144,54 @@ class _BrowseActionBar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What is left of today's allowance. Shows nothing while it is unknown, and
+/// leaves out any kind the backend reports as unlimited.
+class _DailyAllowanceLine extends ConsumerWidget {
+  const _DailyAllowanceLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(dailyStatusProvider).value;
+    if (status == null) {
+      return const SizedBox.shrink();
+    }
+
+    final parts = [
+      ?_allowanceLabel(status.likes, 'like', 'likes'),
+      ?_allowanceLabel(status.superLikes, 'Super Like', 'Super Likes'),
+      ?_allowanceLabel(status.passes, 'pass', 'passes'),
+    ];
+    if (parts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        '${parts.join(' · ')} left today',
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+String? _allowanceLabel(
+  DailyAllowance allowance,
+  String singular,
+  String plural,
+) {
+  final remaining = allowance.remaining;
+  if (allowance.unlimited || remaining == null) {
+    return null;
+  }
+  return '$remaining ${remaining == 1 ? singular : plural}';
 }
 
 class _DailyPickCard extends ConsumerWidget {
@@ -927,6 +1204,9 @@ class _DailyPickCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final likeLimitReached = ref.watch(
+      swipeLimitProvider.select((limits) => limits.likeReached),
+    );
     final headline = dailyPick.alreadySeen
         ? 'Already seen today'
         : 'Featured for today';
@@ -1049,9 +1329,24 @@ class _DailyPickCard extends ConsumerWidget {
                             ),
                             const SizedBox(width: 4),
                             FilledButton.icon(
-                              onPressed: () => ref
-                                  .read(browseControllerProvider)
-                                  .likeCandidate(dailyPick.userId),
+                              onPressed: likeLimitReached
+                                  ? null
+                                  : () async {
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
+                                      );
+                                      try {
+                                        await ref
+                                            .read(browseControllerProvider)
+                                            .likeCandidate(dailyPick.userId);
+                                      } on ApiError catch (error) {
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(error.message),
+                                          ),
+                                        );
+                                      }
+                                    },
                               icon: const Icon(
                                 Icons.favorite_rounded,
                                 size: 18,
@@ -1089,6 +1384,20 @@ class _CandidateCard extends StatelessWidget {
   final BrowseCandidate candidate;
   final int remainingCount;
   final VoidCallback onViewProfile;
+
+  Future<void> _openPhotoPreview(BuildContext context) async {
+    final photoUrls = _candidatePhotoUrls(candidate);
+    if (photoUrls.isEmpty) {
+      return;
+    }
+    HapticFeedback.selectionClick();
+    await PhotoViewerScreen.show(
+      context,
+      photoUrls: photoUrls,
+      heroTagPrefix: 'browse-photo-${candidate.id}',
+      title: candidate.name,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1133,10 +1442,21 @@ class _CandidateCard extends StatelessWidget {
                       key: ValueKey('browse-candidate-media-${candidate.id}'),
                       name: candidate.name,
                       photoUrl: photoUrl,
+                      heroTag: photoUrl == null
+                          ? null
+                          : 'browse-photo-${candidate.id}-0',
                       width: double.infinity,
                       height: 236,
                       borderRadius: const BorderRadius.all(Radius.circular(26)),
                     ),
+                    if (photoUrl != null)
+                      Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: _BrowsePhotoPreviewButton(
+                          onPressed: () => _openPhotoPreview(context),
+                        ),
+                      ),
                     Positioned(
                       top: 14,
                       left: 14,
@@ -1271,6 +1591,39 @@ class _CandidateCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BrowsePhotoPreviewButton extends StatelessWidget {
+  const _BrowsePhotoPreviewButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.42),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: IconButton(
+        tooltip: 'View photo full screen',
+        onPressed: onPressed,
+        iconSize: 18,
+        visualDensity: VisualDensity.compact,
+        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+        icon: const Icon(Icons.fullscreen_rounded, color: Colors.white),
+      ),
+    );
+  }
+}
+
+List<String> _candidatePhotoUrls(BrowseCandidate candidate) {
+  final urls = <String>[
+    if (candidate.primaryPhotoUrl case final url? when url.trim().isNotEmpty)
+      url.trim(),
+    ...candidate.photoUrls.where((url) => url.trim().isNotEmpty),
+  ];
+
+  return urls.toSet().toList(growable: false);
 }
 
 String? _primaryPhotoUrl(String? primaryPhotoUrl, List<String> photoUrls) {
@@ -1572,6 +1925,109 @@ class _SwipeCue extends StatelessWidget {
               Text(label, style: Theme.of(context).textTheme.titleMedium),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown instead of Discover while the signed-in account is `UNDER_REVIEW`.
+/// There is deliberately no "activate" action: an account under review
+/// cannot activate itself.
+class _AccountUnderReviewState extends StatelessWidget {
+  const _AccountUnderReviewState({required this.onCheckAgain});
+
+  final VoidCallback onCheckAgain;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: DecoratedBox(
+          decoration: AppTheme.surfaceDecoration(
+            context,
+            gradient: AppTheme.heroGradient(context),
+            prominent: true,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ShellHeroPill(
+                  icon: Icons.policy_outlined,
+                  label: 'Under review',
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Your account is under review',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Discovery is paused while our team reviews your account. '
+                  'There is nothing you need to do right now.',
+                ),
+                const SizedBox(height: 18),
+                OutlinedButton(
+                  onPressed: onCheckAgain,
+                  child: const Text('Check again'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfilePausedState extends StatelessWidget {
+  const _ProfilePausedState({required this.onResume});
+
+  final VoidCallback onResume;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: DecoratedBox(
+          decoration: AppTheme.surfaceDecoration(
+            context,
+            gradient: AppTheme.heroGradient(context),
+            prominent: true,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ShellHeroPill(
+                  icon: Icons.pause_circle_outline_rounded,
+                  label: 'Paused',
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Your profile is paused',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Nobody new can see you, and you cannot browse or swipe. '
+                  'Your matches and chats still work.',
+                ),
+                const SizedBox(height: 18),
+                FilledButton(
+                  onPressed: onResume,
+                  child: const Text('Resume profile'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

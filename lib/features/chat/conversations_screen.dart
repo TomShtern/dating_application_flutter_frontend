@@ -9,6 +9,7 @@ import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/app_group_label.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
+import '../presence/presence_widgets.dart';
 import 'conversation_thread_screen.dart';
 import 'conversations_provider.dart';
 
@@ -53,13 +54,15 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
   Widget build(BuildContext context) {
     final conversationsState = ref.watch(conversationsProvider);
     final controller = ref.read(conversationsControllerProvider);
+    // Archived chats are listed in their own group and left out of the counts.
     final conversationCount = conversationsState.maybeWhen(
-      data: (value) => value.length,
+      data: (value) => value.where((summary) => !summary.archived).length,
       orElse: () => null,
     );
     final readyToStartCount = conversationsState.maybeWhen(
-      data: (value) =>
-          value.where((summary) => summary.messageCount == 0).length,
+      data: (value) => value
+          .where((summary) => !summary.archived && summary.messageCount == 0)
+          .length,
       orElse: () => null,
     );
 
@@ -113,6 +116,12 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                         ),
                       )
                       .toList(growable: false);
+                  final openConversations = filteredConversations
+                      .where((summary) => !summary.archived)
+                      .toList(growable: false);
+                  final archivedConversations = filteredConversations
+                      .where((summary) => summary.archived)
+                      .toList(growable: false);
 
                   return ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -138,34 +147,45 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
                             ),
                             child: Text(
                               '${filteredConversations.length} of ${conversations.length} ${conversations.length == 1 ? 'conversation' : 'conversations'} match',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                             ),
                           ),
-                        AppGroupLabel(
-                          title: _searchQuery.isEmpty
-                              ? 'Open conversations'
-                              : 'Matching conversations',
-                          accentColor: _conversationTeal,
-                          countText: '${filteredConversations.length}',
-                        ),
-                        SizedBox(height: AppTheme.listSpacing()),
-                        for (
-                          var index = 0;
-                          index < filteredConversations.length;
-                          index++
-                        ) ...[
-                          _ConversationCard(
-                            currentUser: widget.currentUser,
-                            summary: filteredConversations[index],
+                        if (openConversations.isNotEmpty) ...[
+                          AppGroupLabel(
+                            title: _searchQuery.isEmpty
+                                ? 'Open conversations'
+                                : 'Matching conversations',
+                            accentColor: _conversationTeal,
+                            countText: '${openConversations.length}',
                           ),
-                          if (index != filteredConversations.length - 1)
+                          for (final summary in openConversations) ...[
                             SizedBox(height: AppTheme.listSpacing()),
+                            _ConversationCard(
+                              currentUser: widget.currentUser,
+                              summary: summary,
+                            ),
+                          ],
+                        ],
+                        if (archivedConversations.isNotEmpty) ...[
+                          if (openConversations.isNotEmpty)
+                            SizedBox(height: AppTheme.sectionSpacing()),
+                          AppGroupLabel(
+                            title: 'Archived',
+                            accentColor: _conversationSlate,
+                            countText: '${archivedConversations.length}',
+                          ),
+                          for (final summary in archivedConversations) ...[
+                            SizedBox(height: AppTheme.listSpacing()),
+                            _ConversationCard(
+                              currentUser: widget.currentUser,
+                              summary: summary,
+                            ),
+                          ],
                         ],
                       ],
                     ],
@@ -736,6 +756,14 @@ class _ConversationAvatarStack extends StatelessWidget {
           Positioned.fill(
             child: UserAvatar(name: summary.otherUserName, radius: 22),
           ),
+          // Presence is only readable for an active match; an archived chat
+          // is often with someone who no longer is one.
+          if (!summary.archived)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: PresenceDot(userId: summary.otherUserId),
+            ),
           Positioned(
             right: 0,
             bottom: 0,
@@ -851,6 +879,14 @@ class _ConversationVisualSpec {
   final IconData icon;
 
   static _ConversationVisualSpec forSummary(ConversationSummary summary) {
+    if (summary.archived) {
+      return const _ConversationVisualSpec(
+        color: _conversationSlate,
+        foregroundColor: _conversationSlate,
+        icon: Icons.archive_outlined,
+      );
+    }
+
     if (summary.unreadCount > 0) {
       return const _ConversationVisualSpec(
         color: _conversationTeal,
@@ -890,6 +926,10 @@ String _conversationPreview(ConversationSummary summary, String currentUserId) {
 }
 
 String _conversationMessageSummary(ConversationSummary summary) {
+  if (summary.archived) {
+    return 'Archived';
+  }
+
   if (summary.unreadCount > 0) {
     return summary.unreadCount == 1
         ? '1 unread'

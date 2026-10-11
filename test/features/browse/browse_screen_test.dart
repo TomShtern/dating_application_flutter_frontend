@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
+import 'package:flutter_dating_application_1/api/api_error.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_screen.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
@@ -79,6 +82,20 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(preferences),
           selectedUserProvider.overrideWith((ref) async => currentUser),
           browseProvider.overrideWith((ref) async => browseResponse),
+          profileProvider.overrideWith(
+            (ref) async => const UserDetail(
+              id: '11111111-1111-1111-1111-111111111111',
+              name: 'Dana',
+              age: 27,
+              bio: 'Coffee and long walks.',
+              gender: 'FEMALE',
+              interestedIn: ['MALE'],
+              approximateLocation: 'Tel Aviv',
+              maxDistanceKm: 25,
+              photoUrls: ['/photos/dana-1.jpg'],
+              state: 'ACTIVE',
+            ),
+          ),
           backendHealthProvider.overrideWith(
             (ref) async =>
                 HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
@@ -109,6 +126,8 @@ void main() {
       find.text('Start the conversation with Noa when you\'re ready.'),
       findsOneWidget,
     );
+    // Only the dialog was closed: Discover is still underneath for Back.
+    expect(find.byType(BrowseScreen, skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('opens the viewed candidate profile from browse', (
@@ -444,6 +463,52 @@ void main() {
     );
   });
 
+  testWidgets('an account under review sees that instead of Discover', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    const underReviewUser = UserSummary(
+      id: '11111111-1111-1111-1111-111111111111',
+      name: 'Dana',
+      age: 27,
+      state: 'UNDER_REVIEW',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(
+            _FakeBrowseApiClient(
+              browseResponse: browseResponse,
+              likeResult: const LikeResult(
+                isMatch: false,
+                message: 'Like recorded',
+              ),
+            ),
+          ),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          selectedUserProvider.overrideWith((ref) async => underReviewUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
+          backendHealthProvider.overrideWith(
+            (ref) async =>
+                HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
+          ),
+        ],
+        child: const MaterialApp(
+          home: BrowseScreen(currentUser: underReviewUser),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your account is under review'), findsOneWidget);
+    expect(find.text(candidate.name), findsNothing);
+    expect(find.widgetWithText(FilledButton, 'Like'), findsNothing);
+    expect(find.textContaining('Activate'), findsNothing);
+    expect(find.textContaining('activate'), findsNothing);
+  });
+
   testWidgets('supports swiping the candidate card to pass', (
     WidgetTester tester,
   ) async {
@@ -484,6 +549,51 @@ void main() {
 
     expect(find.text('Passed'), findsOneWidget);
     expect(apiClient.passCalls, 1);
+  });
+
+  testWidgets('a refused swipe brings the card back instead of losing it', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+
+    final apiClient = _FakeBrowseApiClient(
+      browseResponse: browseResponse,
+      likeResult: const LikeResult(isMatch: false, message: 'Like recorded'),
+      passError: const ApiError(message: 'Network down'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+          browseProvider.overrideWith((ref) async => browseResponse),
+          backendHealthProvider.overrideWith(
+            (ref) async =>
+                HealthStatus(status: 'ok', timestamp: DateTime(2026, 4, 19, 9)),
+          ),
+        ],
+        child: const MaterialApp(home: BrowseScreen(currentUser: currentUser)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final candidateName = find.text(candidate.name).first;
+    await tester.ensureVisible(candidateName);
+    await tester.pumpAndSettle();
+    await tester.drag(
+      candidateName,
+      const Offset(-500, 0),
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+
+    expect(apiClient.passCalls, 1);
+    expect(find.text('Network down'), findsOneWidget);
+    expect(find.text(candidate.name), findsWidgets);
+    expect(find.widgetWithText(FilledButton, 'Like'), findsOneWidget);
   });
 
   testWidgets('opens discovery preferences from browse', (
@@ -551,12 +661,19 @@ class _FakeBrowseApiClient extends ApiClient {
       message: 'Last swipe undone',
       matchDeleted: false,
     ),
+    this.passError,
   }) : super(dio: Dio());
 
+  final ApiError? passError;
   final BrowseResponse browseResponse;
   final LikeResult likeResult;
   final UndoSwipeResult undoResult;
   int passCalls = 0;
+
+  @override
+  Future<Uint8List> getPhotoBytes(String url) async {
+    throw const ApiError(message: 'Not found', statusCode: 404);
+  }
 
   @override
   Future<BrowseResponse> getBrowse({required String userId}) async {
@@ -577,6 +694,9 @@ class _FakeBrowseApiClient extends ApiClient {
     required String targetId,
   }) async {
     passCalls++;
+    if (passError case final error?) {
+      throw error;
+    }
     return 'Passed';
   }
 

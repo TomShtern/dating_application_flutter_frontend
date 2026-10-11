@@ -57,7 +57,9 @@ void main() {
             match.matchId,
           ).overrideWith((ref) async => <MessageDto>[]),
         ],
-        child: MaterialApp(home: MatchesScreen(currentUser: currentUser)),
+        child: MaterialApp(
+          home: Scaffold(body: MatchesScreen(currentUser: currentUser)),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -114,7 +116,9 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(home: MatchesScreen(currentUser: currentUser)),
+        child: MaterialApp(
+          home: Scaffold(body: MatchesScreen(currentUser: currentUser)),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -140,7 +144,9 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(home: MatchesScreen(currentUser: currentUser)),
+        child: MaterialApp(
+          home: Scaffold(body: MatchesScreen(currentUser: currentUser)),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -173,7 +179,9 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(home: MatchesScreen(currentUser: currentUser)),
+        child: MaterialApp(
+          home: Scaffold(body: MatchesScreen(currentUser: currentUser)),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -222,7 +230,9 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(home: MatchesScreen(currentUser: currentUser)),
+        child: MaterialApp(
+          home: Scaffold(body: MatchesScreen(currentUser: currentUser)),
+        ),
       ),
     );
     await tester.pumpAndSettle();

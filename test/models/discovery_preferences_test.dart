@@ -23,11 +23,7 @@ void main() {
           'maxAgeDifference': 5,
         },
       },
-      'readOnly': {
-        'name': 'Dana',
-        'state': 'ACTIVE',
-        'photoUrls': [],
-      },
+      'readOnly': {'name': 'Dana', 'state': 'ACTIVE', 'photoUrls': []},
     });
 
     final prefs = DiscoveryPreferences.fromProfileEditSnapshot(snapshot);
@@ -68,10 +64,7 @@ void main() {
   });
 
   test('toProfileUpdateRequest omits empty interestedIn', () {
-    const prefs = DiscoveryPreferences(
-      minAge: 25,
-      interestedIn: [],
-    );
+    const prefs = DiscoveryPreferences(minAge: 25, interestedIn: []);
 
     final request = prefs.toProfileUpdateRequest();
 
@@ -89,18 +82,9 @@ void main() {
   });
 
   test('equality works correctly', () {
-    const prefsA = DiscoveryPreferences(
-      minAge: 25,
-      interestedIn: ['MALE'],
-    );
-    const prefsB = DiscoveryPreferences(
-      minAge: 25,
-      interestedIn: ['MALE'],
-    );
-    const prefsC = DiscoveryPreferences(
-      minAge: 26,
-      interestedIn: ['MALE'],
-    );
+    const prefsA = DiscoveryPreferences(minAge: 25, interestedIn: ['MALE']);
+    const prefsB = DiscoveryPreferences(minAge: 25, interestedIn: ['MALE']);
+    const prefsC = DiscoveryPreferences(minAge: 26, interestedIn: ['MALE']);
 
     expect(prefsA, prefsB);
     expect(prefsA.hashCode, prefsB.hashCode);

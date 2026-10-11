@@ -43,4 +43,18 @@ void main() {
       expect(summary.lastMessageAt, DateTime.parse('2026-04-18T14:21:00Z'));
     },
   );
+
+  test('reads the archived flag and defaults it to false', () {
+    Map<String, dynamic> json({bool? archived}) => {
+      'id': 'conversation-1',
+      'otherUserId': '22222222-2222-2222-2222-222222222222',
+      'otherUserName': 'Noa',
+      'messageCount': 2,
+      'lastMessageAt': '2026-10-11T18:04:11Z',
+      'archived': ?archived,
+    };
+
+    expect(ConversationSummary.fromJson(json(archived: true)).archived, isTrue);
+    expect(ConversationSummary.fromJson(json()).archived, isFalse);
+  });
 }

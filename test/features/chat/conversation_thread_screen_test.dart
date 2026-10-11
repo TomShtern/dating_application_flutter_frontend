@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
+import 'package:flutter_dating_application_1/api/api_error.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_screen.dart';
+import 'package:flutter_dating_application_1/features/presence/presence_widgets.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
 import 'package:flutter_dating_application_1/models/conversation_summary.dart';
 import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
+import 'package:flutter_dating_application_1/models/user_presence.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 import 'package:flutter_dating_application_1/theme/app_theme.dart';
 
@@ -28,6 +31,174 @@ void main() {
     messageCount: 1,
     lastMessageAt: DateTime.parse('2026-04-18T14:20:00Z'),
   );
+
+  final greeting = MessageDto(
+    id: 'message-1',
+    conversationId: conversation.id,
+    senderId: conversation.otherUserId,
+    content: 'Hey Dana',
+    sentAt: DateTime.parse('2026-04-18T14:20:00Z'),
+  );
+
+  Future<_FakeConversationThreadApiClient> pumpThreadWithPresence(
+    WidgetTester tester, {
+    UserPresence? presence,
+    ApiError? presenceError,
+  }) async {
+    final apiClient =
+        _FakeConversationThreadApiClient(
+            messageResponses: [
+              [greeting],
+            ],
+            sentMessage: greeting,
+          )
+          ..presence = presence
+          ..presenceError = presenceError;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith((ref) async => currentUser),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: ConversationThreadScreen(
+            currentUser: currentUser,
+            conversation: conversation,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    return apiClient;
+  }
+
+  testWidgets('shows Online in the header from the presence poll', (
+    WidgetTester tester,
+  ) async {
+    final apiClient = await pumpThreadWithPresence(
+      tester,
+      presence: const UserPresence(
+        status: PresenceStatus.online,
+        typing: false,
+      ),
+    );
+
+    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('Tap name to view profile'), findsNothing);
+    expect(apiClient.presenceRequests.first, (
+      conversation.otherUserId,
+      conversation.id,
+    ));
+
+    apiClient.presence = const UserPresence(
+      status: PresenceStatus.away,
+      typing: false,
+    );
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+
+    expect(find.text('Away'), findsOneWidget);
+    expect(find.text('Online'), findsNothing);
+
+    apiClient.presence = const UserPresence(
+      status: PresenceStatus.offline,
+      typing: false,
+    );
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+
+    expect(find.text('Away'), findsNothing);
+    expect(find.text('Tap name to view profile'), findsOneWidget);
+  });
+
+  testWidgets('shows and clears the typing indicator from the presence poll', (
+    WidgetTester tester,
+  ) async {
+    final apiClient = await pumpThreadWithPresence(
+      tester,
+      presence: const UserPresence(status: PresenceStatus.online, typing: true),
+    );
+
+    expect(find.text('typing'), findsOneWidget);
+    expect(find.byType(TypingDots), findsOneWidget);
+
+    apiClient.presence = const UserPresence(
+      status: PresenceStatus.online,
+      typing: false,
+    );
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+
+    expect(find.text('typing'), findsNothing);
+    expect(find.byType(TypingDots), findsNothing);
+    expect(find.text('Online'), findsOneWidget);
+  });
+
+  for (final status in [401, 403, 404, 429]) {
+    testWidgets('a $status on presence hides the indicators silently', (
+      WidgetTester tester,
+    ) async {
+      final apiClient = await pumpThreadWithPresence(
+        tester,
+        presence: const UserPresence(
+          status: PresenceStatus.online,
+          typing: true,
+        ),
+      );
+      expect(find.text('typing'), findsOneWidget);
+
+      apiClient.presenceError = ApiError(
+        message: 'Refused',
+        statusCode: status,
+      );
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump();
+
+      expect(find.text('typing'), findsNothing);
+      expect(find.text('Online'), findsNothing);
+      expect(find.text('Tap name to view profile'), findsOneWidget);
+      expect(find.text('Refused'), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+      // Chat itself is untouched.
+      expect(find.text('Hey Dana'), findsOneWidget);
+
+      // And it backs off instead of asking again every poll.
+      final requestsAfterFailure = apiClient.presenceRequests.length;
+      await tester.pump(const Duration(seconds: 20));
+      expect(apiClient.presenceRequests, hasLength(requestsAfterFailure));
+    });
+  }
+
+  testWidgets('reports typing at most once per 5 seconds, only with text', (
+    WidgetTester tester,
+  ) async {
+    final apiClient = await pumpThreadWithPresence(tester);
+    final field = find.byType(TextField);
+
+    await tester.enterText(field, 'H');
+    await tester.enterText(field, 'He');
+    await tester.enterText(field, 'Hey');
+    await tester.pump();
+
+    expect(apiClient.typingConversationIds, [conversation.id]);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.enterText(field, 'Hey t');
+    expect(apiClient.typingConversationIds, hasLength(1));
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.enterText(field, 'Hey th');
+    expect(apiClient.typingConversationIds, hasLength(2));
+
+    // An emptied field stops reporting, even after the window has passed.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.enterText(field, '');
+    await tester.pump();
+    expect(apiClient.typingConversationIds, hasLength(2));
+  });
 
   testWidgets('renders existing messages and sends a new one', (
     WidgetTester tester,
@@ -525,6 +696,35 @@ class _FakeConversationThreadApiClient extends ApiClient {
   int getMessagesCalls = 0;
   String? lastSentContent;
   final List<String> sentContents = <String>[];
+
+  UserPresence? presence;
+  ApiError? presenceError;
+  final List<(String, String?)> presenceRequests = [];
+  final List<String> typingConversationIds = [];
+
+  @override
+  Future<void> sendHeartbeat({required String userId}) async {}
+
+  @override
+  Future<void> sendTyping({
+    required String userId,
+    required String conversationId,
+  }) async {
+    typingConversationIds.add(conversationId);
+  }
+
+  @override
+  Future<UserPresence> getPresence({
+    required String userId,
+    String? conversationId,
+  }) async {
+    presenceRequests.add((userId, conversationId));
+    if (presenceError case final error?) {
+      throw error;
+    }
+    return presence ??
+        const UserPresence(status: PresenceStatus.offline, typing: false);
+  }
 
   @override
   Future<List<MessageDto>> getMessages({

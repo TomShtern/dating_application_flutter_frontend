@@ -56,17 +56,18 @@ class LocationController {
       allowApproximate: allowApproximate,
     );
 
-    await apiClient.updateProfile(
-      userId: currentUser.id,
-      request: ProfileUpdateRequest(
-        location: ProfileLocationRequest(
-          countryCode: countryCode,
-          cityName: cityName,
-          zipCode: zipCode,
-          allowApproximate: allowApproximate,
-        ),
-      ),
-    );
+    await _ref
+        .read(profileControllerProvider)
+        .updateProfile(
+          ProfileUpdateRequest(
+            location: ProfileLocationRequest(
+              countryCode: countryCode,
+              cityName: cityName,
+              zipCode: zipCode,
+              allowApproximate: allowApproximate,
+            ),
+          ),
+        );
 
     _ref.invalidate(profileProvider);
     _ref.invalidate(otherUserProfileProvider(currentUser.id));

@@ -31,9 +31,7 @@ void main() {
           apiClientProvider.overrideWithValue(apiClient),
           selectedUserProvider.overrideWith((ref) async => currentUser),
         ],
-        child: const MaterialApp(
-          home: DiscoveryPreferencesScreen(),
-        ),
+        child: const MaterialApp(home: DiscoveryPreferencesScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -73,9 +71,7 @@ void main() {
           apiClientProvider.overrideWithValue(apiClient),
           selectedUserProvider.overrideWith((ref) async => currentUser),
         ],
-        child: const MaterialApp(
-          home: DiscoveryPreferencesScreen(),
-        ),
+        child: const MaterialApp(home: DiscoveryPreferencesScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -101,9 +97,7 @@ void main() {
           apiClientProvider.overrideWithValue(apiClient),
           selectedUserProvider.overrideWith((ref) async => currentUser),
         ],
-        child: const MaterialApp(
-          home: DiscoveryPreferencesScreen(),
-        ),
+        child: const MaterialApp(home: DiscoveryPreferencesScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -127,9 +121,7 @@ void main() {
           apiClientProvider.overrideWithValue(apiClient),
           selectedUserProvider.overrideWith((ref) async => currentUser),
         ],
-        child: const MaterialApp(
-          home: DiscoveryPreferencesScreen(),
-        ),
+        child: const MaterialApp(home: DiscoveryPreferencesScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -174,11 +166,7 @@ class _FakeDiscoveryPrefsApiClient extends ApiClient {
           'acceptableEducation': [],
         },
       },
-      'readOnly': {
-        'name': 'Dana',
-        'state': 'ACTIVE',
-        'photoUrls': [],
-      },
+      'readOnly': {'name': 'Dana', 'state': 'ACTIVE', 'photoUrls': []},
     });
   }
 
@@ -188,8 +176,6 @@ class _FakeDiscoveryPrefsApiClient extends ApiClient {
     required ProfileUpdateRequest request,
   }) async {
     updateProfileCalls++;
-    return const ProfileUpdateResponse(
-      completionInfo: ProfileCompletionInfo(),
-    );
+    return const ProfileUpdateResponse(completionInfo: ProfileCompletionInfo());
   }
 }

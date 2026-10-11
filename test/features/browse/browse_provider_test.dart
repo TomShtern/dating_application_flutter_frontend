@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
+import 'package:flutter_dating_application_1/api/api_error.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
 import 'package:flutter_dating_application_1/features/chat/conversations_provider.dart';
@@ -17,6 +18,177 @@ import 'package:flutter_dating_application_1/models/undo_swipe_result.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 void main() {
+  const candidate = BrowseCandidate(
+    id: 'target-1',
+    name: 'Noa',
+    age: 29,
+    state: 'ACTIVE',
+  );
+  const oneCandidate = BrowseResponse(
+    candidates: [candidate],
+    dailyPick: null,
+    dailyPickViewed: false,
+    locationMissing: false,
+  );
+  const dana = UserSummary(
+    id: '11111111-1111-1111-1111-111111111111',
+    name: 'Dana',
+    age: 27,
+    state: 'ACTIVE',
+  );
+  const likeLimit = ApiError(
+    message: 'Daily like limit reached. Resets at 00:00 UTC.',
+    code: 'RATE_LIMITED',
+    statusCode: 429,
+  );
+
+  ProviderContainer swipeContainer(_FakeApiClient apiClient) {
+    final container = ProviderContainer(
+      overrides: [
+        apiClientProvider.overrideWithValue(apiClient),
+        selectedUserProvider.overrideWith((ref) async => dana),
+      ],
+    );
+    addTearDown(container.dispose);
+    return container;
+  }
+
+  test('a 429 on like marks the daily like limit with the backend message, '
+      'keeps the card and is not retried', () async {
+    final apiClient = _FakeApiClient(
+      browseResponses: [oneCandidate],
+      likeError: likeLimit,
+    );
+    final container = swipeContainer(apiClient);
+    await container.read(browseProvider.future);
+
+    await expectLater(
+      container.read(browseControllerProvider).likeCandidate(candidate.id),
+      throwsA(same(likeLimit)),
+    );
+
+    final limits = container.read(swipeLimitProvider);
+    expect(limits.likeReached, isTrue);
+    expect(limits.likeMessage, likeLimit.message);
+    expect(limits.passReached, isFalse);
+    expect(apiClient.likeCalls, 1);
+    // The refused swipe did not consume the card or refetch the deck.
+    expect(apiClient.browseCalls, 1);
+    final browse = await container.read(browseProvider.future);
+    expect(browse.candidates.single.id, candidate.id);
+  });
+
+  test('a 429 on pass marks only the daily pass limit', () async {
+    const passLimit = ApiError(
+      message: 'Daily pass limit reached. Resets at 00:00 UTC.',
+      code: 'RATE_LIMITED',
+      statusCode: 429,
+    );
+    final apiClient = _FakeApiClient(
+      browseResponses: [oneCandidate],
+      passError: passLimit,
+    );
+    final container = swipeContainer(apiClient);
+    await container.read(browseProvider.future);
+
+    await expectLater(
+      container.read(browseControllerProvider).passCandidate(candidate.id),
+      throwsA(same(passLimit)),
+    );
+
+    final limits = container.read(swipeLimitProvider);
+    expect(limits.passReached, isTrue);
+    expect(limits.passMessage, passLimit.message);
+    expect(limits.likeReached, isFalse);
+    expect(apiClient.passCalls, 1);
+  });
+
+  test('a 429 on super-like marks only the super-like limit, so like and pass '
+      'stay available', () async {
+    const superLikeLimit = ApiError(
+      message: 'Daily super-like limit reached. Resets at 00:00 UTC.',
+      code: 'RATE_LIMITED',
+      statusCode: 429,
+    );
+    final apiClient = _FakeApiClient(
+      browseResponses: [oneCandidate],
+      superLikeError: superLikeLimit,
+    );
+    final container = swipeContainer(apiClient);
+    await container.read(browseProvider.future);
+
+    await expectLater(
+      container.read(browseControllerProvider).superLikeCandidate(candidate.id),
+      throwsA(same(superLikeLimit)),
+    );
+
+    final limits = container.read(swipeLimitProvider);
+    expect(limits.superLikeReached, isTrue);
+    expect(limits.superLikeMessage, superLikeLimit.message);
+    expect(limits.likeReached, isFalse);
+    expect(limits.passReached, isFalse);
+    expect(apiClient.superLikeCalls, 1);
+    expect(apiClient.browseCalls, 1);
+  });
+
+  test('superLikeCandidate uses the super-like call and refreshes the deck', () async {
+    final apiClient = _FakeApiClient(browseResponses: [oneCandidate]);
+    final container = swipeContainer(apiClient);
+    await container.read(browseProvider.future);
+
+    final result = await container
+        .read(browseControllerProvider)
+        .superLikeCandidate(candidate.id);
+    await container.read(browseProvider.future);
+
+    expect(result.isMatch, isFalse);
+    expect(apiClient.superLikeCalls, 1);
+    expect(apiClient.likeCalls, 0);
+    expect(apiClient.browseCalls, 2);
+  });
+
+  test(
+    'a 409 or a burst 429 on like is not treated as a daily limit',
+    () async {
+      for (final error in const [
+        ApiError(message: 'Not visible.', code: 'CONFLICT', statusCode: 409),
+        ApiError(
+          message: 'Too many requests. Try again in 3 s.',
+          code: 'TOO_MANY_REQUESTS',
+          statusCode: 429,
+          retryAfterSeconds: 3,
+        ),
+      ]) {
+        final container = swipeContainer(
+          _FakeApiClient(browseResponses: [oneCandidate], likeError: error),
+        );
+        await container.read(browseProvider.future);
+
+        await expectLater(
+          container.read(browseControllerProvider).likeCandidate(candidate.id),
+          throwsA(same(error)),
+        );
+
+        expect(container.read(swipeLimitProvider).likeReached, isFalse);
+      }
+    },
+  );
+
+  test('refreshing Discover clears a reached limit', () async {
+    final container = swipeContainer(
+      _FakeApiClient(browseResponses: [oneCandidate], likeError: likeLimit),
+    );
+    await container.read(browseProvider.future);
+    await expectLater(
+      container.read(browseControllerProvider).likeCandidate(candidate.id),
+      throwsA(same(likeLimit)),
+    );
+
+    await container.read(browseControllerProvider).refresh();
+
+    expect(container.read(swipeLimitProvider).likeReached, isFalse);
+  });
+
   test('likeCandidate refreshes browse data from the server', () async {
     final apiClient = _FakeApiClient(
       browseResponses: [
@@ -393,7 +565,15 @@ class _FakeApiClient extends ApiClient {
     ),
     this.matchResponses = const [],
     this.conversationResponses = const [],
+    this.likeError,
+    this.passError,
+    this.superLikeError,
   }) : super(dio: Dio());
+
+  final ApiError? likeError;
+  final ApiError? passError;
+  final ApiError? superLikeError;
+  int superLikeCalls = 0;
 
   final List<BrowseResponse> browseResponses;
   final LikeResult likeResult;
@@ -422,6 +602,21 @@ class _FakeApiClient extends ApiClient {
     required String targetId,
   }) async {
     likeCalls++;
+    if (likeError case final error?) {
+      throw error;
+    }
+    return likeResult;
+  }
+
+  @override
+  Future<LikeResult> superLikeUser({
+    required String userId,
+    required String targetId,
+  }) async {
+    superLikeCalls++;
+    if (superLikeError case final error?) {
+      throw error;
+    }
     return likeResult;
   }
 
@@ -431,6 +626,9 @@ class _FakeApiClient extends ApiClient {
     required String targetId,
   }) async {
     passCalls++;
+    if (passError case final error?) {
+      throw error;
+    }
     return 'Passed';
   }
 

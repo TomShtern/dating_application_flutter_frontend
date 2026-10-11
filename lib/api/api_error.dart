@@ -1,11 +1,24 @@
 import 'package:dio/dio.dart';
 
 class ApiError implements Exception {
-  const ApiError({required this.message, this.code, this.statusCode});
+  const ApiError({
+    required this.message,
+    this.code,
+    this.statusCode,
+    this.retryAfterSeconds,
+  });
 
   final String message;
   final String? code;
   final int? statusCode;
+
+  /// The `Retry-After` header of a 429, when the server sent one. The
+  /// per-client request limiter sends it; a daily swipe limit does not.
+  final int? retryAfterSeconds;
+
+  /// A 429 that is a daily allowance running out rather than a burst of
+  /// requests: waiting a few seconds will not help.
+  bool get isDailyLimit => statusCode == 429 && retryAfterSeconds == null;
 
   factory ApiError.fromDioException(DioException exception, {String? baseUrl}) {
     final response = exception.response;
@@ -17,15 +30,24 @@ class ApiError implements Exception {
       final code = payload['code'] as String?;
 
       if (statusCode == 429) {
-        final retryAfter = response?.headers.value('retry-after');
-        final suffix = retryAfter != null && retryAfter.isNotEmpty
-            ? ' Try again in $retryAfter.'
-            : ' Try again shortly.';
+        final retryAfter = int.tryParse(
+          response?.headers.value('retry-after') ?? '',
+        );
+        // A backend message without Retry-After already says when to come
+        // back (daily limit reset, verification lock), so it is shown as is.
+        final String message;
+        if (retryAfter != null) {
+          message =
+              '${backendMessage ?? 'Too many requests.'} '
+              'Try again in $retryAfter s.';
+        } else {
+          message = backendMessage ?? 'Too many requests. Try again shortly.';
+        }
         return ApiError(
-          message:
-              '${backendMessage ?? 'Too many requests.'}$suffix',
+          message: message,
           code: code,
           statusCode: statusCode,
+          retryAfterSeconds: retryAfter,
         );
       }
 
@@ -40,10 +62,7 @@ class ApiError implements Exception {
       }
 
       return ApiError(
-        message:
-            backendMessage ??
-            exception.message ??
-            'Request failed.',
+        message: backendMessage ?? exception.message ?? 'Request failed.',
         code: code,
         statusCode: statusCode,
       );

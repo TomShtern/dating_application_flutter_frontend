@@ -19,8 +19,9 @@ screenshots as the taste target:
   back affordance through the AppBar.
 - Do not change providers, models, API calls, send-message behavior,
   polling/refresh behavior, route parameters, or safety action behavior.
-- Do not invent read receipts, typing indicators, compatibility, or message
-  status not provided by the API.
+- Do not invent read receipts, compatibility, or message status not provided
+  by the API. The header's typing and Online/Away line is real: it comes from
+  the presence API through `PresenceObserver` — keep it.
 - Do not add new tests for this UI/design pass. You may run existing useful
   tests, `flutter analyze`, and the visual-review suite.
 

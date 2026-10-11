@@ -10,6 +10,7 @@ class PendingLiker {
     this.photoUrls = const <String>[],
     this.approximateLocation,
     this.summaryLine,
+    this.superLike = false,
   });
 
   final String userId;
@@ -20,6 +21,7 @@ class PendingLiker {
   final List<String> photoUrls;
   final String? approximateLocation;
   final String? summaryLine;
+  final bool superLike;
 
   factory PendingLiker.fromJson(Map<String, dynamic> json) {
     return PendingLiker(
@@ -31,6 +33,7 @@ class PendingLiker {
       photoUrls: parseStringList(json['photoUrls']),
       approximateLocation: parseNullableString(json['approximateLocation']),
       summaryLine: parseNullableString(json['summaryLine']),
+      superLike: json['superLike'] as bool? ?? false,
     );
   }
 }

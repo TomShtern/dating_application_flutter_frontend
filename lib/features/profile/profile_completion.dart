@@ -18,10 +18,10 @@ class MissingField {
   static IconData iconForKey(String key) {
     return switch (key) {
       'name' => Icons.badge_outlined,
-      'dob' => Icons.cake_outlined,
+      'birthDate' => Icons.cake_outlined,
       'location' => Icons.location_on_outlined,
-      'photo' => Icons.photo_camera_outlined,
-      'pace' => Icons.speed_outlined,
+      'photoUrls' => Icons.photo_camera_outlined,
+      'pacePreferences' => Icons.speed_outlined,
       'gender' => Icons.wc_rounded,
       'interestedIn' => Icons.favorite_border_rounded,
       'bio' => Icons.edit_note_rounded,
@@ -36,13 +36,10 @@ List<MissingField> missingFieldsFromInfo(ProfileCompletionInfo info) {
   }
 
   return info.missingProfileFields.map((key) {
-    final label =
-        info.missingProfileFieldLabels[key] ?? ProfileCompletionInfo.defaultLabel(key);
     return MissingField(
       key: key,
-      label: label,
+      label: ProfileCompletionInfo.defaultLabel(key),
       icon: MissingField.iconForKey(key),
-      isActionable: ProfileCompletionInfo.isActionable(key),
     );
   }).toList();
 }

@@ -1,10 +1,14 @@
+import 'pace_preferences.dart';
 import 'profile_edit_snapshot.dart';
 
-/// A partial profile update payload built from the fields currently surfaced
-/// by the mobile read model.
+/// A partial profile update payload; omitted scalar fields are preserved
+/// server-side.
 ///
-/// Until the backend exposes a richer read DTO for profile editing, the mobile
-/// client relies on omitted write-side fields being preserved server-side.
+/// Exception: `interestedIn` and `interests` are NOT preserved. The backend
+/// request record turns an absent set into an empty one and the use case then
+/// applies it, so omitting either clears the stored value. Callers that did
+/// not mean to change them must resend the current values — see
+/// [withCurrentSets], used by `ProfileController`.
 class ProfileUpdateRequest {
   const ProfileUpdateRequest({
     this.name,
@@ -36,7 +40,7 @@ class ProfileUpdateRequest {
   final int? maxAge;
   final int? heightCm;
   final ProfileLocationRequest? location;
-  final String? pacePreferences;
+  final PacePreferences? pacePreferences;
   final String? birthDate;
   final String? smoking;
   final String? drinking;
@@ -45,6 +49,34 @@ class ProfileUpdateRequest {
   final String? education;
   final List<String>? interests;
   final ProfileEditDealbreakers? dealbreakers;
+
+  /// Returns a copy that carries [currentInterestedIn] / [currentInterests]
+  /// when this request leaves them unset, so the backend does not clear them.
+  ProfileUpdateRequest withCurrentSets({
+    required List<String> currentInterestedIn,
+    required List<String> currentInterests,
+  }) {
+    return ProfileUpdateRequest(
+      name: name,
+      bio: bio,
+      gender: gender,
+      interestedIn: interestedIn ?? currentInterestedIn,
+      maxDistanceKm: maxDistanceKm,
+      minAge: minAge,
+      maxAge: maxAge,
+      heightCm: heightCm,
+      location: location,
+      pacePreferences: pacePreferences,
+      birthDate: birthDate,
+      smoking: smoking,
+      drinking: drinking,
+      wantsKids: wantsKids,
+      lookingFor: lookingFor,
+      education: education,
+      interests: interests ?? currentInterests,
+      dealbreakers: dealbreakers,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     final payload = <String, dynamic>{};
@@ -76,8 +108,10 @@ class ProfileUpdateRequest {
     if (location != null) {
       payload['location'] = location!.toJson();
     }
-    if (pacePreferences != null) {
-      payload['pacePreferences'] = pacePreferences;
+    // The backend throws on a partly filled pace object, so send it only
+    // when all four answers are set.
+    if (pacePreferences != null && pacePreferences!.isComplete) {
+      payload['pacePreferences'] = pacePreferences!.toJson();
     }
     if (birthDate != null) {
       payload['birthDate'] = birthDate;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
 import '../../api/report_reason.dart';
+import '../../models/report_result.dart';
 import '../../shared/widgets/app_overflow_menu_button.dart';
 import '../auth/selected_user_provider.dart';
 import 'safety_provider.dart';
@@ -21,6 +22,16 @@ class SafetyActionOutcome {
       action == SafetyAction.block ||
       action == SafetyAction.unmatch ||
       action == SafetyAction.gracefulExit;
+}
+
+/// `autoFlagged` means the account went under review, not that it was banned.
+String _reportOutcomeMessage(ReportResult result) {
+  final reported = result.blockedByReporter
+      ? 'User reported and blocked.'
+      : 'User reported.';
+  return result.autoFlagged
+      ? '$reported Their account is now under review.'
+      : reported;
 }
 
 class SafetyActionsButton extends ConsumerWidget {
@@ -300,9 +311,8 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (sheetContext) => _ReportReasonSheet(
-        targetUserName: widget.targetUserName,
-      ),
+      builder: (sheetContext) =>
+          _ReportReasonSheet(targetUserName: widget.targetUserName),
     );
 
     if (request == null || !mounted) {
@@ -314,7 +324,7 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
     });
 
     try {
-      final message = await ref
+      final result = await ref
           .read(safetyControllerProvider)
           .reportUser(widget.targetUserId, request);
 
@@ -324,10 +334,10 @@ class _SafetyActionSheetState extends ConsumerState<SafetyActionSheet> {
 
       Navigator.of(context).pop(
         SafetyActionOutcome(
-          action: request.blockUser
+          action: request.blockUser || result.blockedByReporter
               ? SafetyAction.block
               : SafetyAction.report,
-          message: message,
+          message: _reportOutcomeMessage(result),
         ),
       );
     } on ApiError catch (error) {

@@ -4,12 +4,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dating_application_1/app/app.dart';
+import 'package:flutter_dating_application_1/features/auth/auth_controller.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/home/backend_health_provider.dart';
 import 'package:flutter_dating_application_1/features/settings/app_preferences_store.dart';
 import 'package:flutter_dating_application_1/models/health_status.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
+
+import '../features/auth/fake_auth_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +29,9 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(preferences),
+          authControllerProvider.overrideWith(
+            () => FakeAuthController(const AuthUnknown()),
+          ),
           selectedUserProvider.overrideWithValue(
             const AsyncData<UserSummary?>(null),
           ),

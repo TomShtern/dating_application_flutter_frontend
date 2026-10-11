@@ -3,6 +3,7 @@ import 'package:flutter_dating_application_1/models/blocked_user_summary.dart';
 import 'package:flutter_dating_application_1/models/browse_candidate.dart';
 import 'package:flutter_dating_application_1/models/browse_response.dart';
 import 'package:flutter_dating_application_1/models/conversation_summary.dart';
+import 'package:flutter_dating_application_1/models/daily_status.dart';
 import 'package:flutter_dating_application_1/models/daily_pick.dart';
 import 'package:flutter_dating_application_1/models/location_metadata.dart';
 import 'package:flutter_dating_application_1/models/match_summary.dart';
@@ -41,6 +42,19 @@ const currentUser = UserSummary(
   name: 'Dana',
   age: 27,
   state: 'ACTIVE',
+);
+
+const pausedCurrentUser = UserSummary(
+  id: '11111111-1111-1111-1111-111111111111',
+  name: 'Dana',
+  age: 27,
+  state: 'PAUSED',
+);
+
+const dailyStatus = DailyStatus(
+  likes: DailyAllowance(used: 7, remaining: 3, unlimited: false),
+  superLikes: DailyAllowance(used: 0, remaining: 1, unlimited: false),
+  passes: DailyAllowance(used: 4, remaining: null, unlimited: true),
 );
 
 const browseCandidates = <BrowseCandidate>[
@@ -222,6 +236,7 @@ final conversations = <ConversationSummary>[
     otherUserName: 'Yael',
     messageCount: 22,
     lastMessageAt: DateTime.parse('2026-04-18T08:45:00Z'),
+    archived: true,
   ),
 ];
 
@@ -420,6 +435,7 @@ const pendingLikers = <PendingLiker>[
     photoUrls: ['/photos/shira-1.jpg'],
     approximateLocation: 'Netanya',
     summaryLine: 'Beach sunsets and quick-witted texts.',
+    superLike: true,
   ),
   PendingLiker(
     userId: '99999999-9999-9999-9999-999999999999',

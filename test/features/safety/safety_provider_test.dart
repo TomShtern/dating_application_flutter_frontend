@@ -17,6 +17,7 @@ import 'package:flutter_dating_application_1/models/conversation_summary.dart';
 import 'package:flutter_dating_application_1/models/match_summary.dart';
 import 'package:flutter_dating_application_1/models/matches_response.dart';
 import 'package:flutter_dating_application_1/models/user_detail.dart';
+import 'package:flutter_dating_application_1/models/report_result.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 
 const _currentUser = UserSummary(
@@ -91,10 +92,12 @@ void main() {
       await container.read(conversationsProvider.future);
       await container.read(otherUserProfileProvider(_otherUserId).future);
 
-      await container.read(safetyControllerProvider).reportUser(
-        _otherUserId,
-        const ReportUserRequest(reason: ReportReason.spam),
-      );
+      await container
+          .read(safetyControllerProvider)
+          .reportUser(
+            _otherUserId,
+            const ReportUserRequest(reason: ReportReason.spam),
+          );
 
       await container.read(browseProvider.future);
       await container.read(matchesProvider.future);
@@ -126,13 +129,15 @@ void main() {
       await container.read(browseProvider.future);
       await container.read(matchesProvider.future);
 
-      await container.read(safetyControllerProvider).reportUser(
-        _otherUserId,
-        const ReportUserRequest(
-          reason: ReportReason.harassment,
-          blockUser: true,
-        ),
-      );
+      await container
+          .read(safetyControllerProvider)
+          .reportUser(
+            _otherUserId,
+            const ReportUserRequest(
+              reason: ReportReason.harassment,
+              blockUser: true,
+            ),
+          );
 
       await container.read(browseProvider.future);
       await container.read(matchesProvider.future);
@@ -326,10 +331,7 @@ class _FakeSafetyApiClient extends ApiClient {
   }
 
   @override
-  Future<UserDetail> getUserDetail({
-    required String userId,
-    String? actingUserId,
-  }) async {
+  Future<UserDetail> getUserDetail({required String userId}) async {
     getUserDetailCalls++;
     return detail;
   }
@@ -353,14 +355,18 @@ class _FakeSafetyApiClient extends ApiClient {
   }
 
   @override
-  Future<String> reportUser({
+  Future<ReportResult> reportUser({
     required String userId,
     required String targetId,
     required ReportUserRequest report,
   }) async {
     reportCalls.add((targetId, userId));
     lastReport = report;
-    return 'User reported.';
+    return ReportResult(
+      success: true,
+      autoFlagged: false,
+      blockedByReporter: report.blockUser,
+    );
   }
 
   @override

@@ -1,11 +1,10 @@
 import 'dart:convert';
 
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter_dating_application_1/app/app.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_provider.dart';
 import 'package:flutter_dating_application_1/features/browse/browse_screen.dart';
 import 'package:flutter_dating_application_1/features/chat/conversation_thread_provider.dart';
@@ -13,9 +12,11 @@ import 'package:flutter_dating_application_1/features/chat/conversations_screen.
 import 'package:flutter_dating_application_1/features/chat/conversations_provider.dart';
 import 'package:flutter_dating_application_1/features/home/backend_health_provider.dart';
 import 'package:flutter_dating_application_1/features/matches/matches_provider.dart';
-import 'package:flutter_dating_application_1/features/auth/auth_token_store.dart';
-import 'package:flutter_dating_application_1/features/auth/login_screen.dart';
+import 'package:flutter_dating_application_1/features/auth/auth_controller.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_store.dart';
+import 'package:flutter_dating_application_1/features/home/app_home_screen.dart';
+import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
+import 'package:flutter_dating_application_1/models/auth_user.dart';
 import 'package:flutter_dating_application_1/models/browse_candidate.dart';
 import 'package:flutter_dating_application_1/models/browse_response.dart';
 import 'package:flutter_dating_application_1/models/conversation_summary.dart';
@@ -26,64 +27,31 @@ import 'package:flutter_dating_application_1/models/message_dto.dart';
 import 'package:flutter_dating_application_1/models/matches_response.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
+import 'package:flutter_dating_application_1/theme/app_theme.dart';
+
+import 'features/onboarding/complete_profile_snapshot.dart';
+
+import 'features/auth/fake_auth_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // AuthController.restoreSession() awaits flutter_secure_storage's platform
-  // channel. Without a mock handler that future never completes, the app
-  // stays in AuthUnknown and pumpAndSettle times out on the startup spinner.
-  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(
-    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-    (methodCall) async => null,
-  );
+  // DatingApp wraps everything in ClerkAuth, and ClerkAuthState cannot be
+  // faked (private constructor). These tests mount AppHomeScreen directly with
+  // an auth controller pinned to Authenticated.
+  Widget app() =>
+      MaterialApp(theme: AppTheme.light(), home: const AppHomeScreen());
 
-  /// Seeds a valid session into SharedPreferences so AuthController
-  /// restores into the Authenticated state during widget tests. The
-  /// live `/me` call still happens but it's caught (statusCode != 401)
-  /// and the seeded session/user remain in effect.
-  String seededSessionJson(UserSummary user) {
-    return jsonEncode({
-      'accessToken': 'access-1',
-      'refreshToken': 'refresh-1',
-      'expiresAt': DateTime.now()
-          .toUtc()
-          .add(const Duration(hours: 1))
-          .toIso8601String(),
-      'user': {
-        'id': user.id,
-        'email': '${user.name.toLowerCase()}@example.com',
-        'displayName': user.name,
-        'profileCompletionState': 'complete',
-      },
-    });
-  }
-
-  testWidgets('shows the login screen when no session is persisted', (
-    WidgetTester tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    final preferences = await SharedPreferences.getInstance();
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          backendHealthProvider.overrideWith(
-            (ref) async => HealthStatus(
-              status: 'ok',
-              timestamp: DateTime(2026, 4, 18, 12),
-            ),
-          ),
-        ],
-        child: const DatingApp(),
+  AuthController authenticatedAs(UserSummary user) => FakeAuthController(
+    Authenticated(
+      AuthUser(
+        id: user.id,
+        email: '${user.name.toLowerCase()}@example.com',
+        displayName: user.name,
+        profileCompletionState: 'complete',
       ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byType(LoginScreen), findsOneWidget);
-  });
+    ),
+  );
 
   testWidgets('routes to browse when a persisted acting user exists', (
     WidgetTester tester,
@@ -103,7 +71,6 @@ void main() {
     });
 
     SharedPreferences.setMockInitialValues({
-      AuthTokenStore.storageKey: seededSessionJson(savedUser),
       SelectedUserStore.storageKey: jsonEncode(savedUser.toJson()),
     });
     final preferences = await SharedPreferences.getInstance();
@@ -112,6 +79,10 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(preferences),
+          authControllerProvider.overrideWith(() => authenticatedAs(savedUser)),
+          profileEditSnapshotProvider.overrideWith(
+            (ref) async => completeProfileSnapshot,
+          ),
           backendHealthProvider.overrideWith(
             (ref) async => HealthStatus(
               status: 'ok',
@@ -184,7 +155,7 @@ void main() {
             ],
           ),
         ],
-        child: const DatingApp(),
+        child: app(),
       ),
     );
     await tester.pumpAndSettle();
@@ -227,7 +198,6 @@ void main() {
     );
 
     SharedPreferences.setMockInitialValues({
-      AuthTokenStore.storageKey: seededSessionJson(savedUser),
       SelectedUserStore.storageKey: jsonEncode(savedUser.toJson()),
     });
     final preferences = await SharedPreferences.getInstance();
@@ -236,6 +206,10 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(preferences),
+          authControllerProvider.overrideWith(() => authenticatedAs(savedUser)),
+          profileEditSnapshotProvider.overrideWith(
+            (ref) async => completeProfileSnapshot,
+          ),
           backendHealthProvider.overrideWith(
             (ref) async => HealthStatus(
               status: 'ok',
@@ -268,7 +242,7 @@ void main() {
           ),
           conversationsProvider.overrideWith((ref) async => const []),
         ],
-        child: const DatingApp(),
+        child: app(),
       ),
     );
     await tester.pumpAndSettle();

@@ -11,6 +11,12 @@ class UserSummary {
   final int age;
   final String state;
 
+  /// The backend's `UserState` arrives as a plain string (`INCOMPLETE`,
+  /// `ACTIVE`, `PAUSED`, `UNDER_REVIEW`, `BANNED`); a value this app has never
+  /// seen is kept as is and simply matches none of the checks.
+  bool get isUnderReview => state.trim().toUpperCase() == 'UNDER_REVIEW';
+  bool get isPaused => state.trim().toUpperCase() == 'PAUSED';
+
   factory UserSummary.fromJson(Map<String, dynamic> json) {
     return UserSummary(
       id: json['id'] as String? ?? '',

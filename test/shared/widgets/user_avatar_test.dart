@@ -1,7 +1,12 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_dating_application_1/api/api_client.dart';
+import 'package:flutter_dating_application_1/api/api_error.dart';
 import 'package:flutter_dating_application_1/app/app_config.dart';
 import 'package:flutter_dating_application_1/shared/widgets/user_avatar.dart';
 
@@ -19,6 +24,7 @@ void main() {
             lanSharedSecret: 'test-secret',
           ),
         ),
+        apiClientProvider.overrideWithValue(_NoPhotoApiClient()),
       ],
       child: MaterialApp(
         home: Scaffold(
@@ -59,4 +65,13 @@ void main() {
     expect(size.width, 60);
     expect(size.height, 60);
   });
+}
+
+class _NoPhotoApiClient extends ApiClient {
+  _NoPhotoApiClient() : super(dio: Dio());
+
+  @override
+  Future<Uint8List> getPhotoBytes(String url) async {
+    throw const ApiError(message: 'Not found', statusCode: 404);
+  }
 }

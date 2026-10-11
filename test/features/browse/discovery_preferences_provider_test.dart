@@ -45,60 +45,61 @@ void main() {
     expect(prefs.interestedIn, ['MALE']);
   });
 
-  test('save updates profile and invalidates browse-related providers', () async {
-    final apiClient = _FakeDiscoveryApiClient();
+  test(
+    'save updates profile and invalidates browse-related providers',
+    () async {
+      final apiClient = _FakeDiscoveryApiClient();
 
-    final container = ProviderContainer(
-      overrides: [
-        apiClientProvider.overrideWithValue(apiClient),
-        selectedUserProvider.overrideWith(
-          (ref) async => const UserSummary(
-            id: '11111111-1111-1111-1111-111111111111',
-            name: 'Dana',
-            age: 27,
-            state: 'ACTIVE',
+      final container = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(apiClient),
+          selectedUserProvider.overrideWith(
+            (ref) async => const UserSummary(
+              id: '11111111-1111-1111-1111-111111111111',
+              name: 'Dana',
+              age: 27,
+              state: 'ACTIVE',
+            ),
           ),
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
+        ],
+      );
+      addTearDown(container.dispose);
 
-    // Prime the providers so invalidation causes a refetch.
-    await container.read(browseProvider.future);
-    await container.read(standoutsProvider.future);
-    await container.read(pendingLikersProvider.future);
+      // Prime the providers so invalidation causes a refetch.
+      await container.read(browseProvider.future);
+      await container.read(standoutsProvider.future);
+      await container.read(pendingLikersProvider.future);
 
-    expect(apiClient.browseCalls, 1);
-    expect(apiClient.standoutsCalls, 1);
-    expect(apiClient.pendingLikersCalls, 1);
-    expect(apiClient.updateProfileCalls, 0);
+      expect(apiClient.browseCalls, 1);
+      expect(apiClient.standoutsCalls, 1);
+      expect(apiClient.pendingLikersCalls, 1);
+      expect(apiClient.updateProfileCalls, 0);
 
-    const prefs = DiscoveryPreferences(
-      minAge: 28,
-      maxAge: 40,
-      maxDistanceKm: 60,
-    );
+      const prefs = DiscoveryPreferences(
+        minAge: 28,
+        maxAge: 40,
+        maxDistanceKm: 60,
+      );
 
-    await container
-        .read(discoveryPreferencesControllerProvider)
-        .save(prefs);
+      await container.read(discoveryPreferencesControllerProvider).save(prefs);
 
-    expect(apiClient.updateProfileCalls, 1);
+      expect(apiClient.updateProfileCalls, 1);
 
-    // Invalidation should trigger refetch on next read.
-    final refreshedBrowse = await container.read(browseProvider.future);
-    final refreshedStandouts = await container.read(standoutsProvider.future);
-    final refreshedPendingLikers = await container.read(
-      pendingLikersProvider.future,
-    );
+      // Invalidation should trigger refetch on next read.
+      final refreshedBrowse = await container.read(browseProvider.future);
+      final refreshedStandouts = await container.read(standoutsProvider.future);
+      final refreshedPendingLikers = await container.read(
+        pendingLikersProvider.future,
+      );
 
-    expect(apiClient.browseCalls, 2);
-    expect(apiClient.standoutsCalls, 2);
-    expect(apiClient.pendingLikersCalls, 2);
-    expect(refreshedBrowse.candidates.single.id, 'target-2');
-    expect(refreshedStandouts.standouts.isEmpty, isTrue);
-    expect(refreshedPendingLikers.isEmpty, isTrue);
-  });
+      expect(apiClient.browseCalls, 2);
+      expect(apiClient.standoutsCalls, 2);
+      expect(apiClient.pendingLikersCalls, 2);
+      expect(refreshedBrowse.candidates.single.id, 'target-2');
+      expect(refreshedStandouts.standouts.isEmpty, isTrue);
+      expect(refreshedPendingLikers.isEmpty, isTrue);
+    },
+  );
 }
 
 class _FakeDiscoveryApiClient extends ApiClient {
@@ -128,11 +129,7 @@ class _FakeDiscoveryApiClient extends ApiClient {
           'acceptableEducation': [],
         },
       },
-      'readOnly': {
-        'name': 'Dana',
-        'state': 'ACTIVE',
-        'photoUrls': [],
-      },
+      'readOnly': {'name': 'Dana', 'state': 'ACTIVE', 'photoUrls': []},
     });
   }
 
@@ -142,9 +139,7 @@ class _FakeDiscoveryApiClient extends ApiClient {
     required request,
   }) async {
     updateProfileCalls++;
-    return const ProfileUpdateResponse(
-      completionInfo: ProfileCompletionInfo(),
-    );
+    return const ProfileUpdateResponse(completionInfo: ProfileCompletionInfo());
   }
 
   @override
@@ -177,9 +172,7 @@ class _FakeDiscoveryApiClient extends ApiClient {
   }
 
   @override
-  Future<List<PendingLiker>> getPendingLikers({
-    required String userId,
-  }) async {
+  Future<List<PendingLiker>> getPendingLikers({required String userId}) async {
     pendingLikersCalls++;
     return const [];
   }

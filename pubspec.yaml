@@ -41,6 +41,9 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_local_notifications: ^21.0.0
   flutter_secure_storage: ^10.3.1
+  clerk_flutter: ^0.0.18-beta
+  clerk_auth: ^0.0.18-beta
+  shorebird_code_push: ^2.0.7
 
 dev_dependencies:
   flutter_test:

@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/widgets/app_async_state.dart';
 import '../auth/auth_controller.dart';
-import '../auth/login_screen.dart';
 import '../auth/selected_user_provider.dart';
+import '../auth/sign_in_screen.dart';
+import '../onboarding/onboarding_gate.dart';
 import 'signed_in_shell.dart';
 
 class AppHomeScreen extends ConsumerStatefulWidget {
@@ -18,11 +19,6 @@ class _AppHomeScreenState extends ConsumerState<AppHomeScreen> {
   bool _bootstrapped = false;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
 
@@ -31,9 +27,9 @@ class _AppHomeScreenState extends ConsumerState<AppHomeScreen> {
       next.whenData((event) {
         if (event is AuthSessionExpired && mounted) {
           final message = event.message ?? 'Session expired.';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       });
     });
@@ -47,9 +43,30 @@ class _AppHomeScreenState extends ConsumerState<AppHomeScreen> {
 
     return switch (authState) {
       AuthUnknown() => const Scaffold(
-          body: AppAsyncState.loading(message: 'Restoring your session…'),
+        body: AppAsyncState.loading(message: 'Restoring your session…'),
+      ),
+      Unauthenticated(:final message) => SignInScreen(infoMessage: message),
+      AuthProvisionFailed(:final message) => Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: AppAsyncState.error(
+                  message: message,
+                  onRetry: () => ref
+                      .read(authControllerProvider.notifier)
+                      .retryProvision(),
+                ),
+              ),
+              TextButton(
+                onPressed: () =>
+                    ref.read(authControllerProvider.notifier).logout(),
+                child: const Text('Sign out'),
+              ),
+            ],
+          ),
         ),
-      Unauthenticated(:final message) => LoginScreen(infoMessage: message),
+      ),
       Authenticated() => _buildAuthenticated(),
     };
   }
@@ -67,7 +84,7 @@ class _AppHomeScreenState extends ConsumerState<AppHomeScreen> {
             ),
           );
         }
-        return SignedInShell(currentUser: user);
+        return OnboardingGate(child: SignedInShell(currentUser: user));
       },
       loading: () => const Scaffold(
         body: AppAsyncState.loading(message: 'Loading your profile…'),

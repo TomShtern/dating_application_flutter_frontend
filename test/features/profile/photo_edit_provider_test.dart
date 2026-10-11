@@ -7,11 +7,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
+import 'package:flutter_dating_application_1/features/auth/auth_controller.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/profile/photo_edit_provider.dart';
 import 'package:flutter_dating_application_1/models/photo_dto.dart';
 import 'package:flutter_dating_application_1/models/user_summary.dart';
 import 'package:flutter_dating_application_1/shared/persistence/shared_preferences_provider.dart';
+
+import '../auth/fake_auth_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -33,108 +36,118 @@ void main() {
         apiClientProvider.overrideWithValue(apiClient),
         selectedUserProvider.overrideWith((ref) async => seededUser),
         sharedPreferencesProvider.overrideWithValue(preferences),
+        // refreshMe() runs after each mutation; a pinned controller keeps it
+        // away from Clerk.
+        authControllerProvider.overrideWith(
+          () => FakeAuthController(const Unauthenticated()),
+        ),
       ],
     );
     addTearDown(container.dispose);
     return container;
   }
 
-  test('userPhotosProvider fetches the photo list for the selected user',
-      () async {
-    SharedPreferences.setMockInitialValues({});
-    final preferences = await SharedPreferences.getInstance();
-    final apiClient = _FakeApiClient(
-      listResponses: const [
-        PhotoListResponse(
-          primaryUrl: '/photos/dana-1.jpg',
-          photos: [
-            PhotoDto(id: 'photo-1', url: '/photos/dana-1.jpg'),
-            PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg'),
-          ],
-        ),
-      ],
-    );
-    final container = makeContainer(apiClient, preferences);
+  test(
+    'userPhotosProvider fetches the photo list for the selected user',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      final apiClient = _FakeApiClient(
+        listResponses: const [
+          PhotoListResponse(
+            primaryUrl: '/photos/dana-1.jpg',
+            photos: [
+              PhotoDto(id: 'photo-1', url: '/photos/dana-1.jpg'),
+              PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg'),
+            ],
+          ),
+        ],
+      );
+      final container = makeContainer(apiClient, preferences);
 
-    final list = await container.read(userPhotosProvider.future);
+      final list = await container.read(userPhotosProvider.future);
 
-    expect(list.photos.map((p) => p.id), ['photo-1', 'photo-2']);
-    expect(apiClient.listCalls, [userId]);
-  });
+      expect(list.photos.map((p) => p.id), ['photo-1', 'photo-2']);
+      expect(apiClient.listCalls, [userId]);
+    },
+  );
 
-  test('deletePhoto calls the API and invalidates the photos provider',
-      () async {
-    SharedPreferences.setMockInitialValues({});
-    final preferences = await SharedPreferences.getInstance();
-    final apiClient = _FakeApiClient(
-      listResponses: const [
-        PhotoListResponse(
-          primaryUrl: '/photos/dana-1.jpg',
-          photos: [
-            PhotoDto(id: 'photo-1', url: '/photos/dana-1.jpg'),
-            PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg'),
-          ],
-        ),
-        PhotoListResponse(
+  test(
+    'deletePhoto calls the API and invalidates the photos provider',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      final apiClient = _FakeApiClient(
+        listResponses: const [
+          PhotoListResponse(
+            primaryUrl: '/photos/dana-1.jpg',
+            photos: [
+              PhotoDto(id: 'photo-1', url: '/photos/dana-1.jpg'),
+              PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg'),
+            ],
+          ),
+          PhotoListResponse(
+            primaryUrl: '/photos/dana-2.jpg',
+            photos: [PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg')],
+          ),
+        ],
+        deleteResponse: const PhotoListResponse(
           primaryUrl: '/photos/dana-2.jpg',
-          photos: [
-            PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg'),
-          ],
+          photos: [PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg')],
         ),
-      ],
-      deleteResponse: const PhotoListResponse(
-        primaryUrl: '/photos/dana-2.jpg',
-        photos: [
-          PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg'),
+      );
+      final container = makeContainer(apiClient, preferences);
+
+      await container.read(userPhotosProvider.future);
+      await container.read(photoEditControllerProvider).deletePhoto('photo-1');
+      final refreshed = await container.read(userPhotosProvider.future);
+
+      expect(apiClient.deleteCalls, hasLength(1));
+      expect(apiClient.deleteCalls.single.$1, userId);
+      expect(apiClient.deleteCalls.single.$2, 'photo-1');
+      expect(refreshed.photos.single.id, 'photo-2');
+      expect(apiClient.listCalls.length, 2);
+    },
+  );
+
+  test(
+    'setPrimary moves the chosen photo to index 0 via reorderPhotos',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final preferences = await SharedPreferences.getInstance();
+      final apiClient = _FakeApiClient(
+        listResponses: const [
+          PhotoListResponse(
+            primaryUrl: '/photos/dana-1.jpg',
+            photos: [
+              PhotoDto(id: 'photo-1', url: '/photos/dana-1.jpg'),
+              PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg'),
+              PhotoDto(id: 'photo-3', url: '/photos/dana-3.jpg'),
+            ],
+          ),
         ],
-      ),
-    );
-    final container = makeContainer(apiClient, preferences);
-
-    await container.read(userPhotosProvider.future);
-    await container.read(photoEditControllerProvider).deletePhoto('photo-1');
-    final refreshed = await container.read(userPhotosProvider.future);
-
-    expect(apiClient.deleteCalls, hasLength(1));
-    expect(apiClient.deleteCalls.single.$1, userId);
-    expect(apiClient.deleteCalls.single.$2, 'photo-1');
-    expect(refreshed.photos.single.id, 'photo-2');
-    expect(apiClient.listCalls.length, 2);
-  });
-
-  test('setPrimary moves the chosen photo to index 0 via reorderPhotos',
-      () async {
-    SharedPreferences.setMockInitialValues({});
-    final preferences = await SharedPreferences.getInstance();
-    final apiClient = _FakeApiClient(
-      listResponses: const [
-        PhotoListResponse(
-          primaryUrl: '/photos/dana-1.jpg',
+        reorderResponse: const PhotoListResponse(
+          primaryUrl: '/photos/dana-3.jpg',
           photos: [
+            PhotoDto(id: 'photo-3', url: '/photos/dana-3.jpg'),
             PhotoDto(id: 'photo-1', url: '/photos/dana-1.jpg'),
             PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg'),
-            PhotoDto(id: 'photo-3', url: '/photos/dana-3.jpg'),
           ],
         ),
-      ],
-      reorderResponse: const PhotoListResponse(
-        primaryUrl: '/photos/dana-3.jpg',
-        photos: [
-          PhotoDto(id: 'photo-3', url: '/photos/dana-3.jpg'),
-          PhotoDto(id: 'photo-1', url: '/photos/dana-1.jpg'),
-          PhotoDto(id: 'photo-2', url: '/photos/dana-2.jpg'),
-        ],
-      ),
-    );
-    final container = makeContainer(apiClient, preferences);
+      );
+      final container = makeContainer(apiClient, preferences);
 
-    await container.read(photoEditControllerProvider).setPrimary('photo-3');
+      await container.read(photoEditControllerProvider).setPrimary('photo-3');
 
-    expect(apiClient.reorderCalls, hasLength(1));
-    expect(apiClient.reorderCalls.single.$1, userId);
-    expect(apiClient.reorderCalls.single.$2,
-        ['photo-3', 'photo-1', 'photo-2']);
-  });
+      expect(apiClient.reorderCalls, hasLength(1));
+      expect(apiClient.reorderCalls.single.$1, userId);
+      expect(apiClient.reorderCalls.single.$2, [
+        'photo-3',
+        'photo-1',
+        'photo-2',
+      ]);
+    },
+  );
 
   test(
     'uploadFromXFile builds a MultipartFile and calls uploadPhoto',
@@ -142,9 +155,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final preferences = await SharedPreferences.getInstance();
       final apiClient = _FakeApiClient(
-        listResponses: const [
-          PhotoListResponse(primaryUrl: null, photos: []),
-        ],
+        listResponses: const [PhotoListResponse(primaryUrl: null, photos: [])],
         uploadResponse: const PhotoUploadResponse(
           photo: PhotoDto(id: 'photo-new', url: '/photos/new.jpg'),
           list: PhotoListResponse(
@@ -160,9 +171,7 @@ void main() {
         name: 'avatar.jpg',
         mimeType: 'image/jpeg',
       );
-      await container
-          .read(photoEditControllerProvider)
-          .uploadFromXFile(picked);
+      await container.read(photoEditControllerProvider).uploadFromXFile(picked);
 
       expect(apiClient.uploadCalls, hasLength(1));
       expect(apiClient.uploadCalls.single.$1, userId);

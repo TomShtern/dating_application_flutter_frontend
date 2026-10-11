@@ -1,5 +1,6 @@
 import 'location_metadata.dart';
 import 'person_summary_fields.dart';
+import 'pace_preferences.dart';
 import 'profile_completion_info.dart';
 import 'profile_update_request.dart';
 
@@ -28,7 +29,6 @@ class ProfileEditSnapshot {
       completionInfo: ProfileCompletionInfo.fromJson(json),
     );
   }
-
 }
 
 class ProfileEditEditable {
@@ -55,7 +55,7 @@ class ProfileEditEditable {
       acceptableLookingFor: <String>[],
       acceptableEducation: <String>[],
     ),
-    this.pacePreferences,
+    this.pacePreferences = PacePreferences.blank,
     this.location,
   });
 
@@ -75,7 +75,7 @@ class ProfileEditEditable {
   final String? education;
   final List<String> interests;
   final ProfileEditDealbreakers dealbreakers;
-  final String? pacePreferences;
+  final PacePreferences pacePreferences;
   final ProfileEditLocation? location;
 
   factory ProfileEditEditable.fromJson(Map<String, dynamic> json) {
@@ -98,7 +98,7 @@ class ProfileEditEditable {
       dealbreakers: ProfileEditDealbreakers.fromJson(
         Map<String, dynamic>.from(json['dealbreakers'] as Map? ?? const {}),
       ),
-      pacePreferences: parseNullableString(json['pacePreferences']),
+      pacePreferences: PacePreferences.fromJson(json['pacePreferences']),
       location: json['location'] is Map
           ? ProfileEditLocation.fromJson(
               Map<String, dynamic>.from(json['location'] as Map),

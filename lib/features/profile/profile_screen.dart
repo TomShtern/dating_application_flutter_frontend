@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
@@ -8,6 +9,7 @@ import '../../shared/formatting/display_text.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../../shared/widgets/app_group_label.dart';
 import '../../shared/widgets/person_media_thumbnail.dart';
+import '../../shared/widgets/photo_viewer_screen.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../browse/browse_provider.dart';
@@ -25,18 +27,27 @@ class ProfileScreen extends ConsumerWidget {
   const ProfileScreen.currentUser({super.key})
     : userId = null,
       userName = null,
-      showPresentationContext = true;
+      showPresentationContext = true,
+      isPreview = false;
 
   const ProfileScreen.otherUser({
     super.key,
     required this.userId,
     required this.userName,
     this.showPresentationContext = true,
-  });
+  }) : isPreview = false;
+
+  /// The signed-in user's own profile, laid out the way other people see it.
+  /// Nothing on it can be acted on.
+  const ProfileScreen.preview({super.key, required String this.userId})
+    : userName = null,
+      showPresentationContext = false,
+      isPreview = true;
 
   final String? userId;
   final String? userName;
   final bool showPresentationContext;
+  final bool isPreview;
 
   bool get _isCurrentUser => userId == null;
 
@@ -45,7 +56,7 @@ class ProfileScreen extends ConsumerWidget {
     final profileState = _isCurrentUser
         ? ref.watch(profileProvider)
         : ref.watch(otherUserProfileProvider(userId!));
-    final presentationContextState = _isCurrentUser
+    final presentationContextState = _isCurrentUser || isPreview
         ? null
         : ref.watch(presentationContextProvider(userId!));
     final controller = ref.read(profileControllerProvider);
@@ -69,6 +80,14 @@ class ProfileScreen extends ConsumerWidget {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (context) => const ProfileEditScreen(),
+                        ),
+                      );
+                    },
+                    onPreview: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (context) =>
+                              ProfileScreen.preview(userId: detail.id),
                         ),
                       );
                     },
@@ -128,7 +147,9 @@ class ProfileScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: Text(
-          userName == null && targetUserName == 'this user'
+          isPreview
+              ? 'How others see you'
+              : userName == null && targetUserName == 'this user'
               ? 'Profile'
               : '$targetUserName\'s profile',
           style: Theme.of(
@@ -139,15 +160,16 @@ class ProfileScreen extends ConsumerWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
-          SafetyActionsButton(
-            targetUserId: userId!,
-            targetUserName: targetUserName,
-            onCompleted: (context, outcome) {
-              if (outcome.removesRelationship) {
-                Navigator.of(context).maybePop();
-              }
-            },
-          ),
+          if (!isPreview)
+            SafetyActionsButton(
+              targetUserId: userId!,
+              targetUserName: targetUserName,
+              onCompleted: (context, outcome) {
+                if (outcome.removesRelationship) {
+                  Navigator.of(context).maybePop();
+                }
+              },
+            ),
           IconButton(
             tooltip: 'Refresh profile',
             onPressed: () => controller.refreshOtherUserProfile(userId!),
@@ -162,6 +184,7 @@ class ProfileScreen extends ConsumerWidget {
             child: _ProfileContent(
               detail: detail,
               isCurrentUser: false,
+              showDecisionRow: !isPreview,
               presentationContextState: presentationContextState,
               showPresentationContext: showPresentationContext,
             ),
@@ -188,10 +211,12 @@ class ProfileScreen extends ConsumerWidget {
 class _CurrentUserProfileIntroCard extends StatelessWidget {
   const _CurrentUserProfileIntroCard({
     required this.onEditProfile,
+    required this.onPreview,
     required this.onRefresh,
   });
 
   final VoidCallback onEditProfile;
+  final VoidCallback onPreview;
   final VoidCallback onRefresh;
 
   @override
@@ -237,6 +262,11 @@ class _CurrentUserProfileIntroCard extends StatelessWidget {
                   icon: const Icon(Icons.edit_outlined),
                 ),
                 IconButton(
+                  tooltip: 'See how others see you',
+                  onPressed: onPreview,
+                  icon: const Icon(Icons.visibility_outlined),
+                ),
+                IconButton(
                   tooltip: 'Refresh profile',
                   onPressed: onRefresh,
                   icon: const Icon(Icons.refresh_rounded),
@@ -254,6 +284,7 @@ class _ProfileContent extends ConsumerWidget {
   const _ProfileContent({
     required this.detail,
     required this.isCurrentUser,
+    this.showDecisionRow = true,
     this.presentationContextState,
     this.showPresentationContext = true,
     this.onEditProfile,
@@ -262,6 +293,9 @@ class _ProfileContent extends ConsumerWidget {
 
   final UserDetail detail;
   final bool isCurrentUser;
+
+  /// Off for the own-profile preview, where like and pass make no sense.
+  final bool showDecisionRow;
   final AsyncValue<ProfilePresentationContext>? presentationContextState;
   final bool showPresentationContext;
   final VoidCallback? onEditProfile;
@@ -282,7 +316,7 @@ class _ProfileContent extends ConsumerWidget {
           detail: detail,
           isCurrentUser: isCurrentUser,
           showVerifiedBadge: showVerifiedBadge,
-          decisionBar: isCurrentUser
+          decisionBar: isCurrentUser || !showDecisionRow
               ? null
               : _ProfileDecisionRow(
                   userId: detail.id,
@@ -588,6 +622,7 @@ class _ProfileDecisionRowState extends ConsumerState<_ProfileDecisionRow> {
     final liked = _decisionState == _ProfileDecisionState.liked;
     final passed = _decisionState == _ProfileDecisionState.passed;
     final locked = _isSubmitting || _decisionState != null;
+    final swipeLimits = ref.watch(swipeLimitProvider);
     final passColor = Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFFD6E4EF)
         : const Color(0xFF5C6D7D);
@@ -606,7 +641,9 @@ class _ProfileDecisionRowState extends ConsumerState<_ProfileDecisionRow> {
           children: [
             Expanded(
               child: FilledButton.icon(
-                onPressed: locked ? null : _handleLike,
+                onPressed: locked || swipeLimits.likeReached
+                    ? null
+                    : _handleLike,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(46),
                   backgroundColor: liked
@@ -629,7 +666,9 @@ class _ProfileDecisionRowState extends ConsumerState<_ProfileDecisionRow> {
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: locked ? null : _handlePass,
+                onPressed: locked || swipeLimits.passReached
+                    ? null
+                    : _handlePass,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(46),
                   foregroundColor: passColor,
@@ -1144,15 +1183,35 @@ class _LifestyleSection extends ConsumerWidget {
 
     final facts = <(IconData, String, String)>[
       if (editable.smoking != null)
-        (Icons.smoking_rooms_outlined, 'Smoking', formatDisplayLabel(editable.smoking!)),
+        (
+          Icons.smoking_rooms_outlined,
+          'Smoking',
+          formatDisplayLabel(editable.smoking!),
+        ),
       if (editable.drinking != null)
-        (Icons.local_bar_outlined, 'Drinking', formatDisplayLabel(editable.drinking!)),
+        (
+          Icons.local_bar_outlined,
+          'Drinking',
+          formatDisplayLabel(editable.drinking!),
+        ),
       if (editable.wantsKids != null)
-        (Icons.child_care_outlined, 'Kids', formatDisplayLabel(editable.wantsKids!)),
+        (
+          Icons.child_care_outlined,
+          'Kids',
+          formatDisplayLabel(editable.wantsKids!),
+        ),
       if (editable.lookingFor != null)
-        (Icons.favorite_border_rounded, 'Looking for', formatDisplayLabel(editable.lookingFor!)),
+        (
+          Icons.favorite_border_rounded,
+          'Looking for',
+          formatDisplayLabel(editable.lookingFor!),
+        ),
       if (editable.education != null)
-        (Icons.school_outlined, 'Education', formatDisplayLabel(editable.education!)),
+        (
+          Icons.school_outlined,
+          'Education',
+          formatDisplayLabel(editable.education!),
+        ),
       if (editable.heightCm != null && editable.heightCm! > 0)
         (Icons.height_rounded, 'Height', '${editable.heightCm} cm'),
     ];
@@ -1201,24 +1260,26 @@ class _LifestyleSection extends ConsumerWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: editable.interests.map((interest) {
-                  return DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: _profileSky.withValues(alpha: 0.10),
-                      borderRadius: AppTheme.chipRadius,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        interest,
-                        style: Theme.of(context).textTheme.labelMedium,
-                      ),
-                    ),
-                  );
-                }).toList(growable: false),
+                children: editable.interests
+                    .map((interest) {
+                      return DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: _profileSky.withValues(alpha: 0.10),
+                          borderRadius: AppTheme.chipRadius,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          child: Text(
+                            interest,
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                        ),
+                      );
+                    })
+                    .toList(growable: false),
               ),
             ],
           ],
@@ -1353,19 +1414,74 @@ class _PhotoSection extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 itemCount: photoUrls.length,
                 separatorBuilder: (context, index) => const SizedBox(width: 10),
-                itemBuilder: (context, index) => ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: PersonMediaThumbnail(
-                    photoUrl: photoUrls[index],
-                    name: displayName,
-                    height: photoHeight,
-                    width: photoWidth,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
+                itemBuilder: (context, index) => _ProfilePhotoTile(
+                  photoUrl: photoUrls[index],
+                  photoUrls: photoUrls,
+                  index: index,
+                  displayName: displayName,
+                  height: photoHeight,
+                  width: photoWidth,
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfilePhotoTile extends StatelessWidget {
+  const _ProfilePhotoTile({
+    required this.photoUrl,
+    required this.photoUrls,
+    required this.index,
+    required this.displayName,
+    required this.height,
+    required this.width,
+  });
+
+  final String photoUrl;
+  final List<String> photoUrls;
+  final int index;
+  final String displayName;
+  final double height;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final heroTag = 'profile-photo-$index';
+
+    return Tooltip(
+      message: 'Tap to view full screen',
+      waitDuration: const Duration(milliseconds: 500),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () async {
+            HapticFeedback.selectionClick();
+            await PhotoViewerScreen.show(
+              context,
+              photoUrls: photoUrls,
+              heroTagPrefix: 'profile-photo',
+              initialIndex: index,
+              title: '$displayName · photo ${index + 1} of ${photoUrls.length}',
+            );
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Hero(
+              tag: heroTag,
+              child: PersonMediaThumbnail(
+                photoUrl: photoUrl,
+                name: displayName,
+                height: height,
+                width: width,
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+          ),
         ),
       ),
     );

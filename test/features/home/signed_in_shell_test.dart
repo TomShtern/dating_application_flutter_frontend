@@ -155,10 +155,7 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
 
     expect(find.text('Settings'), findsAtLeastNWidgets(1));
-    expect(
-      find.widgetWithText(OutlinedButton, 'Switch'),
-      findsOneWidget,
-    );
+    expect(find.widgetWithText(OutlinedButton, 'Switch'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('View stats'),
       200,

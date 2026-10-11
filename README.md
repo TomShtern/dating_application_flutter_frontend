@@ -1,4 +1,4 @@
-﻿# Flutter Dating Application Frontend
+# Flutter Dating Application Frontend
 
 A production-grade mobile dating client built with Flutter, Riverpod, and Material 3, demonstrating thin-client architecture over a RESTful microservice backend. The application implements the complete user discovery and relationship lifecycle—featuring swipable discovery profiles, real-time message polling, photo curation, community moderation flows, and automated visual regression testing across all 19 application screens.
 
@@ -31,7 +31,7 @@ The client strictly avoids domain logic duplication (e.g. fabricating compatibil
                            │ coordinates
 ┌──────────────────────────▼─────────────────────────────┐
 │                 Centralized API Layer                  │
-│  (Dio · QueuedInterceptor · FlutterSecureStorage Auth) │
+│  (Dio · Clerk auth interceptor · Clerk sign-in)     │
 └──────────────────────────┬─────────────────────────────┘
                            │ HTTPS / REST (JSON)
 ┌──────────────────────────▼─────────────────────────────┐
@@ -49,7 +49,7 @@ The client strictly avoids domain logic duplication (e.g. fabricating compatibil
 - **Profile & Photo Management:** Profile completion checklist, bio/interests editing, interactive photo gallery manager (upload, reorder, delete) powered by image_picker.
 - **Identity & Verification:** Multi-step photo verification flow with status checks and badging.
 - **Trust & Safety:** In-app moderation sheet offering blocking, user reporting with categorization, and unmatching with mutual conversation archiving.
-- **Onboarding & Auth:** Real JWT access/refresh token authentication flow (with automatic token renewal) plus a development user switcher for rapid QA across personas.
+- **Onboarding & Auth:** Clerk-based sign-in and sign-up (`clerk_flutter`), with the backend profile provisioned from the Clerk session and a guided first-run onboarding that follows the backend's missing-field list, plus a debug-only quick sign-in list of test accounts for rapid QA.
 - **System Settings:** Dynamic Material 3 theme mode toggle (System, Light, Dark) with persisted user preferences.
 
 ---
@@ -61,10 +61,10 @@ The client strictly avoids domain logic duplication (e.g. fabricating compatibil
 - Scoped providers with explicit auto-invalidation, fine-grained view models, and deterministic session guards (selectedUserGuard).
 - Dependency injection via ProviderScope overrides in unit, widget, and visual tests without requiring brittle mocks.
 
-### Resilient Auth & Token Lifecycle
-- Seamless access and refresh token lifecycle orchestration using Dio's QueuedInterceptor (uth_refresh_interceptor.dart).
-- Background token renewal prevents race conditions when concurrent requests encounter an expired JWT.
-- Secure token persistence using FlutterSecureStorage with automated fallback migration from legacy stores.
+### Clerk Auth & Token Lifecycle
+- One Dio interceptor (`clerk_auth_interceptor.dart`) handles auth for every call.
+- A fresh Clerk session token is fetched for every request (tokens last ~60 s), so the app caches and stores no tokens.
+- `401 NOT_PROVISIONED` triggers `POST /api/auth/session` and a single retry; a persistent `401 UNAUTHORIZED` signs the user out.
 - Global session expiration event bus cleanly reroutes expired sessions to the authentication flow.
 
 ### Centralized Design System
@@ -93,10 +93,10 @@ flutter test test/visual_inspection/screenshot_test.dart
 
 `	ext
 lib/
-├── api/             # Centralized Dio client, endpoints, interceptors, auth token holder
+├── api/             # Centralized Dio client, endpoints, interceptors, Clerk auth interceptor
 ├── app/             # App root (DatingApp), AppConfig, Env loaders
 ├── features/        # Modular feature slices
-│   ├── auth/        # Sign-up, login, token refresh, and dev-user picker
+│   ├── auth/        # Clerk sign-in, session provisioning, auth state
 │   ├── browse/      # Discover swiper, Standouts curation, undo action
 │   ├── chat/        # Polled conversation thread and chat message list
 │   ├── home/        # Signed-in shell with IndexedStack navigation

@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../api/api_error.dart';
 import '../../models/app_preferences.dart';
 import '../../models/user_summary.dart';
 import '../../shared/formatting/display_text.dart';
@@ -10,15 +10,16 @@ import '../../shared/widgets/developer_only_callout_card.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../theme/app_theme.dart';
 import '../auth/auth_controller.dart';
-import '../auth/dev_user_picker_screen.dart';
 import '../auth/selected_user_provider.dart';
 import '../notifications/notifications_provider.dart';
 import '../notifications/notifications_screen.dart';
 import '../safety/blocked_users_screen.dart';
 import '../stats/achievements_screen.dart';
 import '../stats/stats_screen.dart';
+import '../updates/app_update_provider.dart';
 import '../verification/verification_screen.dart';
 import 'app_preferences_provider.dart';
+import 'info_page_screen.dart';
 
 const _settingsRose = Color(0xFFD95F84);
 const _settingsViolet = Color(0xFF8E6DE8);
@@ -104,8 +105,8 @@ class SettingsScreen extends ConsumerWidget {
                                   'Review recent activity and catch anything unread',
                               badgeLabel: unreadNotifications > 0
                                   ? (unreadNotifications > 99
-                                      ? '99+'
-                                      : '$unreadNotifications')
+                                        ? '99+'
+                                        : '$unreadNotifications')
                                   : null,
                               onTap: () {
                                 Navigator.of(context).push(
@@ -223,13 +224,71 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 SizedBox(height: AppTheme.sectionSpacing(compact: true)),
+                const _AppUpdatesCard(),
+                SizedBox(height: AppTheme.sectionSpacing()),
+                const AppGroupLabel(
+                  title: 'Help & legal',
+                  accentColor: _settingsSlate,
+                ),
+                const SizedBox(height: AppTheme.cardGap),
+                DecoratedBox(
+                  decoration: AppTheme.surfaceDecoration(
+                    context,
+                    color: _settingsSurfaceColor(context, _settingsSlate),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(AppTheme.cardPadding),
+                    child: Column(
+                      children: [
+                        _SettingsLinkTile(
+                          icon: Icons.help_outline_rounded,
+                          accentColor: _settingsSky,
+                          title: 'Help',
+                          subtitle: 'How swiping, chats and safety tools work',
+                          onTap: () => _openInfoPage(context, InfoPage.help),
+                        ),
+                        _SettingsDivider(),
+                        _SettingsLinkTile(
+                          icon: Icons.description_outlined,
+                          accentColor: _settingsViolet,
+                          title: 'Terms of use',
+                          subtitle: 'The rules for using the app',
+                          onTap: () => _openInfoPage(context, InfoPage.terms),
+                        ),
+                        _SettingsDivider(),
+                        _SettingsLinkTile(
+                          icon: Icons.lock_outline_rounded,
+                          accentColor: _settingsMint,
+                          title: 'Privacy policy',
+                          subtitle: 'What the app holds about you and why',
+                          onTap: () => _openInfoPage(context, InfoPage.privacy),
+                        ),
+                        _SettingsDivider(),
+                        _SettingsLinkTile(
+                          icon: Icons.info_outline_rounded,
+                          accentColor: _settingsSlate,
+                          title: 'About',
+                          subtitle: 'The app and its installed update',
+                          onTap: () => _openInfoPage(context, InfoPage.about),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: AppTheme.sectionSpacing()),
                 _SettingsSectionCard(
                   icon: Icons.manage_accounts_outlined,
                   accentColor: _settingsRose,
                   title: 'Account',
                   subtitle:
-                      'Delete your profile, photos, and matches permanently. This cannot be undone.',
-                  child: _DeleteAccountTile(currentUser: currentUser),
+                      'Take a break by pausing your profile, or delete it permanently.',
+                  child: Column(
+                    children: [
+                      _PauseProfileTile(currentUser: currentUser),
+                      _SettingsDivider(),
+                      _DeleteAccountTile(currentUser: currentUser),
+                    ],
+                  ),
                 ),
                 SizedBox(height: AppTheme.sectionSpacing(compact: true)),
               ],
@@ -239,6 +298,12 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+void _openInfoPage(BuildContext context, InfoPage page) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(builder: (context) => InfoPageScreen(page: page)),
+  );
 }
 
 class _SettingsIntroCard extends StatelessWidget {
@@ -399,22 +464,162 @@ class _SettingsSessionCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
               ),
-              if (kDebugMode) ...[
-                const SizedBox(height: 6),
-                TextButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const DevUserPickerScreen(),
-                    ),
-                  ),
-                  icon: const Icon(Icons.developer_mode_rounded, size: 16),
-                  label: const Text('Pick seeded user'),
-                ),
-              ],
             ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AppUpdatesCard extends ConsumerWidget {
+  const _AppUpdatesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final update = ref.watch(appUpdateControllerProvider);
+    final busy =
+        update.phase == AppUpdatePhase.checking ||
+        update.phase == AppUpdatePhase.downloading;
+    final canCheck = update.phase != AppUpdatePhase.unavailable && !busy;
+    final patch = update.currentPatch;
+
+    return _SettingsSectionCard(
+      icon: Icons.system_update_outlined,
+      accentColor: _settingsMint,
+      title: 'App updates',
+      subtitle: patch == null
+          ? 'Running the original release.'
+          : 'Update $patch is installed.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (busy)
+                const Padding(
+                  padding: EdgeInsets.only(right: 10),
+                  child: SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              Expanded(child: Text(_updateStatusText(update.phase))),
+            ],
+          ),
+          const SizedBox(height: AppTheme.cardGap),
+          FilledButton.tonalIcon(
+            onPressed: canCheck
+                ? ref.read(appUpdateControllerProvider.notifier).checkNow
+                : null,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Check for updates'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _updateStatusText(AppUpdatePhase phase) {
+  return switch (phase) {
+    AppUpdatePhase.unavailable =>
+      'Updates only work in release builds installed through Shorebird.',
+    AppUpdatePhase.idle || AppUpdatePhase.checking => 'Checking for updates…',
+    AppUpdatePhase.downloading => 'Downloading an update…',
+    AppUpdatePhase.upToDate => 'You are on the latest version.',
+    AppUpdatePhase.restartRequired =>
+      'Update downloaded. Close and reopen the app to apply it.',
+    AppUpdatePhase.failed => 'Could not check for updates. Try again.',
+  };
+}
+
+class _PauseProfileTile extends ConsumerStatefulWidget {
+  const _PauseProfileTile({required this.currentUser});
+
+  final UserSummary currentUser;
+
+  @override
+  ConsumerState<_PauseProfileTile> createState() => _PauseProfileTileState();
+}
+
+class _PauseProfileTileState extends ConsumerState<_PauseProfileTile> {
+  bool _isWorking = false;
+
+  Future<void> _toggle() async {
+    final resuming = widget.currentUser.isPaused;
+    if (!resuming) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Pause your profile?'),
+          content: const Text(
+            'Nobody new will see you until you resume. Your matches and '
+            'chats stay, and you can keep messaging. While paused you '
+            'cannot browse, swipe, block or report.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Pause profile'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isWorking = true);
+    try {
+      final controller = ref.read(selectUserControllerProvider);
+      if (resuming) {
+        await controller.resumeProfile();
+      } else {
+        await controller.pauseProfile();
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            resuming ? 'Your profile is visible again.' : 'Profile paused.',
+          ),
+        ),
+      );
+    } on ApiError catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isWorking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final paused = widget.currentUser.isPaused;
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        paused
+            ? Icons.play_circle_outline_rounded
+            : Icons.pause_circle_outline_rounded,
+      ),
+      title: Text(paused ? 'Resume profile' : 'Pause profile'),
+      subtitle: Text(
+        paused
+            ? 'Your profile is hidden from new people right now.'
+            : 'Hide your profile from new people. Matches and chats stay.',
+      ),
+      trailing: _isWorking
+          ? const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : null,
+      onTap: _isWorking ? null : _toggle,
     );
   }
 }
@@ -449,9 +654,7 @@ class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(
-                  dialogContext,
-                ).colorScheme.error,
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
               ),
               onPressed: () => Navigator.of(dialogContext).pop(true),
               child: const Text('Continue'),
@@ -473,9 +676,9 @@ class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
               hintText: 'DELETE',
               border: OutlineInputBorder(),
             ),
-            onSubmitted: (value) => Navigator.of(dialogContext).pop(
-              value.trim().toUpperCase() == 'DELETE',
-            ),
+            onSubmitted: (value) => Navigator.of(
+              dialogContext,
+            ).pop(value.trim().toUpperCase() == 'DELETE'),
           ),
           actions: [
             TextButton(
@@ -484,13 +687,11 @@ class _DeleteAccountTileState extends ConsumerState<_DeleteAccountTile> {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(
-                  dialogContext,
-                ).colorScheme.error,
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
               ),
-              onPressed: () => Navigator.of(dialogContext).pop(
-                typedName.text.trim().toUpperCase() == 'DELETE',
-              ),
+              onPressed: () => Navigator.of(
+                dialogContext,
+              ).pop(typedName.text.trim().toUpperCase() == 'DELETE'),
               child: const Text('Delete account'),
             ),
           ],
@@ -661,7 +862,10 @@ class _SettingsLinkTile extends StatelessWidget {
                       borderRadius: AppTheme.chipRadius,
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       child: Text(
                         badgeLabel!,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(

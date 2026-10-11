@@ -1,3 +1,7 @@
+/// Response of `POST /api/auth/session` (`AuthUserDto`).
+///
+/// [id] is the LOCAL user UUID, used in every `/api/users/{id}/...` path.
+/// It is not the Clerk `user_...` id.
 class AuthUser {
   const AuthUser({
     required this.id,
@@ -7,8 +11,15 @@ class AuthUser {
   });
 
   final String id;
-  final String email;
+
+  /// Null unless the Clerk token carries the optional `email` claim. Do not
+  /// depend on it; read the email from Clerk's own user object instead.
+  final String? email;
   final String? displayName;
+
+  /// `complete`, or `needs_<first missing field>` (for example `needs_name`).
+  /// A snapshot only; onboarding is driven by `missingProfileFields` from the
+  /// profile update response.
   final String profileCompletionState;
 
   bool get isProfileComplete => profileCompletionState == 'complete';
@@ -18,54 +29,12 @@ class AuthUser {
     if (id is! String || id.trim().isEmpty) {
       throw const FormatException('AuthUser is missing a non-empty id.');
     }
-    final email = json['email'];
-    if (email is! String || email.trim().isEmpty) {
-      throw const FormatException('AuthUser is missing a non-empty email.');
-    }
     return AuthUser(
       id: id,
-      email: email,
+      email: json['email'] as String?,
       displayName: json['displayName'] as String?,
       profileCompletionState:
           json['profileCompletionState'] as String? ?? 'unknown',
     );
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'email': email,
-      'displayName': displayName,
-      'profileCompletionState': profileCompletionState,
-    };
-  }
-
-  AuthUser copyWith({
-    String? id,
-    String? email,
-    String? displayName,
-    String? profileCompletionState,
-  }) {
-    return AuthUser(
-      id: id ?? this.id,
-      email: email ?? this.email,
-      displayName: displayName ?? this.displayName,
-      profileCompletionState:
-          profileCompletionState ?? this.profileCompletionState,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is AuthUser &&
-        other.id == id &&
-        other.email == email &&
-        other.displayName == displayName &&
-        other.profileCompletionState == profileCompletionState;
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(id, email, displayName, profileCompletionState);
 }

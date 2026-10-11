@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_dating_application_1/api/api_client.dart';
+import 'package:flutter_dating_application_1/api/api_error.dart';
 import 'package:flutter_dating_application_1/features/auth/selected_user_provider.dart';
 import 'package:flutter_dating_application_1/features/profile/profile_provider.dart';
 import 'package:flutter_dating_application_1/models/profile_edit_snapshot.dart';
@@ -104,7 +105,6 @@ void main() {
       expect(detail.id, currentUserDetail.id);
       expect(detail.name, currentUserDetail.name);
       expect(apiClient.requestedUserIds, [currentUser.id]);
-      expect(apiClient.requestedActingUserIds, [currentUser.id]);
     },
   );
 
@@ -133,7 +133,6 @@ void main() {
       expect(detail.id, otherUserDetail.id);
       expect(detail.name, otherUserDetail.name);
       expect(apiClient.requestedUserIds, [otherUserDetail.id]);
-      expect(apiClient.requestedActingUserIds, [currentUser.id]);
     },
   );
 
@@ -145,6 +144,7 @@ void main() {
           currentUser.id: currentUserDetail,
           otherUserDetail.id: otherUserDetail,
         },
+        editSnapshot: editSnapshot,
       );
 
       final container = ProviderContainer(
@@ -165,17 +165,87 @@ void main() {
       final refreshedDetail = await container.read(profileProvider.future);
 
       expect(apiClient.updatedUserIds, [currentUser.id]);
-      expect(apiClient.updatedRequests, [updatedRequest]);
+      // The controller fills `interests` from the stored profile because the
+      // backend would otherwise clear it on every partial update.
+      expect(apiClient.updatedRequests, const [
+        ProfileUpdateRequest(
+          bio: 'Updated bio for the edit flow.',
+          gender: 'FEMALE',
+          interestedIn: ['MALE', 'FEMALE'],
+          maxDistanceKm: 15,
+          interests: <String>[],
+        ),
+      ]);
       expect(refreshedDetail.bio, updatedRequest.bio);
       expect(refreshedDetail.interestedIn, updatedRequest.interestedIn);
       expect(refreshedDetail.maxDistanceKm, updatedRequest.maxDistanceKm);
       expect(apiClient.requestedUserIds, [currentUser.id, currentUser.id]);
-      expect(apiClient.requestedActingUserIds, [
-        currentUser.id,
-        currentUser.id,
-      ]);
     },
   );
+
+  test('updateProfile resends the stored interests and interestedIn, which the '
+      'backend would otherwise clear', () async {
+    final apiClient = _FakeProfileApiClient(
+      responses: {currentUser.id: currentUserDetail},
+      editSnapshot: const ProfileEditSnapshot(
+        userId: '11111111-1111-1111-1111-111111111111',
+        editable: EditableProfileSnapshot(
+          interestedIn: ['MALE', 'FEMALE'],
+          interests: ['Hiking', 'Chess'],
+        ),
+        readOnly: ReadOnlyProfileSnapshot(
+          name: 'Dana',
+          state: 'ACTIVE',
+          photoUrls: [],
+        ),
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        apiClientProvider.overrideWithValue(apiClient),
+        selectedUserProvider.overrideWith((ref) async => currentUser),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container
+        .read(profileControllerProvider)
+        .updateProfile(const ProfileUpdateRequest(bio: 'Only the bio'));
+
+    expect(apiClient.updatedRequests.single.toJson(), {
+      'bio': 'Only the bio',
+      'interestedIn': ['MALE', 'FEMALE'],
+      'interests': ['Hiking', 'Chess'],
+    });
+  });
+
+  test('updateProfile does not send anything when the stored profile cannot '
+      'be read', () async {
+    final apiClient = _FakeProfileApiClient(
+      responses: {currentUser.id: currentUserDetail},
+    );
+    final container = ProviderContainer(
+      // Riverpod 3 retries a failing provider for ~38 s; surface the error
+      // straight away instead.
+      retry: (_, _) => null,
+      overrides: [
+        apiClientProvider.overrideWithValue(apiClient),
+        selectedUserProvider.overrideWith((ref) async => currentUser),
+        profileEditSnapshotProvider.overrideWith(
+          (ref) async => throw const ApiError(message: 'offline'),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await expectLater(
+      container
+          .read(profileControllerProvider)
+          .updateProfile(const ProfileUpdateRequest(bio: 'Only the bio')),
+      throwsA(isA<ApiError>()),
+    );
+    expect(apiClient.updatedRequests, isEmpty);
+  });
 
   test(
     'profileEditSnapshotProvider loads backend edit-prefill values',
@@ -250,7 +320,6 @@ class _FakeProfileApiClient extends ApiClient {
   final ProfileEditSnapshot? editSnapshot;
   final ProfilePresentationContext? presentationContext;
   final List<String> requestedUserIds = <String>[];
-  final List<String?> requestedActingUserIds = <String?>[];
   final List<String> updatedUserIds = <String>[];
   final List<ProfileUpdateRequest> updatedRequests = <ProfileUpdateRequest>[];
   final List<String> editSnapshotUserIds = <String>[];
@@ -258,12 +327,8 @@ class _FakeProfileApiClient extends ApiClient {
   final List<String> presentationContextTargetIds = <String>[];
 
   @override
-  Future<UserDetail> getUserDetail({
-    required String userId,
-    String? actingUserId,
-  }) async {
+  Future<UserDetail> getUserDetail({required String userId}) async {
     requestedUserIds.add(userId);
-    requestedActingUserIds.add(actingUserId);
     return responses[userId]!;
   }
 

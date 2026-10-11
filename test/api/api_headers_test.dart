@@ -4,93 +4,66 @@ import 'package:flutter_dating_application_1/api/api_endpoints.dart';
 import 'package:flutter_dating_application_1/api/api_headers.dart';
 
 void main() {
-  test('does not attach auth headers to health requests', () {
+  test('does not attach the shared secret to health requests', () {
     final headers = ApiHeaders.build(
       path: ApiEndpoints.health,
       sharedSecret: 'lan-dev-secret',
-      userId: '11111111-1111-1111-1111-111111111111',
     );
 
     expect(headers.containsKey(ApiHeaders.sharedSecretHeader), isFalse);
-    expect(headers.containsKey(ApiHeaders.userIdHeader), isFalse);
   });
 
-  test('attaches both auth headers to user scoped requests', () {
-    final headers = ApiHeaders.build(
-      path: ApiEndpoints.userDetail('11111111-1111-1111-1111-111111111111'),
-      sharedSecret: 'lan-dev-secret',
-      userId: '11111111-1111-1111-1111-111111111111',
-    );
-
-    expect(headers[ApiHeaders.sharedSecretHeader], 'lan-dev-secret');
-    expect(
-      headers[ApiHeaders.userIdHeader],
-      '11111111-1111-1111-1111-111111111111',
-    );
-  });
-
-  test('keeps shared secret on list requests without forcing a user id', () {
-    final headers = ApiHeaders.build(
-      path: ApiEndpoints.users,
-      sharedSecret: 'lan-dev-secret',
-    );
-
-    expect(headers[ApiHeaders.sharedSecretHeader], 'lan-dev-secret');
-    expect(headers.containsKey(ApiHeaders.userIdHeader), isFalse);
-  });
-
-  test('attaches Bearer token on protected routes when supplied', () {
-    final headers = ApiHeaders.build(
-      path: ApiEndpoints.userDetail('u-1'),
-      sharedSecret: 'lan-dev-secret',
-      userId: 'u-1',
-      accessToken: 'token-1',
-    );
-    expect(headers[ApiHeaders.authorizationHeader], 'Bearer token-1');
-  });
-
-  test('omits Bearer token on the unauthenticated auth endpoints', () {
+  test('attaches the shared secret to every other route', () {
     for (final path in [
-      ApiEndpoints.authSignup,
-      ApiEndpoints.authLogin,
-      ApiEndpoints.authRefresh,
-      ApiEndpoints.authLogout,
+      ApiEndpoints.authSession,
+      ApiEndpoints.users,
+      ApiEndpoints.userDetail('11111111-1111-1111-1111-111111111111'),
+      ApiEndpoints.messages(
+        '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
+      ),
     ]) {
       final headers = ApiHeaders.build(
         path: path,
         sharedSecret: 'lan-dev-secret',
-        accessToken: 'token-1',
       );
       expect(
-        headers.containsKey(ApiHeaders.authorizationHeader),
-        isFalse,
-        reason: 'Bearer should not be sent to $path',
+        headers[ApiHeaders.sharedSecretHeader],
+        'lan-dev-secret',
+        reason: 'shared secret missing for $path',
       );
     }
   });
 
-  test('attaches Bearer on /api/auth/me (which requires auth)', () {
-    final headers = ApiHeaders.build(
-      path: ApiEndpoints.authMe,
-      sharedSecret: 'lan-dev-secret',
-      accessToken: 'token-1',
-    );
-    expect(headers[ApiHeaders.authorizationHeader], 'Bearer token-1');
-  });
+  test(
+    'never sends a user id header (backend derives the caller from the token)',
+    () {
+      final headers = ApiHeaders.build(
+        path: ApiEndpoints.userDetail('u-1'),
+        sharedSecret: 'lan-dev-secret',
+      );
 
-  test('attaches both auth headers to conversation message routes', () {
-    final headers = ApiHeaders.build(
-      path: ApiEndpoints.messages(
-        '11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222',
-      ),
-      sharedSecret: 'lan-dev-secret',
-      userId: '11111111-1111-1111-1111-111111111111',
-    );
+      expect(
+        headers.keys.map((key) => key.toLowerCase()),
+        isNot(contains('x-user-id')),
+      );
+    },
+  );
 
-    expect(headers[ApiHeaders.sharedSecretHeader], 'lan-dev-secret');
-    expect(
-      headers[ApiHeaders.userIdHeader],
-      '11111111-1111-1111-1111-111111111111',
-    );
+  test(
+    'static headers never include Authorization (the interceptor adds it)',
+    () {
+      final headers = ApiHeaders.build(
+        path: ApiEndpoints.authSession,
+        sharedSecret: 'lan-dev-secret',
+      );
+
+      expect(headers.containsKey(ApiHeaders.authorizationHeader), isFalse);
+    },
+  );
+
+  test('needsBearer is false only for the public health probe', () {
+    expect(ApiHeaders.needsBearer(ApiEndpoints.health), isFalse);
+    expect(ApiHeaders.needsBearer(ApiEndpoints.authSession), isTrue);
+    expect(ApiHeaders.needsBearer(ApiEndpoints.userDetail('u-1')), isTrue);
   });
 }

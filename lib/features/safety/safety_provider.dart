@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_client.dart';
 import '../../api/report_reason.dart';
+import '../../models/report_result.dart';
 import '../../models/user_summary.dart';
 import '../../shared/providers/selected_user_guard.dart' as user_guard;
 import '../browse/browse_provider.dart';
@@ -38,16 +39,19 @@ class SafetyController {
     return message;
   }
 
-  Future<String> reportUser(String targetId, ReportUserRequest report) async {
+  Future<ReportResult> reportUser(
+    String targetId,
+    ReportUserRequest report,
+  ) async {
     final currentUser = await _requireActionableTarget(targetId);
-    final message = await _ref
+    final result = await _ref
         .read(apiClientProvider)
         .reportUser(userId: currentUser.id, targetId: targetId, report: report);
 
-    if (report.blockUser) {
+    if (report.blockUser || result.blockedByReporter) {
       _invalidateRelationshipData(targetId);
     }
-    return message;
+    return result;
   }
 
   Future<String> unmatchUser(String targetId) async {

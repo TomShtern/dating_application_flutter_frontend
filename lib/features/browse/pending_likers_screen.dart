@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_error.dart';
+import '../../models/conversation_summary.dart';
 import '../../models/pending_liker.dart';
 import '../../shared/formatting/date_formatting.dart';
 import '../../shared/widgets/app_async_state.dart';
@@ -9,6 +11,10 @@ import '../../shared/widgets/app_group_label.dart';
 import '../../shared/widgets/app_route_header.dart';
 import '../../shared/widgets/person_media_thumbnail.dart';
 import '../../theme/app_theme.dart';
+import '../auth/selected_user_provider.dart';
+import 'browse_provider.dart';
+import 'match_celebration_dialog.dart';
+import '../chat/conversation_thread_screen.dart';
 import '../profile/profile_screen.dart';
 import '../safety/safety_action_sheet.dart';
 import 'pending_likers_provider.dart';
@@ -17,13 +23,140 @@ const _pendingRose = Color(0xFFD95F84);
 const _pendingCoral = Color(0xFFE28B6C);
 const _pendingViolet = Color(0xFF8E6DE8);
 const _pendingSky = Color(0xFF188DC8);
+const _pendingSlate = Color(0xFF596579);
 
-class PendingLikersScreen extends ConsumerWidget {
+class PendingLikersScreen extends ConsumerStatefulWidget {
   const PendingLikersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PendingLikersScreen> createState() =>
+      _PendingLikersScreenState();
+}
+
+class _PendingLikersScreenState extends ConsumerState<PendingLikersScreen> {
+  String? _busyLikerId;
+
+  Future<void> _handleLike(PendingLiker liker) async {
+    if (_busyLikerId != null) {
+      return;
+    }
+
+    HapticFeedback.selectionClick();
+    setState(() => _busyLikerId = liker.userId);
+
+    try {
+      final browseController = ref.read(browseControllerProvider);
+      final currentUser = await ref.read(selectedUserProvider.future);
+      final result = await browseController.likeCandidate(liker.userId);
+
+      if (!mounted) {
+        return;
+      }
+
+      if (result.isMatch && result.matchId != null) {
+        final conversation = ConversationSummary(
+          id: result.matchId!,
+          otherUserId: liker.userId,
+          otherUserName: liker.name,
+          messageCount: 0,
+          lastMessageAt: DateTime.now(),
+        );
+        final actingUser = currentUser;
+        await MatchCelebrationDialog.show(
+          context,
+          matchedUserName: liker.name,
+          currentUserName: actingUser?.name ?? 'You',
+          matchedUserPhotoUrl: _likerPhoto(liker),
+          onMessageNow: actingUser == null
+              ? null
+              : () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ConversationThreadScreen(
+                        currentUser: actingUser,
+                        conversation: conversation,
+                      ),
+                    ),
+                  );
+                },
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result.message)));
+      }
+    } on ApiError catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not send that right now.')),
+        );
+      }
+    } finally {
+      // `ref` throws once the screen is gone.
+      if (mounted) {
+        ref.invalidate(pendingLikersProvider);
+        setState(() => _busyLikerId = null);
+      }
+    }
+  }
+
+  Future<void> _handlePass(PendingLiker liker) async {
+    if (_busyLikerId != null) {
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    setState(() => _busyLikerId = liker.userId);
+
+    try {
+      final browseController = ref.read(browseControllerProvider);
+      final message = await browseController.passCandidate(liker.userId);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } on ApiError catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not send that right now.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        ref.invalidate(pendingLikersProvider);
+        setState(() => _busyLikerId = null);
+      }
+    }
+  }
+
+  String? _likerPhoto(PendingLiker liker) {
+    if (liker.primaryPhotoUrl != null &&
+        liker.primaryPhotoUrl!.trim().isNotEmpty) {
+      return liker.primaryPhotoUrl!.trim();
+    }
+    if (liker.photoUrls.isNotEmpty) {
+      return liker.photoUrls.first;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final likersState = ref.watch(pendingLikersProvider);
+    final swipeLimits = ref.watch(swipeLimitProvider);
     final controller = ref.read(pendingLikersControllerProvider);
 
     return Scaffold(
@@ -77,7 +210,14 @@ class PendingLikersScreen extends ConsumerWidget {
                             padding: EdgeInsets.only(
                               bottom: AppTheme.listSpacing(compact: true),
                             ),
-                            child: _PendingLikerCard(liker: liker),
+                            child: _PendingLikerCard(
+                              liker: liker,
+                              limits: swipeLimits,
+                              actionsEnabled: _busyLikerId == null,
+                              isBusy: _busyLikerId == liker.userId,
+                              onLike: () => _handleLike(liker),
+                              onPass: () => _handlePass(liker),
+                            ),
                           ),
                         ),
                       ],
@@ -315,9 +455,21 @@ class _PendingInfoPill extends StatelessWidget {
 }
 
 class _PendingLikerCard extends StatelessWidget {
-  const _PendingLikerCard({required this.liker});
+  const _PendingLikerCard({
+    required this.liker,
+    required this.limits,
+    required this.actionsEnabled,
+    required this.isBusy,
+    required this.onLike,
+    required this.onPass,
+  });
 
   final PendingLiker liker;
+  final SwipeLimits limits;
+  final bool actionsEnabled;
+  final bool isBusy;
+  final VoidCallback onLike;
+  final VoidCallback onPass;
 
   void _openProfile(BuildContext context) {
     Navigator.of(context).push(
@@ -475,6 +627,12 @@ class _PendingLikerCard extends StatelessWidget {
                         spacing: 8,
                         runSpacing: 6,
                         children: [
+                          if (liker.superLike)
+                            const _PendingInfoPill(
+                              icon: Icons.star_rounded,
+                              label: 'Super Liked you',
+                              color: _pendingSky,
+                            ),
                           if (liker.approximateLocation case final location?)
                             _PendingInfoPill(
                               icon: Icons.location_on_outlined,
@@ -503,6 +661,58 @@ class _PendingLikerCard extends StatelessWidget {
                             Icons.chevron_right_rounded,
                             color: _pendingSky.withValues(alpha: 0.82),
                             size: 22,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed:
+                                  actionsEnabled &&
+                                      !isBusy &&
+                                      !limits.passReached
+                                  ? onPass
+                                  : null,
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(44),
+                                foregroundColor: _pendingSlate,
+                              ),
+                              icon: isBusy
+                                  ? const SizedBox.shrink()
+                                  : const Icon(Icons.close_rounded, size: 18),
+                              label: const Text('Pass'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed:
+                                  actionsEnabled &&
+                                      !isBusy &&
+                                      !limits.likeReached
+                                  ? onLike
+                                  : null,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: _pendingRose,
+                                minimumSize: const Size.fromHeight(44),
+                              ),
+                              icon: isBusy
+                                  ? const SizedBox.square(
+                                      dimension: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.favorite_rounded,
+                                      size: 18,
+                                    ),
+                              label: Text(isBusy ? 'Working…' : 'Like'),
+                            ),
                           ),
                         ],
                       ),

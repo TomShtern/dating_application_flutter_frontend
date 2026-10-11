@@ -33,7 +33,10 @@ class ScreenshotWriter extends LocalFileComparator {
          expectedScenarios,
        ) {
     for (final scenario in _expectedScenarios) {
-      _scenarioNames.putIfAbsent(scenario.fileName, () => scenario.scenarioName);
+      _scenarioNames.putIfAbsent(
+        scenario.fileName,
+        () => scenario.scenarioName,
+      );
     }
     _archiveManager = VisualReviewArchiveManager(
       outputRootDirectory: this.outputRootDirectory,
@@ -231,7 +234,8 @@ class ScreenshotWriter extends LocalFileComparator {
     final missingScenarios = _buildMissingScenarios();
     final capturedScreenshotCount = _screenshots.length;
     final expectedScreenshotCount = _expectedScenarios.length;
-    final isPartialRun = expectedScreenshotCount > 0 &&
+    final isPartialRun =
+        expectedScreenshotCount > 0 &&
         capturedScreenshotCount < expectedScreenshotCount;
     final Map<String, Object?> manifest = <String, Object?>{
       'generatedAtUtc': _clock().toUtc().toIso8601String(),
@@ -279,7 +283,8 @@ class ScreenshotWriter extends LocalFileComparator {
     final missingScenarios = _buildMissingScenarios();
     final capturedScreenshotCount = _screenshots.length;
     final expectedScreenshotCount = _expectedScenarios.length;
-    final isPartialRun = expectedScreenshotCount > 0 &&
+    final isPartialRun =
+        expectedScreenshotCount > 0 &&
         capturedScreenshotCount < expectedScreenshotCount;
     final coverageSummary = expectedScreenshotCount > 0
         ? 'Captured $capturedScreenshotCount of $expectedScreenshotCount expected screenshots.'
@@ -289,7 +294,9 @@ class ScreenshotWriter extends LocalFileComparator {
         : expectedScreenshotCount > 0
         ? 'Complete visual review run'
         : 'Visual review run';
-    final statusClass = isPartialRun ? 'status-card partial' : 'status-card complete';
+    final statusClass = isPartialRun
+        ? 'status-card partial'
+        : 'status-card complete';
     final missingScenariosHtml = missingScenarios.isEmpty
         ? ''
         : '''<details class="missing-scenarios">

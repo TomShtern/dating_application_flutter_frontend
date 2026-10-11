@@ -1,15 +1,33 @@
+/// Profile completion as the backend reports it (`ProfileCompletionDto`).
+///
+/// Field keys are the backend's `User.REQUIRED_PROFILE_FIELDS`, in this order:
+/// [fieldOrder].
 class ProfileCompletionInfo {
   const ProfileCompletionInfo({
     this.missingProfileFields = const [],
-    this.missingProfileFieldLabels = const {},
+    this.missingProfileFieldLabels = const [],
     this.requiredProfileFieldCount = 0,
     this.profileComplete = false,
     this.canActivate = false,
     this.canBrowse = false,
   });
 
+  /// Backend completion keys, in the order the backend checks them.
+  static const fieldOrder = <String>[
+    'name',
+    'bio',
+    'birthDate',
+    'gender',
+    'interestedIn',
+    'location',
+    'photoUrls',
+    'pacePreferences',
+  ];
+
   final List<String> missingProfileFields;
-  final Map<String, String> missingProfileFieldLabels;
+
+  /// Display names parallel to [missingProfileFields] (same index).
+  final List<String> missingProfileFieldLabels;
   final int requiredProfileFieldCount;
   final bool profileComplete;
   final bool canActivate;
@@ -19,20 +37,12 @@ class ProfileCompletionInfo {
     if (json == null) {
       return const ProfileCompletionInfo();
     }
-    final missingFields = (json['missingProfileFields'] as List<dynamic>?)
-            ?.whereType<String>()
-            .toList() ??
-        const [];
-    final labels = <String, String>{};
-    final rawLabels = json['missingProfileFieldLabels'];
-    if (rawLabels is Map) {
-      for (final entry in rawLabels.entries) {
-        labels[entry.key.toString()] = entry.value.toString();
-      }
-    }
+    List<String> strings(Object? value) =>
+        value is List ? value.whereType<String>().toList() : const [];
+
     return ProfileCompletionInfo(
-      missingProfileFields: missingFields,
-      missingProfileFieldLabels: labels,
+      missingProfileFields: strings(json['missingProfileFields']),
+      missingProfileFieldLabels: strings(json['missingProfileFieldLabels']),
       requiredProfileFieldCount:
           (json['requiredProfileFieldCount'] as num?)?.toInt() ?? 0,
       profileComplete: json['profileComplete'] as bool? ?? false,
@@ -44,21 +54,14 @@ class ProfileCompletionInfo {
   static String defaultLabel(String key) {
     return switch (key) {
       'name' => 'Add your name',
-      'dob' => 'Add your date of birth',
+      'birthDate' => 'Add your date of birth',
       'location' => 'Set your location',
-      'photo' => 'Add a profile photo',
-      'pace' => 'Set your pace preference',
+      'photoUrls' => 'Add a profile photo',
+      'pacePreferences' => 'Set your pace preferences',
       'gender' => 'Set your gender',
       'interestedIn' => "Set who you're interested in",
       'bio' => 'Add a bio',
       _ => 'Complete: $key',
-    };
-  }
-
-  static bool isActionable(String key) {
-    return switch (key) {
-      'dob' => false,
-      _ => true,
     };
   }
 }

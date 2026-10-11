@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +19,9 @@ const _verificationTrust = Color(0xFF16A871);
 const _verificationSky = Color(0xFF188DC8);
 const _verificationViolet = Color(0xFF7C4DFF);
 
+/// The backend refuses a second code for the same user within this window.
+const _resendCooldown = Duration(seconds: 60);
+
 class VerificationScreen extends ConsumerStatefulWidget {
   const VerificationScreen({super.key});
 
@@ -32,9 +37,17 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   bool _confirming = false;
   VerificationStartResult? _startResult;
   VerificationConfirmationResult? _confirmResult;
+  String? _startError;
+  String? _confirmError;
+
+  /// Set by a 429 on confirm: too many wrong codes, locked by the backend.
+  bool _confirmLocked = false;
+  int _resendSecondsLeft = 0;
+  Timer? _resendTimer;
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     _contactController.dispose();
     _codeController.dispose();
     super.dispose();
@@ -137,13 +150,17 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                   ),
                   const SizedBox(height: AppTheme.cardGap),
                   FilledButton.icon(
-                    onPressed: _starting ? null : _handleStart,
+                    onPressed: _starting || _resendSecondsLeft > 0
+                        ? null
+                        : _handleStart,
                     style: _verificationButtonStyle(context),
                     icon: const Icon(Icons.verified_outlined),
-                    label: Text(
-                      _starting ? 'Starting…' : 'Send verification code',
-                    ),
+                    label: Text(_startButtonLabel()),
                   ),
+                  if (_startError != null) ...[
+                    const SizedBox(height: AppTheme.cardGap),
+                    _VerificationErrorText(_startError!),
+                  ],
                 ],
               ),
             ),
@@ -200,12 +217,18 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                     ),
                     const SizedBox(height: AppTheme.cardGap),
                     FilledButton(
-                      onPressed: _confirming ? null : _handleConfirm,
+                      onPressed: _confirming || _confirmLocked
+                          ? null
+                          : _handleConfirm,
                       style: _verificationButtonStyle(context),
                       child: Text(
                         _confirming ? 'Confirming…' : 'Confirm verification',
                       ),
                     ),
+                    if (_confirmError != null) ...[
+                      const SizedBox(height: AppTheme.cardGap),
+                      _VerificationErrorText(_confirmError!),
+                    ],
                   ],
                 ),
               ),
@@ -223,6 +246,33 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     );
   }
 
+  String _startButtonLabel() {
+    if (_starting) {
+      return 'Starting…';
+    }
+    if (_resendSecondsLeft > 0) {
+      return 'Resend in $_resendSecondsLeft s';
+    }
+    return _startResult == null ? 'Send verification code' : 'Resend code';
+  }
+
+  void _startResendCooldown() {
+    _resendTimer?.cancel();
+    _resendSecondsLeft = _resendCooldown.inSeconds;
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _resendSecondsLeft -= 1;
+      });
+      if (_resendSecondsLeft <= 0) {
+        timer.cancel();
+      }
+    });
+  }
+
   Future<void> _handleStart() async {
     final contact = _contactController.text.trim();
     final validationMessage = _contactValidationMessage(contact);
@@ -236,6 +286,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     setState(() {
       _starting = true;
       _confirmResult = null;
+      _startError = null;
     });
 
     try {
@@ -247,17 +298,25 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       }
       setState(() {
         _startResult = result;
+        _confirmError = null;
         if (kDebugMode) {
           _codeController.text = result.devVerificationCode;
         }
+        _startResendCooldown();
       });
     } on ApiError catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      setState(() {
+        _startError = error.message;
+        // 400 "Verification code already sent": a code went out less than a
+        // minute ago, so hold the button for the same window.
+        if (error.statusCode == 400 &&
+            error.message.toLowerCase().contains('already sent')) {
+          _startResendCooldown();
+        }
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -299,6 +358,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
 
     setState(() {
       _confirming = true;
+      _confirmError = null;
     });
 
     try {
@@ -315,9 +375,14 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      setState(() {
+        _confirmError = error.message;
+        // 429: too many wrong codes. The backend keeps the lock for a while,
+        // so confirming stays off until this screen is opened again.
+        if (error.statusCode == 429) {
+          _confirmLocked = true;
+        }
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -353,6 +418,37 @@ ButtonStyle _verificationButtonStyle(BuildContext context) {
       ),
     ),
   );
+}
+
+class _VerificationErrorText extends StatelessWidget {
+  const _VerificationErrorText(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.error_outline_rounded,
+          size: 16,
+          color: theme.colorScheme.error,
+        ),
+        const SizedBox(width: AppTheme.compactCardGap),
+        Expanded(
+          child: Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _VerificationProgressBar extends StatelessWidget {

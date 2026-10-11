@@ -14,6 +14,7 @@ class PersonMediaThumbnail extends ConsumerWidget {
     this.width = 96,
     this.height = 128,
     this.borderRadius = const BorderRadius.all(Radius.circular(24)),
+    this.heroTag,
   });
 
   final String name;
@@ -22,6 +23,10 @@ class PersonMediaThumbnail extends ConsumerWidget {
   final double height;
   final BorderRadius borderRadius;
 
+  /// When set, the photo is wrapped in a [Hero] so a fullscreen viewer can
+  /// animate in from this thumbnail.
+  final String? heroTag;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final resolvedPhotoUrl = resolveMediaUrl(
@@ -29,6 +34,20 @@ class PersonMediaThumbnail extends ConsumerWidget {
       baseUrl: ref.watch(appConfigProvider).baseUrl,
     );
 
+    if (resolvedPhotoUrl == null || heroTag == null) {
+      return _buildThumbnail(resolvedPhotoUrl, fallbackWidth: width);
+    }
+
+    return Hero(
+      tag: heroTag!,
+      child: _buildThumbnail(resolvedPhotoUrl, fallbackWidth: width),
+    );
+  }
+
+  Widget _buildThumbnail(
+    String? resolvedPhotoUrl, {
+    required double fallbackWidth,
+  }) {
     final fallback = _PhotoFallback(name: name, width: width, height: height);
 
     if (resolvedPhotoUrl == null) {

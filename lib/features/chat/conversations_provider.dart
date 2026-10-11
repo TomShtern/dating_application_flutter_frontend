@@ -28,6 +28,41 @@ class ConversationsController {
     return _ref.refresh(conversationsProvider.future);
   }
 
+  Future<void> archive(String conversationId) async {
+    final currentUser = await user_guard.requireSelectedUser(_ref);
+    await _ref
+        .read(apiClientProvider)
+        .archiveConversation(
+          userId: currentUser.id,
+          conversationId: conversationId,
+        );
+    _ref.invalidate(conversationsProvider);
+  }
+
+  Future<void> unarchive(String conversationId) async {
+    final currentUser = await user_guard.requireSelectedUser(_ref);
+    await _ref
+        .read(apiClientProvider)
+        .unarchiveConversation(
+          userId: currentUser.id,
+          conversationId: conversationId,
+        );
+    _ref.invalidate(conversationsProvider);
+  }
+
+  /// Removes the chat from the signed-in user's list only. The backend keeps
+  /// the messages and shows the chat again when either person writes.
+  Future<void> delete(String conversationId) async {
+    final currentUser = await user_guard.requireSelectedUser(_ref);
+    await _ref
+        .read(apiClientProvider)
+        .deleteConversation(
+          userId: currentUser.id,
+          conversationId: conversationId,
+        );
+    _ref.invalidate(conversationsProvider);
+  }
+
   Future<UserSummary> requireSelectedUser() async {
     return user_guard.requireSelectedUser(_ref);
   }

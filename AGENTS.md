@@ -45,13 +45,15 @@ lib/
   app/                  app root, Env, AppConfig
   api/                  Dio client, endpoints, headers, errors, auth token holder
   features/
-    auth/               signup, login, refresh, dev-user picker, auth state
+    auth/               Clerk sign-in screen, provisioning, auth state, dev-user picker (unreachable)
     browse/             discover, undo, standouts, pending likers
     chat/               conversations and thread
     home/               startup routing, health banner, signed-in shell
     location/           location completion and providers
     matches/            matches list
     notifications/      list, actions, preferences, OS-channel service
+    onboarding/         completion gate and guided first-run steps
+    presence/           heartbeat, typing, online/typing indicators
     profile/            profile view/edit, photo management
     safety/             block/report/unmatch/blocked users
     settings/           theme mode and settings
@@ -70,17 +72,41 @@ No router package. `main.dart` initializes `SharedPreferences` and injects it vi
 `sharedPreferencesProvider`. `DatingApp` uses `MaterialApp` with
 `AppTheme.light()`, `AppTheme.dark()` and `themeModeProvider`.
 
-`AppHomeScreen` picks the startup flow from `selectedUserProvider` — no user
-means `DevUserPickerScreen`, a user means `SignedInShell`, an `IndexedStack` with
-five bottom-nav tabs: Discover, Matches, Chats, Profile, Settings. Every other
-screen is pushed imperatively.
+`AppHomeScreen` switches on `authControllerProvider`: restoring → spinner,
+signed out → `SignInScreen`, provisioning failed → retry, authenticated →
+`OnboardingGate` around `SignedInShell`, an `IndexedStack` with five bottom-nav
+tabs: Discover, Matches, Chats, Profile, Settings. Every other screen is pushed
+imperatively.
+
+**Onboarding is backend-driven.** `OnboardingGate` watches
+`profileEditSnapshotProvider` and shows the guided `OnboardingScreen` until the
+backend reports `profileComplete`. The step is always the first key in
+`missingProfileFields`; each save refreshes the snapshot, which moves to the
+next step. Required keys and their order are `ProfileCompletionInfo.fieldOrder`
+(mirrors the backend's `User.REQUIRED_PROFILE_FIELDS`); an unknown key falls
+back to a generic step that opens `ProfileEditScreen`. Do not add completion
+rules in Dart.
+
+**Backend enum values are verbatim.** Gender, pace, smoking, drinking, kids,
+looking-for and education option lists live in `lib/models/gender_options.dart`,
+`pace_preferences.dart` and `lifestyle_options.dart` and mirror the Java enums.
+Pace is one all-or-nothing object; a partial one is rejected, so
+`ProfileUpdateRequest` sends it only when complete.
+
+**Partial profile updates wipe two fields.** The backend's profile PUT turns an
+absent `interestedIn` / `interests` into an empty set and applies it (verified by
+reading the Java source, not by a live call). `ProfileController.updateProfile`
+therefore resends the stored values on every update that omits them. Route
+every profile write through it; fixing this properly is a backend change.
 
 ## Running
 
 Runtime config is centralized: `lib/app/env.dart` reads Dart defines and
 `lib/app/app_config.dart` exposes `appConfigProvider`. `.env` is **not**
 auto-loaded — pass it explicitly. Keys: `DATING_APP_API_BASE_URL`,
-`DATING_APP_SHARED_SECRET`.
+`DATING_APP_SHARED_SECRET`, `CLERK_PUBLISHABLE_KEY` (required — the app asserts
+on startup without it), `CLERK_TEST_ACCOUNTS` (optional, debug-only; format in
+`.env.example`).
 
 ```powershell
 flutter pub get
@@ -111,6 +137,32 @@ to start those batch files. That is an agent-execution caveat, not proof the
 user's own PowerShell is broken. `semgrep` is installed as a launcher but its
 Python module is missing — do not rely on it until that is repaired.
 
+## Over-the-air updates (Shorebird)
+
+Dart and asset changes ship as patches to an installed release build; native,
+Gradle, manifest and new-plugin changes need a new full release.
+
+```powershell
+shorebird release android -- --dart-define-from-file=.env   # baseline APK
+shorebird patch android -- --dart-define-from-file=.env     # push a Dart patch
+```
+
+- Shorebird builds with its own Flutter checkout, not the one on PATH. Patches
+  only run on builds made by `shorebird release`; `flutter run` and debug
+  builds have no updater (the Settings card says so).
+- The app side is `lib/features/updates/app_update_provider.dart`: it checks at
+  startup, downloads in the background, announces a newly running patch once
+  (snackbar) and shows state on the Settings "App updates" card. A patch only
+  takes effect on the next app start.
+- Release builds are signed with the keystore named in `android/key.properties`
+  (gitignored, keystore outside the repo). Every update must use the same key,
+  so back the keystore up; without the file Gradle falls back to the debug key.
+- Release builds disable cleartext HTTP, so the API base URL baked in with
+  `--dart-define` must be HTTPS. A shared secret baked into a distributed APK is
+  extractable; do not hand testers the real one.
+- Run Gradle directly with the JDK Flutter uses (`flutter doctor -v` shows it);
+  plain `gradlew` picks up JDK 25, which Gradle 8.14 cannot run on.
+
 ## Verified constraints
 
 - **No WebSocket and no server push.** No Firebase or FCM anywhere — verified in
@@ -122,10 +174,21 @@ Python module is missing — do not rely on it until that is repaired.
 - **Chat is polled and conversation-scoped.** `ConversationThreadScreen`
   refreshes every 20 s while visible. Poll gently. Do not invent nested
   user-scoped message routes.
-- **Two auth entry points** — the dev user picker and the real
-  email+password+DOB signup / login flow with JWT access and refresh tokens. Both
-  end at a `selectedUserProvider` value; downstream code must not branch on which
-  one ran.
+- **Presence and typing are polled too.** One `PresenceController`
+  (`lib/features/presence/presence_provider.dart`) owns the heartbeat, the
+  typing calls and other users' status; it runs only while signed in and in the
+  foreground. Do not add a second timer or call those endpoints from a screen.
+- **Backend photos need auth headers.** Load them through `AppNetworkImage`,
+  never `Image.network`. Details in `.claude/rules/api.md`.
+- **Auth is Clerk-only** (`clerk_flutter`). The backend verifies Clerk session
+  tokens; the app holds no passwords, refresh tokens or backend tokens. After a
+  Clerk sign-in, `AuthController` calls `POST /api/auth/session` and stores the
+  returned local UUID in `selectedUserProvider`; every `/api/users/{id}/...` path
+  uses that id, never the Clerk `user_...` id. Details in `.claude/rules/api.md`.
+  `DevUserPickerScreen` still exists but is unreachable (backend rejects
+  `X-User-Id`). Debug builds can show a quick sign-in list from
+  `CLERK_TEST_ACCOUNTS`.
+- **Never put a Clerk secret key (`sk_...`) in the app.** Only the publishable key.
 - **No offline-first sync** exists in this frontend.
 - Photo management (list, upload, delete, reorder) is wired through
   `image_picker` and the photo endpoints.

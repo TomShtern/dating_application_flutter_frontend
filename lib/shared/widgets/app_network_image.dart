@@ -1,7 +1,17 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AppNetworkImage extends StatelessWidget {
+import '../../api/api_client.dart';
+import '../../app/app_config.dart';
+import '../media/authenticated_photo_image.dart';
+import '../media/media_url.dart';
+
+/// The one place the app loads a remote image.
+///
+/// Bytes come through [ApiClient.getPhotoBytes], so backend `/photos/...` URLs
+/// are sent with the shared secret and a fresh Clerk token. Any failure
+/// (401, 403, 404, 429, offline) shows [fallbackBuilder] and nothing else.
+class AppNetworkImage extends ConsumerWidget {
   const AppNetworkImage({
     super.key,
     required this.url,
@@ -29,26 +39,46 @@ class AppNetworkImage extends StatelessWidget {
     return (safe * dpr).toInt();
   }
 
+  Widget _fallback(BuildContext context) => fallbackBuilder != null
+      ? fallbackBuilder!(context)
+      : const Center(child: SizedBox.shrink());
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final safeWidth = _safeDim(width);
-    final safeHeight = _safeDim(height);
-    final image = CachedNetworkImage(
-      imageUrl: url,
-      width: safeWidth,
-      height: safeHeight,
+    final apiClient = ref.watch(apiClientProvider);
+    final resolvedUrl =
+        resolveMediaUrl(
+          rawUrl: url,
+          baseUrl: ref.watch(appConfigProvider).baseUrl,
+        ) ??
+        url;
+
+    final image = Image(
+      image: ResizeImage.resizeIfNeeded(
+        cacheDim(width, dpr),
+        cacheDim(height, dpr),
+        AuthenticatedPhotoImage(
+          resolvedUrl,
+          loadBytes: apiClient.getPhotoBytes,
+        ),
+      ),
+      width: _safeDim(width),
+      height: _safeDim(height),
       fit: fit,
-      fadeInDuration: const Duration(milliseconds: 200),
-      fadeOutDuration: const Duration(milliseconds: 100),
-      memCacheWidth: cacheDim(width, dpr),
-      memCacheHeight: cacheDim(height, dpr),
-      placeholder: (context, url) => fallbackBuilder != null
-          ? fallbackBuilder!(context)
-          : const Center(child: SizedBox.shrink()),
-      errorWidget: (context, url, error) => fallbackBuilder != null
-          ? fallbackBuilder!(context)
-          : const Center(child: SizedBox.shrink()),
+      gaplessPlayback: true,
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded) return child;
+        if (frame == null) return _fallback(context);
+        return TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 200),
+          builder: (context, opacity, child) =>
+              Opacity(opacity: opacity, child: child),
+          child: child,
+        );
+      },
+      errorBuilder: (context, error, stackTrace) => _fallback(context),
     );
 
     if (borderRadius != null) {

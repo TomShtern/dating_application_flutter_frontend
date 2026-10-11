@@ -300,14 +300,8 @@ void main() {
       missingScenarios.single,
       containsPair('scenarioName', 'beta screen'),
     );
-    expect(
-      missingScenarios.single,
-      containsPair('scenarioSlug', 'beta'),
-    );
-    expect(
-      missingScenarios.single,
-      containsPair('sourceFileName', 'beta.png'),
-    );
+    expect(missingScenarios.single, containsPair('scenarioSlug', 'beta'));
+    expect(missingScenarios.single, containsPair('sourceFileName', 'beta.png'));
 
     final String latestGallery = await writer.latestGalleryFile.readAsString();
     expect(latestGallery, contains('Partial visual review run'));

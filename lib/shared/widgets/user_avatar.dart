@@ -121,7 +121,8 @@ class UserAvatar extends ConsumerWidget {
                   width: frameSize - innerPadding * 2,
                   height: frameSize - innerPadding * 2,
                   fit: BoxFit.cover,
-                  fallbackBuilder: (_) => _AvatarFallback(name: name, radius: radius),
+                  fallbackBuilder: (_) =>
+                      _AvatarFallback(name: name, radius: radius),
                 ),
         ),
       ),

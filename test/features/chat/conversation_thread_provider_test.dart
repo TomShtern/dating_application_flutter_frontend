@@ -203,6 +203,91 @@ void main() {
       expect(apiClient.sentContents, ['Hey there', 'Hey there']);
     },
   );
+
+  test('deleteMessage unsends a just-sent message and it does not come back '
+      'from the local copy', () async {
+    const conversationId = 'conversation-1';
+    const currentUser = UserSummary(
+      id: '11111111-1111-1111-1111-111111111111',
+      name: 'Dana',
+      age: 27,
+      state: 'ACTIVE',
+    );
+    final sent = MessageDto(
+      id: 'message-2',
+      conversationId: conversationId,
+      senderId: currentUser.id,
+      content: 'Hey there',
+      sentAt: DateTime.parse('2026-04-18T14:21:00Z'),
+    );
+    // The backend never lists the sent message here, so only the local copy
+    // could keep it on screen.
+    final apiClient = _FakeConversationThreadApiClient(
+      messageResponses: [const <MessageDto>[]],
+      sentMessage: sent,
+    );
+    final container = ProviderContainer(
+      overrides: [
+        apiClientProvider.overrideWithValue(apiClient),
+        selectedUserProvider.overrideWith((ref) async => currentUser),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container.read(conversationThreadProvider(conversationId).future);
+    final controller = container.read(
+      conversationThreadControllerProvider(conversationId),
+    );
+
+    await controller.sendMessage('Hey there');
+    await container.read(conversationThreadProvider(conversationId).future);
+    final delivered = container
+        .read(conversationThreadMessagesProvider(conversationId))
+        .requireValue
+        .single;
+    expect(delivered.id, 'message-2');
+
+    await controller.deleteMessage(delivered);
+
+    expect(apiClient.deletedMessageIds, ['message-2']);
+    expect(
+      container
+          .read(conversationThreadMessagesProvider(conversationId))
+          .requireValue,
+      isEmpty,
+    );
+  });
+
+  test('deleteMessage refuses a message that never reached the backend', () async {
+    const conversationId = 'conversation-1';
+    final apiClient = _FakeConversationThreadApiClient(
+      messageResponses: [const <MessageDto>[]],
+      sentMessage: MessageDto(
+        id: 'unused',
+        conversationId: conversationId,
+        senderId: 'me',
+        content: 'unused',
+        sentAt: DateTime.parse('2026-04-18T14:21:00Z'),
+      ),
+    );
+    final container = ProviderContainer(
+      overrides: [apiClientProvider.overrideWithValue(apiClient)],
+    );
+    addTearDown(container.dispose);
+
+    await expectLater(
+      container
+          .read(conversationThreadControllerProvider(conversationId))
+          .deleteMessage(
+            MessageDto.localSending(
+              conversationId: conversationId,
+              senderId: 'me',
+              content: 'Still sending',
+            ),
+          ),
+      throwsA(isA<ApiError>()),
+    );
+    expect(apiClient.deletedMessageIds, isEmpty);
+  });
 }
 
 class _FakeConversationThreadApiClient extends ApiClient {
@@ -221,6 +306,15 @@ class _FakeConversationThreadApiClient extends ApiClient {
   String? lastSentContent;
   final List<String> sentContents = <String>[];
   int sendCalls = 0;
+  final List<String> deletedMessageIds = <String>[];
+
+  @override
+  Future<void> deleteMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    deletedMessageIds.add(messageId);
+  }
 
   @override
   Future<List<MessageDto>> getMessages({

@@ -66,4 +66,51 @@ void main() {
     expect(apiError.code, 'FORBIDDEN');
     expect(apiError.statusCode, 403);
   });
+
+  DioException tooManyRequests(
+    Map<String, dynamic> body, {
+    String? retryAfter,
+  }) {
+    final options = RequestOptions(path: '/api/users/u-1/like/u-2');
+    return DioException(
+      requestOptions: options,
+      type: DioExceptionType.badResponse,
+      response: Response<dynamic>(
+        requestOptions: options,
+        statusCode: 429,
+        data: body,
+        headers: Headers.fromMap({
+          'retry-after': ?retryAfter == null ? null : [retryAfter],
+        }),
+      ),
+    );
+  }
+
+  test('a 429 without Retry-After is a daily limit and keeps the backend '
+      'message', () {
+    final apiError = ApiError.fromDioException(
+      tooManyRequests({
+        'code': 'RATE_LIMITED',
+        'message': 'Daily like limit reached. Resets at 00:00 UTC.',
+      }),
+    );
+
+    expect(apiError.statusCode, 429);
+    expect(apiError.code, 'RATE_LIMITED');
+    expect(apiError.isDailyLimit, isTrue);
+    expect(apiError.message, 'Daily like limit reached. Resets at 00:00 UTC.');
+  });
+
+  test('a 429 with Retry-After is a burst limit, not a daily limit', () {
+    final apiError = ApiError.fromDioException(
+      tooManyRequests({
+        'code': 'TOO_MANY_REQUESTS',
+        'message': 'Too many requests.',
+      }, retryAfter: '7'),
+    );
+
+    expect(apiError.isDailyLimit, isFalse);
+    expect(apiError.retryAfterSeconds, 7);
+    expect(apiError.message, 'Too many requests. Try again in 7 s.');
+  });
 }

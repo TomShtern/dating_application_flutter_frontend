@@ -11,10 +11,7 @@ import '../../shared/providers/selected_user_guard.dart' as user_guard;
 final profileProvider = FutureProvider<UserDetail>((ref) async {
   final apiClient = ref.watch(apiClientProvider);
   final currentUser = await user_guard.watchSelectedUser(ref);
-  return apiClient.getUserDetail(
-    userId: currentUser.id,
-    actingUserId: currentUser.id,
-  );
+  return apiClient.getUserDetail(userId: currentUser.id);
 });
 
 final otherUserProfileProvider = FutureProvider.family<UserDetail, String>((
@@ -22,8 +19,8 @@ final otherUserProfileProvider = FutureProvider.family<UserDetail, String>((
   userId,
 ) async {
   final apiClient = ref.watch(apiClientProvider);
-  final currentUser = await user_guard.watchSelectedUser(ref);
-  return apiClient.getUserDetail(userId: userId, actingUserId: currentUser.id);
+  await user_guard.watchSelectedUser(ref);
+  return apiClient.getUserDetail(userId: userId);
 });
 
 final profileEditSnapshotProvider = FutureProvider<ProfileEditSnapshot>((
@@ -63,7 +60,7 @@ class ProfileController {
     final apiClient = _ref.read(apiClientProvider);
     final response = await apiClient.updateProfile(
       userId: currentUser.id,
-      request: request,
+      request: await _keepingStoredSets(request),
     );
 
     _ref.invalidate(profileProvider);
@@ -71,6 +68,22 @@ class ProfileController {
     _ref.invalidate(otherUserProfileProvider(currentUser.id));
 
     return response;
+  }
+
+  /// The backend clears `interestedIn` / `interests` when a PUT omits them, so
+  /// every update that does not set them resends the stored values. If the
+  /// stored values cannot be read the update fails rather than risk wiping.
+  Future<ProfileUpdateRequest> _keepingStoredSets(
+    ProfileUpdateRequest request,
+  ) async {
+    if (request.interestedIn != null && request.interests != null) {
+      return request;
+    }
+    final snapshot = await _ref.read(profileEditSnapshotProvider.future);
+    return request.withCurrentSets(
+      currentInterestedIn: snapshot.editable.interestedIn,
+      currentInterests: snapshot.editable.interests,
+    );
   }
 
   void refreshCurrentUserProfile() {
