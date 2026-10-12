@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'app/env.dart';
 import 'features/auth/clerk_auth_provider.dart';
+import 'features/auth/sign_in_redirect.dart';
 import 'shared/persistence/shared_preferences_provider.dart';
 
 Future<void> main() async {
@@ -18,8 +19,14 @@ Future<void> main() async {
     '(or --dart-define-from-file=.env).',
   );
   final clerkAuthState = await ClerkAuthState.create(
-    config: ClerkAuthConfig(publishableKey: Env.clerkPublishableKey),
+    config: ClerkAuthConfig(
+      publishableKey: Env.clerkPublishableKey,
+      redirectionGenerator: signInRedirectFor,
+      deepLinkStream: signInRedirectLinks(),
+    ),
   );
+
+  completeBrowserSignIns(clerkAuthState);
 
   // Clerk's prebuilt widgets need a ClerkAuth ancestor; it sits above
   // MaterialApp as in Clerk's own setup. The same state is shared with

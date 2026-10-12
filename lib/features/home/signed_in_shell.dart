@@ -14,6 +14,7 @@ import '../profile/profile_screen.dart';
 import '../settings/settings_screen.dart';
 import '../browse/pending_likers_provider.dart';
 import '../updates/app_update_provider.dart';
+import '../updates/update_banner.dart';
 
 class _ShellDestination {
   const _ShellDestination({
@@ -79,20 +80,19 @@ class _SignedInShellState extends ConsumerState<SignedInShell> {
     return ref.watch(notificationsUnreadCountProvider).value ?? 0;
   }
 
+  /// A downloaded patch is offered by [UpdateBanner]; this only confirms the
+  /// one that just started running.
   void _announceUpdate(AppUpdateState? previous, AppUpdateState next) {
     final installed = next.justInstalledPatch;
-    final String message;
-    if (installed != null) {
-      ref.read(appUpdateControllerProvider.notifier).acknowledgeInstall();
-      message = 'App updated. Now running update $installed.';
-    } else if (next.phase == AppUpdatePhase.restartRequired &&
-        previous?.phase != AppUpdatePhase.restartRequired) {
-      message = 'Update downloaded. Close and reopen the app to apply it.';
-    } else {
+    if (installed == null) {
       return;
     }
+    ref.read(appUpdateControllerProvider.notifier).acknowledgeInstall();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 6)),
+      SnackBar(
+        content: Text('App updated. Now running update $installed.'),
+        duration: const Duration(seconds: 6),
+      ),
     );
   }
 
@@ -186,52 +186,65 @@ class _SignedInShellState extends ConsumerState<SignedInShell> {
                 MediaQuery.sizeOf(context).width,
               ),
             ),
-            child: DecoratedBox(
-              decoration: AppTheme.surfaceDecoration(
-                context,
-                gradient: LinearGradient(
-                  colors: [
-                    colorScheme.surface.withValues(alpha: 0.94),
-                    colorScheme.surfaceContainerLow.withValues(alpha: 0.92),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: AppTheme.panelRadius,
-                prominent: true,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-                child: ClipRRect(
-                  borderRadius: AppTheme.panelRadius,
-                  child: NavigationBar(
-                    selectedIndex: _selectedIndex,
-                    onDestinationSelected: (index) {
-                      setState(() {
-                        _selectedIndex = index;
-                      });
-                    },
-                    destinations: destinations
-                        .map(
-                          (destination) => NavigationDestination(
-                            icon: _NavIcon(
-                              icon: destination.icon,
-                              showBadge: destination.showBadge,
-                              badgeCount: destination.badgeCount,
-                            ),
-                            selectedIcon: _NavIcon(
-                              icon: destination.selectedIcon,
-                              showBadge: destination.showBadge,
-                              badgeCount: destination.badgeCount,
-                            ),
-                            label: destination.label,
-                          ),
-                        )
-                        .toList(growable: false),
-                  ),
-                ),
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const UpdateBanner(),
+                _navigationBar(colorScheme, destinations),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _navigationBar(
+    ColorScheme colorScheme,
+    List<_ShellDestination> destinations,
+  ) {
+    return DecoratedBox(
+      decoration: AppTheme.surfaceDecoration(
+        context,
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.surface.withValues(alpha: 0.94),
+            colorScheme.surfaceContainerLow.withValues(alpha: 0.92),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: AppTheme.panelRadius,
+        prominent: true,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+        child: ClipRRect(
+          borderRadius: AppTheme.panelRadius,
+          child: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            destinations: destinations
+                .map(
+                  (destination) => NavigationDestination(
+                    icon: _NavIcon(
+                      icon: destination.icon,
+                      showBadge: destination.showBadge,
+                      badgeCount: destination.badgeCount,
+                    ),
+                    selectedIcon: _NavIcon(
+                      icon: destination.selectedIcon,
+                      showBadge: destination.showBadge,
+                      badgeCount: destination.badgeCount,
+                    ),
+                    label: destination.label,
+                  ),
+                )
+                .toList(growable: false),
           ),
         ),
       ),

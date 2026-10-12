@@ -6,6 +6,9 @@ import '../auth/auth_controller.dart';
 import '../auth/selected_user_provider.dart';
 import '../auth/sign_in_screen.dart';
 import '../onboarding/onboarding_gate.dart';
+import '../updates/app_release_provider.dart';
+import '../updates/app_update_provider.dart';
+import '../updates/update_banner.dart';
 import 'signed_in_shell.dart';
 
 class AppHomeScreen extends ConsumerStatefulWidget {
@@ -21,6 +24,11 @@ class _AppHomeScreenState extends ConsumerState<AppHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+
+    // Update checks start here, not in the signed-in shell: a fix for a
+    // sign-in or onboarding bug has to reach people that bug keeps out.
+    ref.listen(appUpdateControllerProvider, (previous, next) {});
+    ref.listen(availableReleaseProvider, (previous, next) {});
 
     // Listen for session-expired events dispatched after forced logout.
     ref.listen<AsyncValue<AuthEvent>>(authEventProvider, (_, next) {
@@ -45,25 +53,29 @@ class _AppHomeScreenState extends ConsumerState<AppHomeScreen> {
       AuthUnknown() => const Scaffold(
         body: AppAsyncState.loading(message: 'Restoring your session…'),
       ),
-      Unauthenticated(:final message) => SignInScreen(infoMessage: message),
-      AuthProvisionFailed(:final message) => Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: AppAsyncState.error(
-                  message: message,
-                  onRetry: () => ref
-                      .read(authControllerProvider.notifier)
-                      .retryProvision(),
+      Unauthenticated(:final message) => UpdateBannerHost(
+        child: SignInScreen(infoMessage: message),
+      ),
+      AuthProvisionFailed(:final message) => UpdateBannerHost(
+        child: Scaffold(
+          body: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: AppAsyncState.error(
+                    message: message,
+                    onRetry: () => ref
+                        .read(authControllerProvider.notifier)
+                        .retryProvision(),
+                  ),
                 ),
-              ),
-              TextButton(
-                onPressed: () =>
-                    ref.read(authControllerProvider.notifier).logout(),
-                child: const Text('Sign out'),
-              ),
-            ],
+                TextButton(
+                  onPressed: () =>
+                      ref.read(authControllerProvider.notifier).logout(),
+                  child: const Text('Sign out'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

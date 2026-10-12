@@ -8,6 +8,7 @@ import '../../models/profile_edit_snapshot.dart';
 import '../../shared/widgets/app_async_state.dart';
 import '../auth/auth_controller.dart';
 import '../profile/profile_provider.dart';
+import '../updates/update_banner.dart';
 import 'onboarding_screen.dart';
 
 /// Shows [child] only once the backend reports the profile complete; until
@@ -57,7 +58,9 @@ class OnboardingGate extends ConsumerWidget {
     if (value.completionInfo.profileComplete) {
       return child;
     }
-    return OnboardingScreen(info: value.completionInfo);
+    return UpdateBannerHost(
+      child: OnboardingScreen(info: value.completionInfo),
+    );
   }
 
   /// The stored user summary (name, age, state) was saved while the profile

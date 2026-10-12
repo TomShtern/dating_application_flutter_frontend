@@ -23,6 +23,7 @@ class SignInScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: ClerkErrorListener(
+          handler: _showClerkError,
           child: ListView(
             padding: AppTheme.screenPadding(),
             children: [
@@ -45,6 +46,22 @@ class SignInScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Clerk's own handler shows each error for four seconds, which is too short
+/// to read a password rule. This one stays until closed or replaced.
+void _showClerkError(BuildContext context, clerk.ClerkError error) {
+  // Server errors carry Clerk's full sentence; the rest describe themselves.
+  final message = error.errors?.errorMessage ?? error.toString();
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 30),
+        showCloseIcon: true,
+      ),
+    );
 }
 
 class _QuickSignInCard extends StatefulWidget {

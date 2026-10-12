@@ -157,7 +157,7 @@ class FlutterNotificationPlatformService
     try {
       final granted = await _androidPlugin?.requestNotificationsPermission();
       if (granted == null) {
-        return getPermissionStatus();
+        return await getPermissionStatus();
       }
 
       return granted

@@ -89,7 +89,8 @@ Use `ApiClient`'s helpers — `_expectMap()`, `_expectList()`,
 ### Base URL
 
 Default `http://127.0.0.1:7070`, shared secret `lan-dev-secret`, all three
-timeouts 10 s (`AppConfig`). Android emulator must use `http://10.0.2.2:7070` —
+timeouts 10 s (`AppConfig`); `POST /api/auth/session` alone waits 90 s for a
+reply, because it is the first call and can meet a sleeping host. Android emulator must use `http://10.0.2.2:7070` —
 not `127.0.0.1`. A physical phone needs the laptop LAN IP.
 `ApiError.fromDioException()` detects loopback URLs and suggests the emulator
 address in its message.

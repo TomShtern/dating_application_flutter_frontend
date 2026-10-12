@@ -19,6 +19,8 @@ import 'package:flutter_dating_application_1/features/safety/blocked_users_scree
 import 'package:flutter_dating_application_1/features/settings/app_preferences_store.dart';
 import 'package:flutter_dating_application_1/features/settings/info_page_screen.dart';
 import 'package:flutter_dating_application_1/features/stats/stats_screen.dart';
+import 'package:flutter_dating_application_1/features/updates/app_release_provider.dart';
+import 'package:flutter_dating_application_1/features/updates/app_update_provider.dart';
 import 'package:flutter_dating_application_1/features/stats/achievements_screen.dart';
 import 'package:flutter_dating_application_1/features/verification/verification_screen.dart';
 import 'package:flutter_dating_application_1/models/app_preferences.dart';
@@ -69,6 +71,14 @@ const _expectedVisualReviewScenarios = [
   ScreenshotScenarioDefinition(
     fileName: 'shell_settings_account.png',
     scenarioName: 'signed-in shell settings tab account',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_update_available.png',
+    scenarioName: 'signed-in shell update available banner',
+  ),
+  ScreenshotScenarioDefinition(
+    fileName: 'shell_settings_update_ready.png',
+    scenarioName: 'signed-in shell settings tab update ready',
   ),
   ScreenshotScenarioDefinition(
     fileName: 'info_help.png',
@@ -514,6 +524,70 @@ void main() {
     );
   });
 
+  testWidgets('captures the update banner for a newer release', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInShell(
+      tester,
+      preferences: preferences,
+      overrides: [
+        releaseCheckSupportedProvider.overrideWithValue(true),
+        availableReleaseProvider.overrideWith(
+          (ref) async => AppRelease(
+            versionCode: 2,
+            versionName: '1.0.1',
+            apkUrl: Uri.parse('https://example.com/app-2.apk'),
+            sha256: 'abc',
+            notes: 'Faster photo loading',
+          ),
+        ),
+      ],
+    );
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'signed-in shell update available banner',
+      fileName: 'shell_update_available.png',
+    );
+  });
+
+  testWidgets('captures the settings update card with a patch ready', (
+    WidgetTester tester,
+  ) async {
+    final preferences = await _preferencesWithTheme(
+      AppThemeModePreference.light,
+    );
+
+    await _pumpSignedInShell(
+      tester,
+      preferences: preferences,
+      overrides: [
+        appUpdateControllerProvider.overrideWith(_PatchReadyController.new),
+      ],
+    );
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Check for updates'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    // The pinned header covers the top of the list; bring the card below it.
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 260));
+    await tester.pumpAndSettle();
+
+    await _captureAndSave(
+      tester,
+      scenarioName: 'signed-in shell settings tab update ready',
+      fileName: 'shell_settings_update_ready.png',
+    );
+  });
+
   testWidgets('captures the archived group on the chats tab', (
     WidgetTester tester,
   ) async {
@@ -710,16 +784,29 @@ Future<void> _pumpVisualHarness(
   await tester.pumpAndSettle();
 }
 
+/// A downloaded patch waiting for a restart, with patch 2 already running.
+class _PatchReadyController extends AppUpdateController {
+  @override
+  AppUpdateState build() => const AppUpdateState(
+    phase: AppUpdatePhase.restartRequired,
+    currentPatch: 2,
+  );
+}
+
 Future<void> _pumpSignedInShell(
   WidgetTester tester, {
   required SharedPreferences preferences,
   ThemeMode themeMode = ThemeMode.light,
   UserSummary user = currentUser,
+  List overrides = const [],
 }) async {
   await _pumpVisualHarness(
     tester,
     child: ProviderScope(
-      overrides: [...signedInShellOverrides(preferences, user: user)],
+      overrides: [
+        ...signedInShellOverrides(preferences, user: user),
+        ...overrides,
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),

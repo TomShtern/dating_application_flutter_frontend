@@ -81,6 +81,12 @@ class ApiError implements Exception {
     if (exception.type == DioExceptionType.connectionError) {
       return _connectionErrorMessage(baseUrl: baseUrl);
     }
+    if (exception.type == DioExceptionType.connectionTimeout ||
+        exception.type == DioExceptionType.sendTimeout ||
+        exception.type == DioExceptionType.receiveTimeout) {
+      return 'The server took too long to answer. It may be starting up, '
+          'so try again in a moment.';
+    }
 
     return exception.message ?? 'Request failed.';
   }

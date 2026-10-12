@@ -869,9 +869,16 @@ class ApiClient {
   /// `POST /api/auth/session`, no body. 201 on first call (a local profile was
   /// created), 200 afterwards; both are safe to repeat. The Bearer token is
   /// attached by the interceptor.
+  ///
+  /// This is the first call after the app starts or a sign-in, so it is the
+  /// one that meets a hosted backend that went to sleep; waking takes longer
+  /// than the default timeout.
   Future<AuthUser> provisionSession() async {
     try {
-      final response = await _dio.post<dynamic>(ApiEndpoints.authSession);
+      final response = await _dio.post<dynamic>(
+        ApiEndpoints.authSession,
+        options: Options(receiveTimeout: const Duration(seconds: 90)),
+      );
       return AuthUser.fromJson(
         _expectMap(response.data, context: 'provisioning your profile'),
       );

@@ -1,12 +1,37 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:restart_app/restart_app.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 
 import '../../shared/persistence/shared_preferences_provider.dart';
+import 'app_release_provider.dart';
 
 const _lastSeenPatchKey = 'app_update.last_seen_patch';
 
+/// How long the app may sit in the background before coming back to the
+/// foreground looks for updates again.
+const _foregroundRecheckAfter = Duration(hours: 1);
+
 final shorebirdUpdaterProvider = Provider<ShorebirdUpdater>(
   (ref) => ShorebirdUpdater(),
+);
+
+/// Starts a new process so a downloaded patch runs. False when the restart
+/// could not be started. The plugin's default mode on Android reopens the
+/// screen inside the same process, where the old code keeps running.
+Future<bool> restartApp() async {
+  try {
+    final result = await Restart.restartApp(mode: RestartMode.process);
+    return result.success;
+  } catch (error) {
+    debugPrint('Could not restart the app: $error');
+    return false;
+  }
+}
+
+/// How the UI restarts the app; replaced in tests.
+final appRestarterProvider = Provider<Future<bool> Function()>(
+  (ref) => restartApp,
 );
 
 enum AppUpdatePhase {
@@ -61,15 +86,38 @@ final appUpdateControllerProvider =
 
 class AppUpdateController extends Notifier<AppUpdateState> {
   late ShorebirdUpdater _updater;
+  DateTime _lastCheck = DateTime.now();
 
   @override
   AppUpdateState build() {
     _updater = ref.watch(shorebirdUpdaterProvider);
+    // A phone keeps an app alive for days, so startup alone would miss
+    // updates published in the meantime. Full releases are rechecked even
+    // on a build that cannot take patches.
+    final lifecycle = AppLifecycleListener(onResume: _recheckIfStale);
+    ref.onDispose(lifecycle.dispose);
     if (!_updater.isAvailable) {
       return const AppUpdateState(phase: AppUpdatePhase.unavailable);
     }
     Future<void>.microtask(_startup);
     return const AppUpdateState();
+  }
+
+  void _recheckIfStale() {
+    if (DateTime.now().difference(_lastCheck) < _foregroundRecheckAfter) {
+      return;
+    }
+    _lastCheck = DateTime.now();
+    ref.invalidate(availableReleaseProvider);
+    checkNow();
+  }
+
+  /// The manual check from Settings: asks again for a full release and for a
+  /// patch, and brings back a dismissed banner.
+  Future<void> checkEverything() async {
+    ref.read(updateDismissedProvider.notifier).reset();
+    ref.invalidate(availableReleaseProvider);
+    await checkNow();
   }
 
   Future<void> _startup() async {
@@ -103,6 +151,7 @@ class AppUpdateController extends Notifier<AppUpdateState> {
       return;
     }
 
+    _lastCheck = DateTime.now();
     state = state.copyWith(phase: AppUpdatePhase.checking);
     try {
       final status = await _updater.checkForUpdate();

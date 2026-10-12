@@ -137,23 +137,50 @@ to start those batch files. That is an agent-execution caveat, not proof the
 user's own PowerShell is broken. `semgrep` is installed as a launcher but its
 Python module is missing — do not rely on it until that is repaired.
 
-## Over-the-air updates (Shorebird)
+## Over-the-air updates
 
-Dart and asset changes ship as patches to an installed release build; native,
-Gradle, manifest and new-plugin changes need a new full release.
+Two channels share one banner and the Settings "App updates" card. The banner
+sits above the bottom navigation, and under the sign-in, provisioning-failed
+and onboarding screens through `UpdateBannerHost`, so a fix for those screens
+reaches people stuck on them. A full release always wins over a waiting patch.
+
+| Channel | Carries | User sees | Script |
+| --- | --- | --- | --- |
+| Full APK | anything (native code, plugins, manifest, assets) | "Update available" → Update → Android's installer | `scripts/release.ps1` |
+| Shorebird patch | Dart code only | "Update ready" → Restart | `scripts/patch.ps1` |
 
 ```powershell
-shorebird release android -- --dart-define-from-file=.env   # baseline APK
-shorebird patch android -- --dart-define-from-file=.env     # push a Dart patch
+.\scripts\release.ps1 -Notes 'What changed' -DryRun   # build only, publish nothing
+.\scripts\release.ps1 -Notes 'What changed'           # new full release
+.\scripts\patch.ps1                                   # Dart-only fix for the current release
 ```
 
+- Both scripts build with the Dart defines in `.env.release` (gitignored, same
+  keys as `.env.example`). They refuse an `http` API URL, a non-`pk_` Clerk key
+  and any `CLERK_TEST_ACCOUNTS`.
+- **Every publish needs the user's explicit OK**, each time. `release.ps1`
+  creates a tag and a GitHub release on this repo; `-DryRun` does not.
+- Full releases are hosted as GitHub Releases of this repo. Each installed
+  build has the manifest address compiled in (`latestReleaseManifestUrl` in
+  `lib/features/updates/app_release_provider.dart`); if hosting ever moves, the
+  old address must keep serving a `latest.json`.
+- `release.ps1` writes the new version into `pubspec.yaml` last, so
+  `pubspec.yaml` always names the release that is out. `patch.ps1` relies on it.
+- A refused patch (asset or native difference, including a newly used icon)
+  means a full release is needed. Never pass `--allow-asset-diffs` or
+  `--allow-native-diffs`.
+- The build number must only go up and the signing key must never change, or
+  Android refuses the update. The `applicationId` is fixed for the same reason:
+  a new ID is a new app that no update or patch reaches.
 - Shorebird builds with its own Flutter checkout, not the one on PATH. Patches
-  only run on builds made by `shorebird release`; `flutter run` and debug
-  builds have no updater (the Settings card says so).
-- The app side is `lib/features/updates/app_update_provider.dart`: it checks at
-  startup, downloads in the background, announces a newly running patch once
-  (snackbar) and shows state on the Settings "App updates" card. A patch only
-  takes effect on the next app start.
+  only run on builds made by `shorebird release`, and the full-release check is
+  off in debug builds (a debug-signed install cannot take a release APK).
+- The app side is `lib/features/updates/`: `app_update_provider.dart` (patch
+  check at startup and when the app returns after an hour away, background
+  download, restart), `app_release_provider.dart` (manifest check, in-app
+  download, installer hand-over, browser fallback) and `update_banner.dart`.
+- `shorebird.yaml` keeps `auto_update: false`: the app downloads patches itself
+  so it can offer the Restart button.
 - Release builds are signed with the keystore named in `android/key.properties`
   (gitignored, keystore outside the repo). Every update must use the same key,
   so back the keystore up; without the file Gradle falls back to the debug key.
@@ -188,6 +215,21 @@ shorebird patch android -- --dart-define-from-file=.env     # push a Dart patch
   `DevUserPickerScreen` still exists but is unreachable (backend rejects
   `X-User-Id`). Debug builds can show a quick sign-in list from
   `CLERK_TEST_ACCOUNTS`.
+- **Social sign-in runs in the phone's browser on Android**, not Clerk's in-app
+  WebView (Google refuses passkeys there). The browser returns on
+  `datingapp://auth/callback`: `lib/features/auth/sign_in_redirect.dart`, the
+  matching intent-filter on `MainActivity`, and `app_links` to receive it.
+  `flutter_deeplinking_enabled` is off because the app has no named routes.
+  Other platforms keep the WebView. The development Clerk instance accepts that
+  redirect address as is; whether a production instance needs it allowlisted is
+  unchecked.
+- **A first-time social sign-in is finished by this app, not the Clerk SDK.**
+  A person with no account comes back on a link without `rotating_token_nonce`,
+  and the SDK (0.0.18-beta) then leaves the card stuck on "Back".
+  `completeBrowserSignIns` in `sign_in_redirect.dart` fetches the sign-in and
+  turns it into a sign-up. It logs each step as `[sign-in] ...` (names and
+  states only, never token values); read them with `adb logcat -s flutter`,
+  release builds included. Keep that logging.
 - **Never put a Clerk secret key (`sk_...`) in the app.** Only the publishable key.
 - **No offline-first sync** exists in this frontend.
 - Photo management (list, upload, delete, reorder) is wired through

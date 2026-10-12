@@ -16,7 +16,9 @@ import '../notifications/notifications_screen.dart';
 import '../safety/blocked_users_screen.dart';
 import '../stats/achievements_screen.dart';
 import '../stats/stats_screen.dart';
+import '../updates/app_release_provider.dart';
 import '../updates/app_update_provider.dart';
+import '../updates/update_banner.dart';
 import '../verification/verification_screen.dart';
 import 'app_preferences_provider.dart';
 import 'info_page_screen.dart';
@@ -478,19 +480,49 @@ class _AppUpdatesCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final update = ref.watch(appUpdateControllerProvider);
+    final releaseCheck = ref.watch(availableReleaseProvider);
+    final release = releaseCheck.value;
+    final downloadPercent = ref.watch(releaseDownloadProvider);
+    final patchesSupported = update.phase != AppUpdatePhase.unavailable;
+    final supported =
+        patchesSupported || ref.watch(releaseCheckSupportedProvider);
     final busy =
+        releaseCheck.isLoading ||
+        downloadPercent != null ||
         update.phase == AppUpdatePhase.checking ||
         update.phase == AppUpdatePhase.downloading;
-    final canCheck = update.phase != AppUpdatePhase.unavailable && !busy;
+    final restartReady =
+        release == null && update.phase == AppUpdatePhase.restartRequired;
     final patch = update.currentPatch;
+
+    final String status;
+    if (!supported) {
+      status = 'Updates only work in installed release builds.';
+    } else if (downloadPercent != null) {
+      status = releaseDownloadSummary(downloadPercent);
+    } else if (release != null) {
+      status = release.notes == null
+          ? 'Version ${release.versionName} is available.'
+          : 'Version ${release.versionName} is available: ${release.notes}';
+    } else if (releaseCheck.isLoading) {
+      status = 'Checking for updates…';
+    } else if (releaseCheck.hasError) {
+      status = 'Could not check for updates. Try again.';
+    } else {
+      status = _patchStatusText(update.phase);
+    }
 
     return _SettingsSectionCard(
       icon: Icons.system_update_outlined,
       accentColor: _settingsMint,
       title: 'App updates',
-      subtitle: patch == null
-          ? 'Running the original release.'
-          : 'Update $patch is installed.',
+      subtitle: [
+        if (installedBuildName.isNotEmpty)
+          'Version $installedBuildName ($installedBuildNumber)',
+        patch == null
+            ? 'Running the original release.'
+            : 'Update $patch is installed.',
+      ].join(' · '),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -504,16 +536,40 @@ class _AppUpdatesCard extends ConsumerWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
-              Expanded(child: Text(_updateStatusText(update.phase))),
+              Expanded(child: Text(status)),
             ],
           ),
           const SizedBox(height: AppTheme.cardGap),
-          FilledButton.tonalIcon(
-            onPressed: canCheck
-                ? ref.read(appUpdateControllerProvider.notifier).checkNow
-                : null,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Check for updates'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              // Here as well as in the banner, so a dismissed banner is
+              // recoverable.
+              if (release != null)
+                FilledButton.icon(
+                  onPressed: downloadPercent == null
+                      ? () => startReleaseInstall(context, ref, release)
+                      : null,
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: Text('Update to ${release.versionName}'),
+                )
+              else if (restartReady)
+                FilledButton.icon(
+                  onPressed: () => restartForPatch(context, ref),
+                  icon: const Icon(Icons.restart_alt_rounded, size: 18),
+                  label: const Text('Restart now'),
+                ),
+              FilledButton.tonalIcon(
+                onPressed: supported && !busy
+                    ? ref
+                          .read(appUpdateControllerProvider.notifier)
+                          .checkEverything
+                    : null,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Check for updates'),
+              ),
+            ],
           ),
         ],
       ),
@@ -521,15 +577,14 @@ class _AppUpdatesCard extends ConsumerWidget {
   }
 }
 
-String _updateStatusText(AppUpdatePhase phase) {
+String _patchStatusText(AppUpdatePhase phase) {
   return switch (phase) {
-    AppUpdatePhase.unavailable =>
-      'Updates only work in release builds installed through Shorebird.',
+    AppUpdatePhase.unavailable ||
+    AppUpdatePhase.upToDate => 'You are on the latest version.',
     AppUpdatePhase.idle || AppUpdatePhase.checking => 'Checking for updates…',
     AppUpdatePhase.downloading => 'Downloading an update…',
-    AppUpdatePhase.upToDate => 'You are on the latest version.',
     AppUpdatePhase.restartRequired =>
-      'Update downloaded. Close and reopen the app to apply it.',
+      'Update downloaded. Restart to finish it.',
     AppUpdatePhase.failed => 'Could not check for updates. Try again.',
   };
 }
